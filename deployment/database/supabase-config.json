@@ -1,0 +1,140 @@
+{
+  "project_name": "marketing-platform",
+  "supabase_url": "https://[your-project].supabase.co",
+  "anon_key": "[your-anon-key]",
+  "service_role_key": "[your-service-role-key]",
+
+  "auth": {
+    "site_url": "https://marketing-platform.vercel.app",
+    "additional_redirect_urls": [
+      "http://localhost:3000",
+      "http://localhost:5173"
+    ],
+    "jwt_expiry": 3600,
+    "enable_signup": true,
+    "enable_email_autoconfirm": false
+  },
+
+  "database": {
+    "policies": {
+      "users": [
+        {
+          "name": "Users can view own profile",
+          "policy": "SELECT",
+          "using": "auth.uid() = id"
+        },
+        {
+          "name": "Users can update own profile",
+          "policy": "UPDATE",
+          "using": "auth.uid() = id",
+          "with_check": "auth.uid() = id"
+        }
+      ],
+      "campaigns": [
+        {
+          "name": "Users can CRUD own campaigns",
+          "policy": "ALL",
+          "using": "auth.uid() = user_id"
+        }
+      ],
+      "contents": [
+        {
+          "name": "Users can CRUD own content",
+          "policy": "ALL",
+          "using": "auth.uid() = user_id"
+        }
+      ],
+      "competitors": [
+        {
+          "name": "Users can CRUD own competitors",
+          "policy": "ALL",
+          "using": "auth.uid() = user_id"
+        }
+      ],
+      "ai_generations": [
+        {
+          "name": "Users can view own AI generations",
+          "policy": "SELECT",
+          "using": "auth.uid() = user_id"
+        }
+      ],
+      "notifications": [
+        {
+          "name": "Users can view own notifications",
+          "policy": "SELECT",
+          "using": "auth.uid() = user_id"
+        },
+        {
+          "name": "Users can update own notifications",
+          "policy": "UPDATE",
+          "using": "auth.uid() = user_id"
+        }
+      ]
+    }
+  },
+
+  "storage": {
+    "buckets": [
+      {
+        "name": "campaign-images",
+        "public": false,
+        "file_size_limit": 5242880,
+        "allowed_mime_types": ["image/jpeg", "image/png", "image/webp", "image/gif"],
+        "policies": [
+          {
+            "name": "Users can upload own images",
+            "policy": "INSERT",
+            "using": "auth.role() = 'authenticated'",
+            "with_check": "(storage.foldername(name))[1] = auth.uid()::text"
+          },
+          {
+            "name": "Users can view own images",
+            "policy": "SELECT",
+            "using": "auth.role() = 'authenticated'"
+          }
+        ]
+      },
+      {
+        "name": "video-uploads",
+        "public": false,
+        "file_size_limit": 52428800,
+        "allowed_mime_types": ["video/mp4", "video/quicktime", "video/x-msvideo"],
+        "policies": [
+          {
+            "name": "Users can upload own videos",
+            "policy": "INSERT",
+            "using": "auth.role() = 'authenticated'"
+          },
+          {
+            "name": "Users can view own videos",
+            "policy": "SELECT",
+            "using": "auth.role() = 'authenticated'"
+          }
+        ]
+      },
+      {
+        "name": "brand-logos",
+        "public": true,
+        "file_size_limit": 2097152,
+        "allowed_mime_types": ["image/jpeg", "image/png", "image/svg+xml", "image/webp"],
+        "policies": [
+          {
+            "name": "Public read",
+            "policy": "SELECT",
+            "using": "true"
+          },
+          {
+            "name": "Authenticated upload",
+            "policy": "INSERT",
+            "using": "auth.role() = 'authenticated'"
+          }
+        ]
+      }
+    ]
+  },
+
+  "edge_functions": {
+    "enabled": false,
+    "functions_dir": "./supabase/functions"
+  }
+}

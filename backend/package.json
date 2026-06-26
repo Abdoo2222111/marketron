@@ -1,0 +1,157 @@
+{
+  "name": "backend-config",
+  "version": "1.0.0",
+  "description": "Development configuration for backend",
+  "env": {
+    "type": "object",
+    "properties": {
+      "NODE_ENV": {
+        "type": "string",
+        "default": "development"
+      },
+      "PORT": {
+        "type": "number",
+        "default": 4000
+      },
+      "FRONTEND_URL": {
+        "type": "string",
+        "default": "http://localhost:3000"
+      },
+      "CORS_ORIGIN": {
+        "type": "string",
+        "default": "*"
+      },
+      "DATABASE_URL": {
+        "type": "string",
+        "description": "PostgreSQL database connection string"
+      },
+      "REDIS_URL": {
+        "type": "string",
+        "default": "redis://localhost:6379"
+      },
+      "JWT_ACCESS_SECRET": {
+        "type": "string"
+      },
+      "JWT_REFRESH_SECRET": {
+        "type": "string"
+      },
+      "OPENAI_API_KEY": {
+        "type": "string",
+        "description": "OpenAI API key for AI services"
+      },
+      "LOG_LEVEL": {
+        "type": "string",
+        "default": "debug"
+      },
+      "LOG_DIR": {
+        "type": "string",
+        "default": "./logs"
+      },
+      "UPLOAD_DIR": {
+        "type": "string",
+        "default": "./uploads"
+      },
+      "MAX_FILE_SIZE": {
+        "type": "number",
+        "default": 5242880
+      },
+      "RATE_LIMIT_WINDOW_MS": {
+        "type": "number",
+        "default": 60000
+      },
+      "RATE_LIMIT_MAX": {
+        "type": "number",
+        "default": 100
+      },
+      "BCRYPT_SALT_ROUNDS": {
+        "type": "number",
+        "default": 12
+      },
+      "SWAGGER_ENABLED": {
+        "type": "boolean",
+        "default": true
+      },
+      "SWAGGER_TITLE": {
+        "type": "string",
+        "default": "Marketing Platform API"
+      },
+      "SWAGGER_VERSION": {
+        "type": "string",
+        "default": "1.0.0"
+      }
+    },
+    "required": [
+      "DATABASE_URL",
+      "JWT_ACCESS_SECRET",
+      "JWT_REFRESH_SECRET",
+      "OPENAI_API_KEY"
+    ]
+  },
+  "prisma": {
+    "seed": "ts-node --skip-project prisma/seed.ts"
+  },
+  "scripts": {
+    "setup": "node setup-environment.js",
+    "prebuild": "npm run setup",
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:push": "prisma db push",
+    "prisma:seed": "prisma db seed",
+    "seed": "ts-node --skip-project prisma/seed.ts",
+    "postinstall": "prisma generate",
+    "test": "jest --passWithNoTests",
+    "lint": "eslint src/**/*.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "axios": "^1.18.1",
+    "bcryptjs": "^2.4.3",
+    "bull": "^4.12.2",
+    "compression": "^1.7.4",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "express-rate-limit": "^7.4.0",
+    "helmet": "^7.1.0",
+    "ioredis": "^5.4.1",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^9.0.1",
+    "openai": "^6.45.0",
+    "pg": "^8.22.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "uuid": "^10.0.0",
+    "winston": "^3.14.2",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/compression": "^1.7.5",
+    "@types/cookie-parser": "^1.4.7",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/jest": "^29.5.12",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/morgan": "^1.9.9",
+    "@types/multer": "^1.4.12",
+    "@types/node": "^20.16.0",
+    "@types/nodemailer": "^8.0.1",
+    "@types/swagger-jsdoc": "^6.0.4",
+    "@types/swagger-ui-express": "^4.1.6",
+    "@types/uuid": "^10.0.0",
+    "eslint": "^8.57.0",
+    "jest": "^29.7.0",
+    "prisma": "^5.22.0",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.5.4"
+  }
+}

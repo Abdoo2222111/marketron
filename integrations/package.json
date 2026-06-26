@@ -1,0 +1,43 @@
+{
+  "name": "social-integrations",
+  "version": "1.0.0",
+  "description": "Social Media API Integrations - Facebook, Instagram, TikTok, Snapchat, Google",
+  "main": "index.ts",
+  "scripts": {
+    "start": "ts-node index.ts",
+    "dev": "ts-node-dev --respawn index.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "mocha --require ts-node/register 'tests/**/*.test.ts'",
+    "test:facebook": "mocha --require ts-node/register tests/facebook.test.ts",
+    "test:tiktok": "mocha --require ts-node/register tests/tiktok.test.ts",
+    "test:snapchat": "mocha --require ts-node/register tests/snapchat.test.ts",
+    "test:common": "mocha --require ts-node/register tests/common.test.ts",
+    "test:watch": "mocha --require ts-node/register 'tests/**/*.test.ts' --watch"
+  },
+  "dependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/crypto-js": "^4.2.1",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.11.5",
+    "@types/qs": "^6.9.11",
+    "axios": "^1.6.7",
+    "cors": "^2.8.5",
+    "crypto-js": "^4.2.0",
+    "dotenv": "^16.4.1",
+    "express": "^4.18.2",
+    "qs": "^6.11.2",
+    "ts-node-dev": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/chai": "^5.2.3",
+    "@types/mocha": "^10.0.10",
+    "@types/sinon": "^21.0.1",
+    "axios-mock-adapter": "^2.1.0",
+    "chai": "^6.2.2",
+    "mocha": "^11.7.6",
+    "sinon": "^22.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3"
+  }
+}

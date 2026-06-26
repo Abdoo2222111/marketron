@@ -1,0 +1,60 @@
+# ============================================================
+# GitHub Actions: نشر خدمات الذكاء الاصطناعي (AI → Railway)
+# ============================================================
+name: 🤖 Deploy AI Services (Railway)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ai-services/**'
+      - 'deployment/ai-services/**'
+      - '.github/workflows/ai-services.yml'
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: 🧪 Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./ai-services
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: ./ai-services/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run tests
+        run: |
+          pip install pytest pytest-asyncio
+          python -m pytest tests/ -v
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        continue-on-error: true
+
+  deploy:
+    name: 🚀 Deploy to Railway
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy to Railway
+        run: railway up --service marketing-ai-services
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        working-directory: ./ai-services

@@ -1,0 +1,37 @@
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+COPY backend/package*.json ./
+RUN npm ci --only=production
+RUN npm ci
+
+COPY backend/ .
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# Build TypeScript
+RUN npm run build
+
+# ── Production Stage ──────────────────────────────────────
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install PostgreSQL client for migrations
+RUN apk add --no-cache postgresql-client
+
+# Copy node_modules from builder
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package*.json ./
+COPY backend/prisma ./prisma
+COPY backend/.env.example ./.env
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3001/api/v1/health || exit 1
+
+EXPOSE 3001
+
+CMD npx prisma generate && npx prisma db push && node dist/index.js

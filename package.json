@@ -1,0 +1,22 @@
+{
+  "name": "marketing-platform",
+  "version": "1.0.0",
+  "description": "منصة التسويق الإلكتروني الشاملة - Facebook, Instagram, TikTok, Snapchat",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "npm run build:backend && npm run build:frontend",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "test": "cd backend && npm test",
+    "deploy": "bash scripts/deploy/deploy.sh",
+    "seed": "cd backend && npx ts-node src/scripts/seed.ts",
+    "migrate": "cd backend && npx ts-node src/scripts/migrate.ts"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "typescript": "^5.4.0"
+  }
+}

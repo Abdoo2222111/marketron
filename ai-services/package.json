@@ -1,0 +1,185 @@
+{
+  "name": "ai-services-config",
+  "version": "1.0.0",
+  "description": "Development configuration for AI services",
+  "env": {
+    "type": "object",
+    "properties": {
+      "NODE_ENV": {
+        "type": "string",
+        "default": "development"
+      },
+      "PORT": {
+        "type": "number",
+        "default": 8000
+      },
+      "HOST": {
+        "type": "string",
+        "default": "0.0.0.0"
+      },
+      "DEBUG": {
+        "type": "boolean",
+        "default": false
+      },
+      "OPENAI_API_KEY": {
+        "type": "string",
+        "description": "OpenAI API key for content generation"
+      },
+      "ANTHROPIC_API_KEY": {
+        "type": "string",
+        "description": "Anthropic API key for fallback"
+      },
+      "REDIS_URL": {
+        "type": "string",
+        "default": "redis://localhost:6379"
+      },
+      "REDIS_ENABLED": {
+        "type": "boolean",
+        "default": false
+      },
+      "CACHE_TTL": {
+        "type": "number",
+        "default": 3600
+      },
+      "JWT_SECRET_KEY": {
+        "type": "string"
+      },
+      "JWT_ALGORITHM": {
+        "type": "string",
+        "default": "HS256"
+      },
+      "RATE_LIMIT_PER_USER": {
+        "type": "number",
+        "default": 100
+      },
+      "RATE_LIMIT_WINDOW": {
+        "type": "number",
+        "default": 60
+      },
+      "LOG_LEVEL": {
+        "type": "string",
+        "default": "INFO"
+      },
+      "LOG_FORMAT": {
+        "type": "string",
+        "default": "json"
+      },
+      "OTEL_ENABLED": {
+        "type": "boolean",
+        "default": false
+      },
+      "OTEL_SERVICE_NAME": {
+        "type": "string",
+        "default": "marketing-ai-services"
+      },
+      "OTEL_EXPORTER_OTLP_ENDPOINT": {
+        "type": "string",
+        "default": "http://localhost:4317"
+      },
+      "HF_TOKEN": {
+        "type": "string"
+      },
+      "USE_LOCAL_MODELS": {
+        "type": "boolean",
+        "default": false
+      },
+      "LLM_TIMEOUT": {
+        "type": "number",
+        "default": 60
+      },
+      "LLM_MAX_RETRIES": {
+        "type": "number",
+        "default": 3
+      },
+      "LLM_FALLBACK_ENABLED": {
+        "type": "boolean",
+        "default": true
+      },
+      "LLM_TEMPERATURE_CHAT": {
+        "type": "number",
+        "default": 0.3
+      },
+      "LLM_TEMPERATURE_GENERATION": {
+        "type": "number",
+        "default": 0.7
+      },
+      "MAX_INPUT_TOKENS": {
+        "type": "number",
+        "default": 128000
+      },
+      "MAX_OUTPUT_TOKENS": {
+        "type": "number",
+        "default": 4096
+      },
+      "PROMETHEUS_ENABLED": {
+        "type": "boolean",
+        "default": false
+      },
+      "SERVICE_PORT": {
+        "type": "number",
+        "default": 8000
+      },
+      "WORKER_THREADS": {
+        "type": "number",
+        "default": 4
+      },
+      "MAX_REQUEST_SIZE": {
+        "type": "number",
+        "default": 10485760
+      }
+    },
+    "required": [
+      "OPENAI_API_KEY",
+      "JWT_SECRET_KEY"
+    ]
+  },
+  "scripts": {
+    "setup": "pip install -r requirements.txt",
+    "dev": "python -m uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload",
+    "start": "python -m uvicorn src.main:app --host 0.0.0.0 --port 8000",
+    "test": "pytest --cov=src --cov-report=html --cov-report=term-missing",
+    "lint": "ruff check src/",
+    "format": "black src/"
+  },
+  "dependencies": {
+    "fastapi": "^0.115.6",
+    "uvicorn": "^0.34.0",
+    "pydantic": "^2.5.0",
+    "pydantic-settings": "^2.1.0",
+    "openai": "^1.55.0",
+    "anthropic": "^0.45.0",
+    "langchain": "^0.3.0",
+    "langchain-openai": "^0.2.0",
+    "langchain-anthropic": "^0.3.0",
+    "langchain-community": "^0.3.0",
+    "transformers": "^4.46.0",
+    "torch": "^2.1.0",
+    "sentencepiece": "^0.2.0",
+    "safetensors": "^0.4.0",
+    "farasa": "^0.1.0",
+    "camel-tools": "^1.5.0",
+    "pyarabic": "^0.6.15",
+    "redis": "^5.2.0",
+    "python-jose": "^3.3.0",
+    "python-multipart": "^0.0.9",
+    "passlib": "^1.7.4",
+    "structlog": "^24.4.0",
+    "prometheus-client": "^0.21.0",
+    "opentelemetry-api": "^1.27.0",
+    "opentelemetry-sdk": "^1.27.0",
+    "opentelemetry-exporter-otlp": "^1.27.0",
+    "slowapi": "^0.1.9",
+    "python-dotenv": "^1.0.0",
+    "tenacity": "^9.0.0",
+    "asyncio": "^3.4.3",
+    "aiofiles": "^24.1.0",
+    "httpx": "^0.28.0",
+    "pytest": "^8.0.0",
+    "pytest-asyncio": "^0.24.0"
+  },
+  "devDependencies": {
+    "ruff": "^0.11.0",
+    "black": "^24.0.0",
+    "mypy": "^1.15.0"
+  }
+}

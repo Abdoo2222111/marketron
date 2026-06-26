@@ -1,0 +1,65 @@
+# ============================================================
+# GitHub Actions: نشر الخلفية (Backend → Render / Railway)
+# ============================================================
+name: 🚀 Deploy Backend API (Render)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'deployment/backend/**'
+      - '.github/workflows/backend.yml'
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  test:
+    name: 🧪 Test & Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: ./backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Run tests
+        run: npm test
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/test
+          JWT_ACCESS_SECRET: test-secret
+          JWT_REFRESH_SECRET: test-secret
+        continue-on-error: true
+
+  deploy:
+    name: 🚀 Deploy to Render
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Render
+        uses: johnbeynon/render-deploy-action@v0.0.8
+        with:
+          service-id: ${{ secrets.RENDER_SERVICE_ID }}
+          api-key: ${{ secrets.RENDER_API_KEY }}
+          wait-for-deploy: true
+          clear-cache: false

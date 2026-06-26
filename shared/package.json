@@ -1,0 +1,10 @@
+{
+  "name": "shared",
+  "version": "1.0.0",
+  "description": "أنواع وموديلات وواجهات مشتركة بين كل مكونات المنصة",
+  "main": "index.ts",
+  "types": "index.ts",
+  "dependencies": {
+    "zod": "^3.23.8"
+  }
+}

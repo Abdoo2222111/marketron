@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: marketron-backend
+    runtime: node
+    repo: https://github.com/YOUR_USERNAME/marketing-platform
+    branch: main
+    rootDir: backend
+    buildCommand: npm install && npm run build && npx prisma generate
+    startCommand: npx prisma db push && node dist/index.js
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: marketron-db
+          property: connectionString
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        value: https://marketron.vercel.app
+      - key: FRONTEND_URL
+        value: https://marketron.vercel.app
+      - key: SWAGGER_ENABLED
+        value: "true"
+
+databases:
+  - name: marketron-db
+    plan: free
+    databaseName: marketron
+    user: marketron
+    region: frankfurt
+    ipAllowList: []
