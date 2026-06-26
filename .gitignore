@@ -65,5 +65,8 @@ temp/
 # Railway
 .railway/
 
+# Next.js
+.next/
+
 # Vercel
 .vercel/
