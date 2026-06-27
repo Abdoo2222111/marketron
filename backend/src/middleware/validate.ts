@@ -1,23 +1,22 @@
 import { Request, Response, NextFunction } from 'express';
-import { AnyZodObject, ZodError } from 'zod';
+import { ZodSchema, ZodError } from 'zod';
 
-/**
- * Middleware factory for validating request body against a Zod schema
- */
-export const validateBody = (schema: AnyZodObject) => {
-  return async (req: Request, res: Response, next: NextFunction) => {
+export const validate = (schema: ZodSchema, source: 'body' | 'query' | 'params' = 'body') => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     try {
-      req.body = await schema.parseAsync(req.body);
+      const data = schema.parse(req[source]);
+      req[source] = data;
       next();
     } catch (error) {
       if (error instanceof ZodError) {
+        const errors = error.errors.map((e) => ({
+          field: e.path.join('.'),
+          message: e.message,
+        }));
         res.status(400).json({
           success: false,
-          error: 'خطأ في صحة البيانات',
-          details: error.errors.map((e) => ({
-            field: e.path.join('.'),
-            message: e.message,
-          })),
+          error: 'بيانات غير صالحة',
+          errors,
         });
         return;
       }
@@ -26,29 +25,8 @@ export const validateBody = (schema: AnyZodObject) => {
   };
 };
 
-/**
- * Middleware factory for validating request query parameters
- */
-export const validateQuery = (schema: AnyZodObject) => {
-  return async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      req.query = await schema.parseAsync(req.query);
-      next();
-    } catch (error) {
-      if (error instanceof ZodError) {
-        res.status(400).json({
-          success: false,
-          error: 'خطأ في معاملات البحث',
-          details: error.errors.map((e) => ({
-            field: e.path.join('.'),
-            message: e.message,
-          })),
-        });
-        return;
-      }
-      next(error);
-    }
-  };
-};
-
-export const validate = validateBody;
+export const passwordSchema = (min = 8) => ({
+  min,
+  pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()_\-+=])/,
+  message: `كلمة المرور يجب أن تحتوي على الأقل ${min} أحرف، حرف كبير، حرف صغير، رقم، ورمز خاص`,
+});

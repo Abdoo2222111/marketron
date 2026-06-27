@@ -117,6 +117,21 @@ router.post('/:platform/sync', async (req: Request, res: Response) => {
   }
 });
 
+// ── Refresh platform token ──────────────────────────────
+router.post('/:platform/refresh', async (req: Request, res: Response) => {
+  try {
+    const platform = req.params.platform;
+    if (platform === 'facebook' || platform === 'instagram') {
+      const result = await platformService.refreshFacebookToken(req.user!.userId, platform);
+      res.json({ success: true, data: result });
+    } else {
+      res.status(400).json({ success: false, error: 'تحديث الرمز غير متاح لهذه المنصة' });
+    }
+  } catch (error: any) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
 // ── Send a message ───────────────────────────────────────
 router.post('/:platform/send', async (req: Request, res: Response) => {
   const { recipientId, text } = req.body;

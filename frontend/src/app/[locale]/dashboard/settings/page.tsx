@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   User, Mail, Phone, Building2, Loader2, AlertCircle, Save, Plus, Trash2,
-  Link as LinkIcon, CheckCircle2, RefreshCw, MessageCircle, QrCode, Facebook, Instagram, Send,
+  Link as LinkIcon, CheckCircle2, RefreshCw, MessageCircle, QrCode, Facebook, Instagram, Send, AlertTriangle, Info,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,19 @@ const PLATFORMS = [
   { id: 'whatsapp', label: 'واتساب', emoji: '💬', color: 'from-emerald-500 to-green-600', desc: 'ربط واتساب عبر Evolution API (QR Code)' },
   { id: 'telegram', label: 'تيليجرام', emoji: '✈️', color: 'from-cyan-400 to-cyan-600', desc: 'ربط بوت تيليجرام لاستقبال الرسائل' },
 ];
+
+const STATUS_BADGES: Record<string, { label: string; variant: 'success' | 'warning' | 'destructive' | 'secondary' }> = {
+  active: { label: 'نشط', variant: 'success' },
+  pending: { label: 'بانتظار', variant: 'warning' },
+  error: { label: 'خطأ', variant: 'destructive' },
+  expired: { label: 'منتهي', variant: 'destructive' },
+};
+
+function formatDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('ar-SA', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
 
 export default function SettingsPage({ params: { locale } }: { params: { locale: string } }) {
   const [tab, setTab] = useState('platforms');
@@ -155,11 +168,27 @@ export default function SettingsPage({ params: { locale } }: { params: { locale:
   // ── Sync Messages ──────────────────────────────────────
   const handleSync = async (platform: string) => {
     setConnecting(`sync-${platform}`);
+    setError(null);
     try {
       const res = await platformsApi.syncMessages(platform);
       showSuccess(res.data?.data?.message || 'تمت المزامنة');
     } catch (err: any) {
       setError(err?.response?.data?.error || 'فشل المزامنة');
+    } finally {
+      setConnecting(null);
+    }
+  };
+
+  // ── Refresh Token ──────────────────────────────────────
+  const handleRefreshToken = async (platform: string) => {
+    setConnecting(`refresh-${platform}`);
+    setError(null);
+    try {
+      const res = await platformsApi.refreshToken(platform);
+      showSuccess(res.data?.data?.message || 'تم تحديث الرمز');
+      await loadConnections();
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'فشل تحديث الرمز');
     } finally {
       setConnecting(null);
     }
@@ -255,38 +284,81 @@ export default function SettingsPage({ params: { locale } }: { params: { locale:
 
                           {/* Connection details */}
                           {conn && (
-                            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 mb-3 text-sm">
-                              <div className="flex items-center justify-between mb-1">
+                            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 mb-3 text-sm space-y-1">
+                              <div className="flex items-center justify-between">
                                 <span className="text-muted-foreground">الحساب:</span>
                                 <span className="font-medium">{conn.platformAccountName || conn.platformAccountId}</span>
                               </div>
                               <div className="flex items-center justify-between">
                                 <span className="text-muted-foreground">الحالة:</span>
-                                <Badge variant={conn.status === 'active' ? 'success' : 'warning'} className="text-xs">
-                                  {conn.status === 'active' ? 'نشط' : 'بانتظار'}
+                                <Badge variant={STATUS_BADGES[conn.status]?.variant || 'secondary'} className="text-xs">
+                                  {STATUS_BADGES[conn.status]?.label || conn.status}
                                 </Badge>
                               </div>
+                              {conn.createdAt && (
+                                <div className="flex items-center justify-between">
+                                  <span className="text-muted-foreground">تاريخ الربط:</span>
+                                  <span className="text-xs">{formatDate(conn.createdAt)}</span>
+                                </div>
+                              )}
+                              {conn.tokenExpiresAt && (
+                                <div className="flex items-center justify-between">
+                                  <span className="text-muted-foreground">انتهاء الرمز:</span>
+                                  <span className={cn('text-xs', new Date(conn.tokenExpiresAt) < new Date() ? 'text-red-500 font-bold' : '')}>
+                                    {formatDate(conn.tokenExpiresAt)}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           )}
 
                           {/* Action buttons */}
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 flex-wrap">
                             {conn ? (
                               <>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="flex-1"
-                                  onClick={() => handleSync(p.id)}
-                                  disabled={connecting === `sync-${p.id}`}
-                                >
-                                  {connecting === `sync-${p.id}` ? (
-                                    <Loader2 className="w-3.5 h-3.5 ml-1 animate-spin" />
-                                  ) : (
-                                    <RefreshCw className="w-3.5 h-3.5 ml-1" />
-                                  )}
-                                  مزامنة الرسائل
-                                </Button>
+                                {conn.status === 'expired' || conn.status === 'error' ? (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="flex-1 border-amber-300 text-amber-600 hover:bg-amber-50"
+                                    onClick={() => handleRefreshToken(p.id)}
+                                    disabled={connecting === `refresh-${p.id}`}
+                                  >
+                                    {connecting === `refresh-${p.id}` ? (
+                                      <Loader2 className="w-3.5 h-3.5 ml-1 animate-spin" />
+                                    ) : (
+                                      <RefreshCw className="w-3.5 h-3.5 ml-1" />
+                                    )}
+                                    تحديث الرمز
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="flex-1"
+                                    onClick={() => handleSync(p.id)}
+                                    disabled={connecting === `sync-${p.id}`}
+                                  >
+                                    {connecting === `sync-${p.id}` ? (
+                                      <Loader2 className="w-3.5 h-3.5 ml-1 animate-spin" />
+                                    ) : (
+                                      <RefreshCw className="w-3.5 h-3.5 ml-1" />
+                                    )}
+                                    مزامنة الرسائل
+                                  </Button>
+                                )}
+                                {p.id === 'facebook' && conn.status === 'active' && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-amber-500 hover:text-amber-600"
+                                    onClick={() => handleRefreshToken(p.id)}
+                                    disabled={connecting === `refresh-${p.id}`}
+                                    title="تحديث رمز الوصول"
+                                  >
+                                    <RefreshCw className={cn('w-3.5 h-3.5', connecting === `refresh-${p.id}` && 'animate-spin')} />
+                                  </Button>
+                                )}
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -299,6 +371,20 @@ export default function SettingsPage({ params: { locale } }: { params: { locale:
                               </>
                             ) : null}
                           </div>
+
+                          {/* Warning for expired/error connections */}
+                          {conn?.status === 'expired' && (
+                            <div className="mt-2 flex items-center gap-1 text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 rounded-lg p-2">
+                              <AlertTriangle className="w-3 h-3 flex-shrink-0" />
+                              انتهت صلاحية الرمز. اضغط "تحديث الرمز" لتجديده.
+                            </div>
+                          )}
+                          {conn?.status === 'error' && (
+                            <div className="mt-2 flex items-center gap-1 text-xs text-red-600 bg-red-50 dark:bg-red-900/20 rounded-lg p-2">
+                              <AlertTriangle className="w-3 h-3 flex-shrink-0" />
+                              الرمز غير صالح. اربط الحساب مجدداً.
+                            </div>
+                          )}
 
                           {/* Facebook connect form */}
                           {p.id === 'facebook' && !conn && (

@@ -42,7 +42,6 @@ export class SocialInboxService {
       },
     });
 
-    // Auto-connect platform-specific resources
     if (data.platform === 'whatsapp') {
       await this.initWhatsAppSession(userId, inbox.id, data.name);
     }
@@ -78,6 +77,16 @@ export class SocialInboxService {
       where: { id: inboxId, userId },
     });
     if (!inbox) throw ApiError.notFound('صندوق الرسائل غير موجود');
+
+    if (inbox.platform === 'whatsapp' && evolutionApi.isEnabled()) {
+      try {
+        await evolutionApi.logout(inbox.name);
+        await evolutionApi.deleteInstance(inbox.name);
+      } catch (error: any) {
+        logger.warn('Evolution cleanup failed', { error: error.message });
+      }
+    }
+
     await prisma.socialInbox.delete({ where: { id: inboxId } });
     return { message: 'تم حذف صندوق الرسائل بنجاح' };
   }
@@ -142,10 +151,8 @@ export class SocialInboxService {
     });
     if (!original) throw ApiError.notFound('الرسالة غير موجودة');
 
-    // Send to real platform
     await this.sendToPlatform(original.inbox, original, text);
 
-    // Create outbound message
     const reply = await prisma.socialMessage.create({
       data: {
         inboxId: original.inboxId,
@@ -159,7 +166,6 @@ export class SocialInboxService {
       },
     });
 
-    // Mark original as replied
     await prisma.socialMessage.update({
       where: { id: messageId },
       data: { status: 'replied', repliedAt: new Date() },
@@ -175,13 +181,14 @@ export class SocialInboxService {
     try {
       switch (platform) {
         case 'whatsapp': {
-          if (!inbox.phoneNumber && !message.phoneNumber) {
+          const phone = message.phoneNumber || inbox.phoneNumber;
+          if (!phone) {
             throw new Error('رقم الهاتف مطلوب لإرسال رسالة واتساب');
           }
-          const phone = message.phoneNumber || inbox.phoneNumber;
+          const cleanPhone = phone.replace(/[^0-9]/g, '');
           await evolutionApi.sendText(
-            inbox.settings?.instanceName || inbox.name,
-            phone,
+            inbox.name,
+            cleanPhone,
             text
           );
           break;
@@ -205,7 +212,6 @@ export class SocialInboxService {
         }
 
         case 'telegram': {
-          // TODO: implement Telegram bot integration
           logger.warn('Telegram sending not yet implemented');
           break;
         }
@@ -213,7 +219,6 @@ export class SocialInboxService {
         case 'tiktok':
         case 'snapchat':
         case 'twitter': {
-          // These platforms don't support direct message replies via simple APIs
           logger.warn(`${platform} direct reply not supported in this integration`);
           break;
         }
@@ -223,8 +228,6 @@ export class SocialInboxService {
       }
     } catch (error: any) {
       logger.error('sendToPlatform failed', { platform, error: error.message });
-      // Still save the reply locally even if platform send fails
-      // Caller can decide whether to throw
     }
   }
 
@@ -233,28 +236,41 @@ export class SocialInboxService {
     if (!evolutionApi.isEnabled()) return;
 
     try {
-      await evolutionApi.createInstance(instanceName);
-    } catch (error: any) {
-      // Instance may already exist
-      logger.info(`Evolution instance ${instanceName} may already exist`);
-    }
+      const result = await evolutionApi.createInstance(instanceName);
+      const qrCode = result?.qrcode?.base64 || result?.qrcode?.code || '';
 
-    const connect = await evolutionApi.connectInstance(instanceName);
-    await prisma.whatsAppSession.upsert({
-      where: { inboxId },
-      update: {
-        qrCode: connect?.qrcode || connect?.base64,
-        qrCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000),
-        status: 'pending',
-      },
-      create: {
-        inboxId,
-        userId,
-        qrCode: connect?.qrcode || connect?.base64,
-        qrCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000),
-        status: 'pending',
-      },
-    });
+      if (qrCode) {
+        await prisma.whatsAppSession.upsert({
+          where: { inboxId },
+          update: { qrCode, qrCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000), status: 'pending' },
+          create: { inboxId, userId, qrCode, qrCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000), status: 'pending' },
+        });
+      }
+
+      await evolutionApi.setWebhook(
+        instanceName,
+        `${process.env.WEBHOOK_BASE_URL || 'https://marketron-backend-production.up.railway.app'}/api/v1/social/webhook/evolution`
+      );
+    } catch (error: any) {
+      if (error?.response?.status === 409 || error?.response?.data?.message?.includes('already exists')) {
+        logger.info(`Evolution instance ${instanceName} already exists, connecting...`);
+        try {
+          const connect = await evolutionApi.connectInstance(instanceName);
+          const qrCode = connect?.qrcode?.base64 || connect?.qrcode?.code || '';
+          if (qrCode) {
+            await prisma.whatsAppSession.upsert({
+              where: { inboxId },
+              update: { qrCode, qrCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000), status: 'pending' },
+              create: { inboxId, userId, qrCode, qrCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000), status: 'pending' },
+            });
+          }
+        } catch (connectError: any) {
+          logger.error('Failed to reconnect existing instance', { error: connectError.message });
+        }
+      } else {
+        logger.error('Evolution initWhatsAppSession failed', { error: error.message });
+      }
+    }
   }
 
   async generateWhatsAppQR(userId: string, inboxId: string) {
@@ -264,57 +280,47 @@ export class SocialInboxService {
     if (!inbox) throw ApiError.notFound('حساب واتساب غير موجود');
 
     if (evolutionApi.isEnabled()) {
-      const connect = await evolutionApi.connectInstance(inbox.name);
-      const qrCodeUrl =
-        connect?.qrcode ||
-        connect?.base64 ||
-        `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(
-          inbox.webhookToken || ''
-        )}`;
+      try {
+        const connect = await evolutionApi.connectInstance(inbox.name);
+        const qrCode = connect?.qrcode?.base64 || connect?.qrcode?.code || connect?.base64 || connect?.qrcode || '';
 
-      const session = await prisma.whatsAppSession.upsert({
-        where: { inboxId },
-        update: {
-          qrCode: qrCodeUrl,
-          qrCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000),
-          status: 'pending',
-        },
-        create: {
-          inboxId,
-          userId,
-          qrCode: qrCodeUrl,
-          qrCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000),
-          status: 'pending',
-        },
-      });
+        if (qrCode) {
+          const session = await prisma.whatsAppSession.upsert({
+            where: { inboxId },
+            update: { qrCode, qrCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000), status: 'pending' },
+            create: { inboxId, userId, qrCode, qrCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000), status: 'pending' },
+          });
 
-      return {
-        qrCodeUrl: session.qrCode,
-        expiresIn: 300,
-        instanceName: inbox.name,
-      };
+          await evolutionApi.setWebhook(
+            inbox.name,
+            `${process.env.WEBHOOK_BASE_URL || 'https://marketron-backend-production.up.railway.app'}/api/v1/social/webhook/evolution`
+          );
+
+          return { qrCodeUrl: session.qrCode, expiresIn: 300, instanceName: inbox.name };
+        }
+
+        const state = await evolutionApi.getConnectionState(inbox.name);
+        if (state?.state === 'CONNECTED') {
+          await prisma.whatsAppSession.upsert({
+            where: { inboxId },
+            update: { status: 'connected', lastConnectedAt: new Date() },
+            create: { inboxId, userId, status: 'connected', lastConnectedAt: new Date() },
+          });
+          return { status: 'connected', instanceName: inbox.name };
+        }
+      } catch (error: any) {
+        logger.error('generateWhatsAppQR failed', { error: error.message });
+        throw ApiError.badRequest('فشل الاتصال بخادم Evolution API. تأكد من تكوينه بشكل صحيح');
+      }
     }
 
-    // Fallback static QR
     const qrData = `whatsapp://connect?token=${inbox.webhookToken}&userId=${userId}`;
-    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(
-      qrData
-    )}`;
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}`;
 
     await prisma.whatsAppSession.upsert({
       where: { inboxId },
-      update: {
-        qrCode: qrCodeUrl,
-        qrCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000),
-        status: 'pending',
-      },
-      create: {
-        inboxId,
-        userId,
-        qrCode: qrCodeUrl,
-        qrCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000),
-        status: 'pending',
-      },
+      update: { qrCode: qrCodeUrl, qrCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000), status: 'pending' },
+      create: { inboxId, userId, qrCode: qrCodeUrl, qrCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000), status: 'pending' },
     });
 
     return { qrCodeUrl, expiresIn: 300 };
@@ -334,7 +340,14 @@ export class SocialInboxService {
     if (inbox && evolutionApi.isEnabled()) {
       try {
         const remoteState = await evolutionApi.getConnectionState(inbox.name);
-        state = remoteState?.state || session.status;
+        const remoteStatus = remoteState?.state || '';
+        if (remoteStatus === 'CONNECTED' || remoteStatus === 'open') {
+          state = 'connected';
+        } else if (remoteStatus === 'connecting' || remoteStatus === 'QRCODE') {
+          state = 'pending';
+        } else if (remoteStatus === 'close' || remoteStatus === 'disconnected') {
+          state = 'disconnected';
+        }
       } catch (error: any) {
         logger.error('getWhatsAppStatus remote check failed', { error: error.message });
       }
@@ -345,6 +358,113 @@ export class SocialInboxService {
       qrCode: session.qrCode,
       lastConnectedAt: session.lastConnectedAt,
     };
+  }
+
+  // ── Evolution Webhook Handlers ────────────────────────
+
+  async updateWhatsAppQR(instanceName: string, qrCode: string) {
+    const inbox = await prisma.socialInbox.findFirst({
+      where: { name: instanceName, platform: 'whatsapp' },
+    });
+    if (!inbox) return;
+
+    await prisma.whatsAppSession.upsert({
+      where: { inboxId: inbox.id },
+      update: {
+        qrCode,
+        qrCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000),
+        status: 'pending',
+      },
+      create: {
+        inboxId: inbox.id,
+        userId: inbox.userId,
+        qrCode,
+        qrCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000),
+        status: 'pending',
+      },
+    });
+  }
+
+  async updateWhatsAppConnectionState(instanceName: string, state: string) {
+    const inbox = await prisma.socialInbox.findFirst({
+      where: { name: instanceName, platform: 'whatsapp' },
+    });
+    if (!inbox) return;
+
+    const statusMap: Record<string, string> = {
+      open: 'connected',
+      connecting: 'pending',
+      close: 'disconnected',
+      disconnected: 'disconnected',
+      QRCODE: 'pending',
+    };
+
+    const newStatus = statusMap[state] || 'pending';
+
+    await prisma.whatsAppSession.updateMany({
+      where: { inboxId: inbox.id },
+      data: {
+        status: newStatus,
+        ...(newStatus === 'connected' ? { lastConnectedAt: new Date() } : {}),
+      },
+    });
+
+    await prisma.socialInbox.update({
+      where: { id: inbox.id },
+      data: {
+        qrCodeUrl: state === 'QRCODE' ? undefined : null,
+      },
+    });
+  }
+
+  async receiveEvolutionMessage(data: {
+    instance: string;
+    remoteJid: string;
+    fromMe: boolean;
+    text: string;
+    mediaUrl?: string;
+    pushName: string;
+    messageId: string;
+    messageTimestamp?: string;
+  }) {
+    if (data.fromMe) return;
+
+    const inbox = await prisma.socialInbox.findFirst({
+      where: { name: data.instance, platform: 'whatsapp' },
+    });
+    if (!inbox) {
+      logger.warn(`No inbox found for Evolution instance: ${data.instance}`);
+      return;
+    }
+
+    const phoneNumber = data.remoteJid.split('@')[0];
+    const existingMessage = data.messageId
+      ? await prisma.socialMessage.findFirst({ where: { platformMessageId: data.messageId } })
+      : null;
+
+    if (existingMessage) return;
+
+    const message = await prisma.socialMessage.create({
+      data: {
+        inboxId: inbox.id,
+        userId: inbox.userId,
+        platform: 'whatsapp',
+        direction: 'inbound',
+        status: 'unread',
+        senderName: data.pushName || phoneNumber || 'Unknown',
+        senderId: data.remoteJid,
+        phoneNumber,
+        messageText: data.text || '',
+        mediaUrl: data.mediaUrl || null,
+        platformMessageId: data.messageId,
+        metadata: JSON.stringify({
+          remoteJid: data.remoteJid,
+          messageTimestamp: data.messageTimestamp,
+        }),
+      },
+    });
+
+    await this.checkAutoReply(inbox.userId, message, 'whatsapp');
   }
 
   // ── Sync from platforms ───────────────────────────────
@@ -389,8 +509,8 @@ export class SocialInboxService {
         inboxId: inbox.id,
         userId,
         platform: inbox.platform,
-        direction: lastMessage.from?.id === sender?.id ? 'inbound' : 'outbound',
-        status: (conversation.unread_count || 0) > 0 ? 'unread' : 'read',
+        direction: lastMessage.from?.id === sender?.id ? 'inbound' : 'outbound' as const,
+        status: (conversation.unread_count || 0) > 0 ? 'unread' as const : 'read' as const,
         senderName: lastMessage.from?.name || sender?.name || 'Unknown',
         senderId: lastMessage.from?.id || sender?.id,
         messageText: lastMessage.message || '',
@@ -461,16 +581,63 @@ export class SocialInboxService {
   }
 
   private async syncWhatsAppMessages(userId: string, inbox: any) {
-    // WhatsApp messages come via webhooks, not polling
-    // But we can check connection state
-    const state = await evolutionApi.getConnectionState(inbox.name);
-    if (state?.state === 'CONNECTED') {
-      await prisma.whatsAppSession.updateMany({
-        where: { inboxId: inbox.id },
-        data: { status: 'connected', lastConnectedAt: new Date() },
-      });
+    if (!evolutionApi.isEnabled()) {
+      return { message: 'Evolution API not configured' };
     }
-    return { message: 'WhatsApp state synced', state: state?.state };
+
+    try {
+      const chats = await evolutionApi.fetchChats(inbox.name);
+      let count = 0;
+
+      if (Array.isArray(chats)) {
+        for (const chat of chats.slice(0, 10)) {
+          const remoteJid = chat.jid || chat.id;
+          if (!remoteJid) continue;
+
+          const messages = await evolutionApi.fetchMessages(inbox.name, remoteJid, 1, 20);
+          if (messages?.length) {
+            for (const msg of messages.slice(0, 5)) {
+              const key = msg.key || {};
+              const existing = key.id
+                ? await prisma.socialMessage.findFirst({ where: { platformMessageId: key.id } })
+                : null;
+              if (existing) continue;
+
+              const messageContent = msg.message?.conversation || msg.message?.extendedTextMessage?.text || '';
+              const phone = key.remoteJid?.split('@')[0] || '';
+
+              await prisma.socialMessage.create({
+                data: {
+                  inboxId: inbox.id,
+                  userId,
+                  platform: 'whatsapp',
+                  direction: key.fromMe ? 'outbound' : 'inbound',
+                  status: 'read',
+                  senderName: key.fromMe ? 'أنت' : phone || 'Unknown',
+                  senderId: key.remoteJid,
+                  phoneNumber: phone,
+                  messageText: messageContent,
+                  platformMessageId: key.id,
+                  metadata: JSON.stringify({ synced: true }),
+                },
+              });
+              count++;
+            }
+          }
+        }
+      }
+
+      await prisma.socialInbox.update({
+        where: { id: inbox.id },
+        data: { lastSyncedAt: new Date() },
+      });
+
+      return { message: `Synced ${count} WhatsApp messages` };
+    } catch (error: any) {
+      logger.error('WhatsApp sync failed', { error: error.message });
+      const state = await evolutionApi.getConnectionState(inbox.name);
+      return { message: `WhatsApp state: ${state?.state || 'unknown'}`, state: state?.state };
+    }
   }
 
   // ── Webhook ──────────────────────────────────────────
@@ -480,7 +647,6 @@ export class SocialInboxService {
     });
     if (!inbox) throw ApiError.notFound('صندوق الرسائل غير موجود');
 
-    // Support both Evolution API and generic webhook formats
     const isEvolution = !!payload.data;
     const normalized = isEvolution
       ? this.normalizeEvolutionPayload(payload)
@@ -503,7 +669,6 @@ export class SocialInboxService {
       },
     });
 
-    // Auto-reply check
     await this.checkAutoReply(inbox.userId, message, inbox.platform);
 
     return { message: 'تم استلام الرسالة' };
@@ -516,7 +681,7 @@ export class SocialInboxService {
       senderName: message.senderName || data.pushName || message.remoteJid,
       senderId: message.remoteJid,
       phoneNumber: message.remoteJid?.split('@')?.[0],
-      text: message.conversation || message.extendedTextMessage?.text || message.caption,
+      text: message.conversation || message.extendedTextMessage?.text || message.caption || message.imageMessage?.caption || message.videoMessage?.caption,
       mediaUrl: message.imageMessage?.url || message.videoMessage?.url || message.audioMessage?.url,
       messageId: message.id || data.key?.id,
       metadata: payload,
@@ -566,7 +731,6 @@ export class SocialInboxService {
           },
         });
 
-        // Try to send to platform
         const inbox = await prisma.socialInbox.findUnique({
           where: { id: message.inboxId },
         });

@@ -6,7 +6,9 @@ const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest',
   },
+  withCredentials: true,
 });
 
 api.interceptors.request.use(
@@ -25,14 +27,19 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
+    const status = error.response?.status;
     const originalRequest = error.config;
-    if (error.response?.status === 401 && !originalRequest._retry) {
+
+    // 401 → try refresh token
+    if (status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/auth/refresh')) {
       originalRequest._retry = true;
       try {
         const refreshToken = localStorage.getItem('refresh_token');
         if (refreshToken) {
           const { data: refreshResponse } = await axios.post(`${API_BASE_URL}/auth/refresh`, {
             refreshToken,
+          }, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
           });
           const newToken = refreshResponse.data?.data?.accessToken || refreshResponse.data?.accessToken;
           localStorage.setItem('auth_token', newToken);
@@ -42,9 +49,10 @@ api.interceptors.response.use(
       } catch {
         localStorage.removeItem('auth_token');
         localStorage.removeItem('refresh_token');
-        window.location.href = '/login';
+        window.location.href = '/ar/auth/login';
       }
     }
+
     return Promise.reject(error);
   }
 );

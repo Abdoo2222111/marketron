@@ -1,10 +1,7 @@
 import rateLimit from 'express-rate-limit';
 
-/**
- * General API rate limiter (applies to all routes)
- */
 export const globalRateLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
+  windowMs: 60 * 1000,
   max: 100,
   standardHeaders: true,
   legacyHeaders: false,
@@ -14,12 +11,9 @@ export const globalRateLimiter = rateLimit({
   },
 });
 
-/**
- * Stricter rate limiter for auth endpoints
- */
 export const authRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10,
+  windowMs: 15 * 60 * 1000,
+  max: 5,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -28,11 +22,19 @@ export const authRateLimiter = rateLimit({
   },
 });
 
-/**
- * Rate limiter for AI endpoints
- */
+export const registerRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 3,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: 'محاولات تسجيل كثيرة. حاول بعد ساعة',
+  },
+});
+
 export const aiRateLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
+  windowMs: 60 * 1000,
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
@@ -42,5 +44,4 @@ export const aiRateLimiter = rateLimit({
   },
 });
 
-// Alias for backward compatibility
 export const apiRateLimiter = globalRateLimiter;

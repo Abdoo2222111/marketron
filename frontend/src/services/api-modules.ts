@@ -223,6 +223,7 @@ export interface PlatformConnection {
   platformAccountName?: string;
   status: string;
   createdAt: string;
+  tokenExpiresAt?: string | null;
 }
 
 export const platformsApi = {
@@ -239,6 +240,7 @@ export const platformsApi = {
   getWhatsAppQR: () => api.get('/platforms/whatsapp/qr'),
   getFacebookPages: () => api.get('/platforms/facebook/pages'),
   syncMessages: (platform: string) => api.post(`/platforms/${platform}/sync`),
+  refreshToken: (platform: string) => api.post(`/platforms/${platform}/refresh`),
   sendMessage: (platform: string, recipientId: string, text: string) =>
     api.post(`/platforms/${platform}/send`, { recipientId, text }),
   getFacebookOAuthUrl: () => api.get('/platforms/facebook/oauth-url'),

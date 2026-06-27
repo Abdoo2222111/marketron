@@ -7,8 +7,22 @@ import logger from '../utils/logger';
 
 // ============================================================
 // Platform Connection Service
-// يدير ربط وفصل كل المنصات (Facebook, WhatsApp, Instagram, etc)
+// يدير ربط وفصل كل المنصات (Facebook, Instagram, WhatsApp, etc)
 // ============================================================
+
+const FB_TOKEN_EXPIRY_MS = 60 * 24 * 60 * 60 * 1000; // 60 days for long-lived tokens
+
+function getFacebookError(error: any): string | null {
+  const status = error?.response?.status;
+  const code = error?.response?.data?.error?.code;
+  const message = error?.response?.data?.error?.message || error.message;
+  if (status === 403) {
+    if (code === 190) return `انتهت صلاحية رمز الوصول. اربط فيسبوك مجدداً.`;
+    if (code === 10) return `الرمز لا يملك صلاحية pages_messaging.`;
+    return `خطأ في فيسبوك: ${message}`;
+  }
+  return null;
+}
 
 export class PlatformService {
   // ── List all connections for a user ─────────────────────
@@ -18,12 +32,18 @@ export class PlatformService {
       orderBy: { createdAt: 'desc' },
     });
 
-    // Return with platform-specific status
-    return connections.map(c => ({
-      ...c,
-      // Mask token for security
-      accessToken: c.accessToken ? '••••••' + c.accessToken.slice(-6) : '',
-    }));
+    return connections.map(c => {
+      const isExpired = c.tokenExpiresAt && new Date() > c.tokenExpiresAt;
+      return {
+        id: c.id,
+        platform: c.platform,
+        platformAccountId: c.platformAccountId,
+        platformAccountName: c.platformAccountName,
+        status: isExpired ? 'expired' : c.status,
+        createdAt: c.createdAt,
+        tokenExpiresAt: c.tokenExpiresAt,
+      };
+    });
   }
 
   // ── Get a specific connection ───────────────────────────
@@ -41,27 +61,28 @@ export class PlatformService {
     return conn;
   }
 
+  // ── Verify a Facebook token with Graph API ──────────────
+  private async verifyFacebookToken(token: string, pageId?: string) {
+    const axios = require('axios');
+    const pid = pageId || 'me';
+    const res = await axios.get(`https://graph.facebook.com/${config.meta.apiVersion}/${pid}`, {
+      params: { fields: 'id,name,access_token', access_token: token },
+    });
+    return res.data;
+  }
+
   // ── Connect Facebook (OAuth or token) ──────────────────
   async connectFacebook(userId: string, data: { accessToken: string; pageId?: string }) {
     let pageInfo: any = { id: data.pageId || 'me', name: 'Facebook Page' };
+    let verifyError: string | null = null;
 
-    // Try to verify the token, but don't block if it's expired (user can refresh later)
     try {
-      const axios = require('axios');
-      const pageId = data.pageId || 'me';
-      const res = await axios.get(`https://graph.facebook.com/${config.meta.apiVersion}/${pageId}`, {
-        params: {
-          fields: 'id,name,access_token',
-          access_token: data.accessToken,
-        },
-      });
-      pageInfo = res.data;
+      pageInfo = await this.verifyFacebookToken(data.accessToken, data.pageId);
     } catch (error: any) {
-      logger.warn('Facebook token verification failed, storing anyway', { error: error.message });
-      // Store the connection anyway — user can update token later
+      const fbErr = getFacebookError(error);
+      verifyError = fbErr || `تعذر التحقق من الرمز: ${error.message}`;
     }
 
-    // Delete existing Facebook connection
     await prisma.platformConnection.deleteMany({
       where: { userId, platform: 'facebook' },
     });
@@ -73,22 +94,35 @@ export class PlatformService {
         accessToken: data.accessToken,
         platformAccountId: pageInfo.id,
         platformAccountName: pageInfo.name,
-        status: 'active',
+        tokenExpiresAt: new Date(Date.now() + FB_TOKEN_EXPIRY_MS),
+        status: verifyError ? 'error' : 'active',
       },
     });
 
-    logger.info(`Facebook connected for user ${userId}: ${pageInfo.name}`);
     return {
       id: connection.id,
       platform: 'facebook',
       platformAccountId: pageInfo.id,
       platformAccountName: pageInfo.name,
-      status: 'active',
+      status: verifyError ? 'error' : 'active',
+      warning: verifyError,
     };
   }
 
   // ── Connect Instagram ───────────────────────────────────
   async connectInstagram(userId: string, data: { accessToken: string; accountId?: string }) {
+    let verifyError: string | null = null;
+
+    try {
+      const axios = require('axios');
+      const accId = data.accountId || 'me';
+      await axios.get(`https://graph.facebook.com/${config.meta.apiVersion}/${accId}`, {
+        params: { fields: 'id,name', access_token: data.accessToken },
+      });
+    } catch (error: any) {
+      verifyError = `تعذر التحقق من الرمز: ${error.message}`;
+    }
+
     await prisma.platformConnection.deleteMany({
       where: { userId, platform: 'instagram' },
     });
@@ -100,14 +134,16 @@ export class PlatformService {
         accessToken: data.accessToken,
         platformAccountId: data.accountId || 'me',
         platformAccountName: 'Instagram Account',
-        status: 'active',
+        tokenExpiresAt: new Date(Date.now() + FB_TOKEN_EXPIRY_MS),
+        status: verifyError ? 'error' : 'active',
       },
     });
 
     return {
       id: connection.id,
       platform: 'instagram',
-      status: 'active',
+      status: verifyError ? 'error' : 'active',
+      warning: verifyError,
     };
   }
 
@@ -241,6 +277,48 @@ export class PlatformService {
     };
   }
 
+  // ── Refresh a Facebook/Instagram token (exchange short-lived for long-lived) ──
+  async refreshFacebookToken(userId: string, platform?: string) {
+    const plat = platform || 'facebook';
+    const conn = await prisma.platformConnection.findFirst({
+      where: { userId, platform: plat },
+    });
+    if (!conn) throw ApiError.notFound(`${plat} غير مربوط`);
+
+    try {
+      const axios = require('axios');
+      if (!config.meta.appId || !config.meta.appSecret) {
+        throw ApiError.badRequest('META_APP_ID و META_APP_SECRET غير مُهيئين في الخادم');
+      }
+      const res = await axios.get('https://graph.facebook.com/v22.0/oauth/access_token', {
+        params: {
+          grant_type: 'fb_exchange_token',
+          client_id: config.meta.appId,
+          client_secret: config.meta.appSecret,
+          fb_exchange_token: conn.accessToken,
+        },
+      });
+      const newToken = res.data.access_token;
+      const expiresIn = (res.data.expires_in || 60 * 24 * 60) * 1000;
+
+      await prisma.platformConnection.update({
+        where: { id: conn.id },
+        data: {
+          accessToken: newToken,
+          tokenExpiresAt: new Date(Date.now() + expiresIn),
+          status: 'active',
+        },
+      });
+
+      logger.info(`Facebook token refreshed for user ${userId}`);
+      return { message: 'تم تحديث رمز فيسبوك بنجاح', expiresAt: new Date(Date.now() + expiresIn) };
+    } catch (error: any) {
+      logger.error('Facebook token refresh failed', { error: error.message });
+      const fbErr = getFacebookError(error);
+      throw ApiError.badRequest(fbErr || 'فشل تحديث رمز فيسبوك. اربط الحساب مجدداً.');
+    }
+  }
+
   // ── Get Facebook pages ──────────────────────────────────
   async getFacebookPages(userId: string) {
     const conn = await prisma.platformConnection.findFirst({
@@ -259,7 +337,8 @@ export class PlatformService {
       return res.data.data || [];
     } catch (error: any) {
       logger.error('Failed to fetch Facebook pages', { error: error.message });
-      throw ApiError.badRequest('فشل جلب صفحات فيسبوك');
+      const fbErr = getFacebookError(error);
+      throw ApiError.badRequest(fbErr || 'فشل جلب صفحات فيسبوك');
     }
   }
 
@@ -285,6 +364,13 @@ export class PlatformService {
 
   private async syncFacebookMessages(userId: string, conn: any) {
     const axios = require('axios');
+
+    // Check token expiry before making API call
+    const isExpired = conn.tokenExpiresAt && new Date() > conn.tokenExpiresAt;
+    if (isExpired) {
+      throw ApiError.badRequest('انتهت صلاحية رمز فيسبوك. استخدم "تحديث الرمز" أو اربط الحساب مجدداً.');
+    }
+
     try {
       const res = await axios.get(
         `https://graph.facebook.com/${config.meta.apiVersion}/${conn.platformAccountId}/conversations`,
@@ -300,7 +386,6 @@ export class PlatformService {
       const conversations = res.data.data || [];
       let syncedCount = 0;
 
-      // Find or create inbox
       let inbox = await prisma.socialInbox.findFirst({
         where: { userId, platform: 'facebook', platformAccountId: conn.platformAccountId },
       });
@@ -351,12 +436,98 @@ export class PlatformService {
       return { message: `تمت مزامنة ${syncedCount} رسالة`, count: syncedCount };
     } catch (error: any) {
       logger.error('Facebook sync failed', { error: error.message });
-      throw ApiError.badRequest(`فشل المزامنة: ${error.message}`);
+      const fbErr = getFacebookError(error);
+      throw ApiError.badRequest(fbErr || `فشل المزامنة: ${error.message}`);
     }
   }
 
   private async syncInstagramMessages(userId: string, conn: any) {
-    return { message: 'مزامنة إنستجرام ستكون متاحة قريباً' };
+    // Instagram uses the Facebook Page Access Token for the Instagram Business Account
+    // We need the Instagram Business Account ID from the connection
+    const axios = require('axios');
+
+    try {
+      // Try to get Instagram Business Account ID if not stored
+      let igAccountId = conn.platformAccountId;
+      if (igAccountId === 'me' || !igAccountId) {
+        const pagesRes = await axios.get(`https://graph.facebook.com/${config.meta.apiVersion}/me/accounts`, {
+          params: { fields: 'id,name,instagram_business_account{id,username}', access_token: conn.accessToken },
+        });
+        for (const page of pagesRes.data.data || []) {
+          if (page.instagram_business_account?.id) {
+            igAccountId = page.instagram_business_account.id;
+            break;
+          }
+        }
+        if (!igAccountId || igAccountId === 'me') {
+          return { message: 'لا يوجد حساب إنستجرام تجاري مرتبط بهذه الصفحة', count: 0 };
+        }
+      }
+
+      // Fetch conversations
+      const res = await axios.get(`https://graph.facebook.com/${config.meta.apiVersion}/${igAccountId}/conversations`, {
+        params: {
+          fields: 'id,updated_time,messages{id,created_time,from,to,message}',
+          access_token: conn.accessToken,
+          limit: 50,
+        },
+      });
+
+      const conversations = res.data.data || [];
+      let syncedCount = 0;
+
+      let inbox = await prisma.socialInbox.findFirst({
+        where: { userId, platform: 'instagram', platformAccountId: igAccountId },
+      });
+      if (!inbox) {
+        inbox = await prisma.socialInbox.create({
+          data: {
+            userId,
+            name: conn.platformAccountName || 'Instagram',
+            platform: 'instagram',
+            platformAccountId: igAccountId,
+            webhookToken: `whk_${Math.random().toString(36).substring(2, 15)}_${Date.now()}`,
+          },
+        });
+      }
+
+      for (const conv of conversations) {
+        const messages = conv.messages?.data || [];
+        for (const msg of messages) {
+          const existing = await prisma.socialMessage.findFirst({
+            where: { platformMessageId: msg.id },
+          });
+          if (!existing) {
+            const isInbound = msg.from?.id !== igAccountId;
+            await prisma.socialMessage.create({
+              data: {
+                inboxId: inbox.id,
+                userId,
+                platform: 'instagram',
+                direction: isInbound ? 'inbound' : 'outbound',
+                status: isInbound ? 'unread' : 'read',
+                senderName: msg.from?.name || 'Unknown',
+                senderId: msg.from?.id,
+                messageText: msg.message || '',
+                platformMessageId: msg.id,
+              },
+            });
+            syncedCount++;
+          }
+        }
+      }
+
+      await prisma.socialInbox.update({
+        where: { id: inbox.id },
+        data: { lastSyncedAt: new Date() },
+      });
+
+      return { message: `تمت مزامنة ${syncedCount} رسالة إنستجرام`, count: syncedCount };
+    } catch (error: any) {
+      logger.error('Instagram sync failed', { error: error.message });
+      const fbErr = getFacebookError(error);
+      throw ApiError.badRequest(fbErr || `فشل مزامنة إنستجرام: ${error.message}`);
+    }
   }
 
   private async syncWhatsAppMessages(userId: string, conn: any) {
@@ -379,16 +550,21 @@ export class PlatformService {
     switch (platform) {
       case 'facebook':
       case 'messenger': {
-        const res = await axios.post(
-          `https://graph.facebook.com/${config.meta.apiVersion}/${conn.platformAccountId}/messages`,
-          {
-            recipient: { id: recipientId },
-            messaging_type: 'RESPONSE',
-            message: { text },
-            access_token: conn.accessToken,
-          }
-        );
-        return { success: true, messageId: res.data.message_id };
+        try {
+          const res = await axios.post(
+            `https://graph.facebook.com/${config.meta.apiVersion}/${conn.platformAccountId}/messages`,
+            {
+              recipient: { id: recipientId },
+              messaging_type: 'RESPONSE',
+              message: { text },
+              access_token: conn.accessToken,
+            }
+          );
+          return { success: true, messageId: res.data.message_id };
+        } catch (error: any) {
+          const fbErr = getFacebookError(error);
+          throw ApiError.badRequest(fbErr || `فشل إرسال الرسالة: ${error.message}`);
+        }
       }
 
       case 'whatsapp': {
@@ -400,14 +576,15 @@ export class PlatformService {
       }
 
       case 'telegram': {
-        const res = await axios.post(
-          `https://api.telegram.org/bot${conn.accessToken}/sendMessage`,
-          {
-            chat_id: recipientId,
-            text,
-          }
-        );
-        return { success: true, messageId: res.data.result?.message_id };
+        try {
+          const res = await axios.post(
+            `https://api.telegram.org/bot${conn.accessToken}/sendMessage`,
+            { chat_id: recipientId, text }
+          );
+          return { success: true, messageId: res.data.result?.message_id };
+        } catch (error: any) {
+          throw ApiError.badRequest(`فشل إرسال رسالة تيليجرام: ${error?.response?.data?.description || error.message}`);
+        }
       }
 
       default:

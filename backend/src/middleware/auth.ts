@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken, JwtPayload } from '../utils/jwt';
 import { ApiError } from '../utils/apiError';
 
-// Extend Express Request to include user
 declare global {
   namespace Express {
     interface Request {
@@ -11,9 +10,6 @@ declare global {
   }
 }
 
-/**
- * Verify JWT access token from Authorization header or cookie
- */
 export const authenticate = (
   req: Request,
   _res: Response,
@@ -22,13 +18,11 @@ export const authenticate = (
   try {
     let token: string | undefined;
 
-    // Check Authorization header
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
       token = authHeader.split(' ')[1];
     }
 
-    // Check cookie
     if (!token && req.cookies?.accessToken) {
       token = req.cookies.accessToken;
     }
@@ -43,15 +37,14 @@ export const authenticate = (
   } catch (error) {
     if (error instanceof ApiError) {
       next(error);
+    } else if (error instanceof Error && error.name === 'TokenExpiredError') {
+      next(ApiError.unauthorized('انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى'));
     } else {
-      next(ApiError.unauthorized('رمز المصادقة غير صالح أو منتهي الصلاحية'));
+      next(ApiError.unauthorized('رمز المصادقة غير صالح'));
     }
   }
 };
 
-/**
- * Optional authentication - doesn't throw if no token
- */
 export const optionalAuth = (
   req: Request,
   _res: Response,
@@ -75,14 +68,10 @@ export const optionalAuth = (
     }
     next();
   } catch {
-    // Token invalid but that's okay for optional auth
     next();
   }
 };
 
-/**
- * Authorize by role(s)
- */
 export const authorize = (...roles: string[]) => {
   return (req: Request, _res: Response, next: NextFunction): void => {
     if (!req.user) {
@@ -90,7 +79,7 @@ export const authorize = (...roles: string[]) => {
     }
 
     if (!roles.includes(req.user.role)) {
-      return next(ApiError.forbidden());
+      return next(ApiError.forbidden('ليس لديك صلاحية للوصول إلى هذا المورد'));
     }
 
     next();

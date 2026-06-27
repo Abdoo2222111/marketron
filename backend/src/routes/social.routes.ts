@@ -68,7 +68,7 @@ router.post('/inboxes/:id/sync', authenticate, async (req: Request, res: Respons
     const result = await socialInboxService.syncInbox(req.user!.userId, req.params.id);
     res.json({ success: true, ...result });
   } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message || 'فشت المزامنة' });
+    res.status(500).json({ success: false, error: error.message || 'فشلت المزامنة' });
   }
 });
 
@@ -112,7 +112,8 @@ router.post('/messages/:id/reply', authenticate, validate(sendReplySchema), asyn
     const reply = await socialInboxService.sendReply(req.user!.userId, req.params.id, req.body.text);
     res.json({ success: true, data: reply });
   } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message || 'فشل إرسال الرد' });
+    const status = error.statusCode || 500;
+    res.status(status).json({ success: false, error: error.message || 'فشل إرسال الرد' });
   }
 });
 
@@ -130,16 +131,82 @@ router.get('/whatsapp/:inboxId/status', authenticate, async (req: Request, res: 
     const result = await socialInboxService.getWhatsAppStatus(req.user!.userId, req.params.inboxId);
     res.json({ success: true, data: result });
   } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message || 'فشل جلب الحالة' });
+    const status = error.statusCode || 500;
+    res.status(status).json({ success: false, error: error.message || 'فشل جلب الحالة' });
   }
 });
 
+// ── Generic webhook (custom per-inbox) ────────────────
 router.post('/webhook/:inboxId', async (req: Request, res: Response) => {
   try {
     const result = await socialInboxService.handleWebhook(req.params.inboxId, req.body);
     res.json({ success: true, ...result });
   } catch (error: any) {
     res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+// ── Evolution API global webhook receiver ─────────────
+router.post('/webhook/evolution', async (req: Request, res: Response) => {
+  try {
+    const payload = req.body;
+    const event = payload.event;
+    const instance = payload.instance;
+    const data = payload.data;
+
+    logger.info(`Evolution webhook received: event=${event}, instance=${instance}`);
+
+    if (event === 'qrcode.updated' || event === 'QRCODE_UPDATED') {
+      const qrCode = data?.qrcode?.code || data?.qrcode?.base64;
+      if (qrCode && instance) {
+        await socialInboxService.updateWhatsAppQR(instance, qrCode);
+      }
+    }
+
+    if (event === 'messages.upsert' || event === 'MESSAGES_UPSERT') {
+      if (instance && data) {
+        const key = data.key || {};
+        const remoteJid = key.remoteJid || '';
+        const message = data.message || {};
+        const messageType = data.messageType || 'conversation';
+        const pushName = data.pushName || '';
+
+        let text = '';
+        if (message.conversation) text = message.conversation;
+        else if (message.extendedTextMessage?.text) text = message.extendedTextMessage.text;
+        else if (message.imageMessage?.caption) text = message.imageMessage.caption;
+        else if (message.videoMessage?.caption) text = message.videoMessage.caption;
+
+        const mediaUrl =
+          message.imageMessage?.url ||
+          message.videoMessage?.url ||
+          message.audioMessage?.url ||
+          message.documentMessage?.url;
+
+        await socialInboxService.receiveEvolutionMessage({
+          instance,
+          remoteJid,
+          fromMe: key.fromMe || false,
+          text,
+          mediaUrl,
+          pushName,
+          messageId: key.id,
+          messageTimestamp: data.messageTimestamp,
+        });
+      }
+    }
+
+    if (event === 'connection.update' || event === 'CONNECTION_UPDATE') {
+      const state = data?.state;
+      if (state && instance) {
+        await socialInboxService.updateWhatsAppConnectionState(instance, state);
+      }
+    }
+
+    res.json({ success: true });
+  } catch (error: any) {
+    logger.error('Evolution webhook processing error', { error: error.message });
+    res.status(200).json({ success: true });
   }
 });
 
