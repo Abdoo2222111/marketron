@@ -49,11 +49,11 @@ interface BackendInbox {
 }
 
 const avatarColors = [
-  'from-electric to-cyan',
-  'from-cyan to-purple',
-  'from-purple to-violet',
-  'from-electric to-purple',
-  'from-blue-500 to-electric',
+  'from-[#7C3AED] to-[#06B6D4]',
+  'from-[#06B6D4] to-[#7C3AED]',
+  'from-[#7C3AED] to-[#8B5CF6]',
+  'from-[#7C3AED] to-[#7C3AED]',
+  'from-blue-500 to-[#7C3AED]',
 ];
 
 function getInitial(name: string) {
@@ -258,7 +258,7 @@ export const SocialInboxPage: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center gap-3 justify-between">
         <div>
           <h1 className="text-2xl font-black gradient-brand-text">صندوق الرسائل الموحد</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-[#A1A1C2] mt-1">
             {connectedPlatforms.length} منصات مربوطة · {totalUnread} رسالة غير مقروءة · {customers.length} عميل في منظومة CRM
           </p>
         </div>
@@ -277,8 +277,8 @@ export const SocialInboxPage: React.FC = () => {
             className={cn(
               'text-xs px-3 py-1.5 rounded-full border transition-all',
               platformFilter === 'all'
-                ? 'bg-gradient-to-r from-electric to-cyan text-white border-transparent font-medium'
-                : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-electric'
+                ? 'bg-gradient-to-r from-[#7C3AED] to-[#06B6D4] text-white border-transparent font-medium'
+                : 'bg-[#14102B] border-[#7C3AED]/20 hover:border-[#7C3AED]'
             )}
           >
             الكل ({threads.length})
@@ -293,8 +293,8 @@ export const SocialInboxPage: React.FC = () => {
                 className={cn(
                   'text-xs px-3 py-1.5 rounded-full border transition-all flex items-center gap-1.5',
                   platformFilter === platform
-                    ? 'bg-gradient-to-r from-electric to-cyan text-white border-transparent font-medium'
-                    : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-electric'
+                    ? 'bg-gradient-to-r from-[#7C3AED] to-[#06B6D4] text-white border-transparent font-medium'
+                    : 'bg-[#14102B] border-[#7C3AED]/20 hover:border-[#7C3AED]'
                 )}
               >
                 <span>{meta.emoji}</span>
@@ -315,17 +315,17 @@ export const SocialInboxPage: React.FC = () => {
       </div>
 
       {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-3 flex items-center gap-2 text-sm text-red-600 dark:text-red-300">
+        <div className="bg-[#F43F5E]/10 border border-[#F43F5E]/20 rounded-xl p-3 flex items-center gap-2 text-sm text-[#F43F5E]">
           <AlertCircle className="w-4 h-4" />
           {error}
         </div>
       )}
 
       {/* Main Inbox layout */}
-      <div className="flex rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm" style={{ height: 'calc(100vh - 220px)' }}>
+      <div className="flex rounded-2xl overflow-hidden border border-[#7C3AED]/20 bg-[#14102B] shadow-sm" style={{ height: 'calc(100vh - 220px)' }}>
         {/* Threads List */}
-        <div className="w-80 flex-shrink-0 border-l border-gray-200 dark:border-gray-800 flex flex-col">
-          <div className="p-3 border-b border-gray-200 dark:border-gray-800">
+        <div className="w-80 flex-shrink-0 border-l border-[#7C3AED]/20 flex flex-col">
+          <div className="p-3 border-b border-[#7C3AED]/20">
             <Input
               placeholder="بحث في المحادثات..."
               value={query}
@@ -337,13 +337,13 @@ export const SocialInboxPage: React.FC = () => {
           <div className="flex-1 overflow-y-auto">
             {loading && threads.length === 0 ? (
               <div className="h-full flex items-center justify-center">
-                <Loader2 className="w-6 h-6 animate-spin text-electric" />
+                <Loader2 className="w-6 h-6 animate-spin text-[#7C3AED]" />
               </div>
             ) : filteredThreads.length === 0 ? (
               <div className="flex-1 h-full flex items-center justify-center text-center p-6">
                 <div>
-                  <MessageCircle className="w-12 h-12 mx-auto mb-2 text-gray-300 dark:text-gray-700" />
-                  <p className="text-sm text-gray-400">لا توجد محادثات مطابقة</p>
+                  <MessageCircle className="w-12 h-12 mx-auto mb-2 text-[#2D2B55]" />
+                  <p className="text-sm text-[#A1A1C2]/60">لا توجد محادثات مطابقة</p>
                 </div>
               </div>
             ) : (
@@ -355,10 +355,10 @@ export const SocialInboxPage: React.FC = () => {
                     key={thread.id}
                     onClick={() => { setSelectedThreadId(thread.id); markAsRead(thread.id); }}
                     className={cn(
-                      'w-full text-right p-3 border-b border-gray-100 dark:border-gray-800 transition-all',
+                      'w-full text-right p-3 border-b border-[#7C3AED]/10 transition-all',
                       isSelected
-                        ? 'bg-gradient-to-l from-electric/10 to-transparent dark:from-electric/20 border-r-2 border-r-electric'
-                        : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                        ? 'bg-gradient-to-l from-[#7C3AED]/10 to-transparent border-r-2 border-r-[#7C3AED]'
+                        : 'hover:bg-[#7C3AED]/5'
                     )}
                   >
                     <div className="flex items-start gap-3">
@@ -367,23 +367,23 @@ export const SocialInboxPage: React.FC = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-sm font-semibold text-gray-900 dark:text-white truncate flex items-center gap-1">
+                          <span className="text-sm font-semibold text-[#F5F3FF] truncate flex items-center gap-1">
                             {thread.customerName}
-                            {thread.pinned && <Pin className="w-3 h-3 text-electric" />}
+                            {thread.pinned && <Pin className="w-3 h-3 text-[#7C3AED]" />}
                           </span>
-                          <span className="text-[11px] text-gray-400 flex-shrink-0">{thread.lastMessageTime}</span>
+                          <span className="text-[11px] text-[#A1A1C2]/60 flex-shrink-0">{thread.lastMessageTime}</span>
                         </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{thread.lastMessage}</p>
+                        <p className="text-xs text-[#A1A1C2] dark:text-[#A1A1C2]/60 truncate mt-0.5">{thread.lastMessage}</p>
                         <div className="flex items-center gap-1.5 mt-1">
                           <span className={cn('inline-flex items-center text-[10px] px-1.5 py-0.5 rounded-full', meta.color, meta.bg)}>
                             {meta.label}
                           </span>
                           {thread.unread > 0 && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gradient-to-r from-electric to-cyan text-white font-medium">
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gradient-to-r from-[#7C3AED] to-[#06B6D4] text-white font-medium shadow-[0_0_12px_rgba(124,58,237,0.3)] shadow-[0_0_12px_rgba(124,58,237,0.3)]">
                               {thread.unread}
                             </span>
                           )}
-                          {thread.status === 'replied' && <span className="text-[10px] text-emerald-500">✓ تم الرد</span>}
+                          {thread.status === 'replied' && <span className="text-[10px] text-[#10B981]">✓ تم الرد</span>}
                         </div>
                       </div>
                     </div>
@@ -393,7 +393,7 @@ export const SocialInboxPage: React.FC = () => {
             )}
           </div>
 
-          <div className="p-3 border-t border-gray-200 dark:border-gray-800">
+          <div className="p-3 border-t border-[#7C3AED]/20">
             <Link href="/ar/dashboard/settings">
               <Button variant="outline" className="w-full">
                 <Plus className="w-4 h-4 ml-2" />
@@ -404,25 +404,25 @@ export const SocialInboxPage: React.FC = () => {
         </div>
 
         {/* Chat panel */}
-        <div className="flex-1 flex flex-col min-w-0 bg-gray-50 dark:bg-gray-950">
+        <div className="flex-1 flex flex-col min-w-0 bg-[#0B0A1A]">
           {selectedThread ? (
             <>
-              <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center justify-between">
+              <div className="p-4 border-b border-[#7C3AED]/20 bg-[#14102B] flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className={cn('w-10 h-10 rounded-full bg-gradient-to-br flex items-center justify-center text-white font-bold', selectedThread.customerAvatarColor)}>
                     {selectedThread.customerInitial}
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900 dark:text-white">{selectedThread.customerName}</p>
-                    <p className="text-xs text-gray-500 flex items-center gap-1">
-                      <span className={cn('w-1.5 h-1.5 rounded-full', selectedThread.status === 'unread' ? 'bg-electric' : selectedThread.status === 'replied' ? 'bg-emerald-500' : 'bg-gray-300')} />
+                    <p className="font-semibold text-[#F5F3FF]">{selectedThread.customerName}</p>
+                    <p className="text-xs text-[#A1A1C2] flex items-center gap-1">
+                      <span className={cn('w-1.5 h-1.5 rounded-full', selectedThread.status === 'unread' ? 'bg-[#7C3AED]' : selectedThread.status === 'replied' ? 'bg-[#10B981]' : 'bg-gray-300')} />
                       {PLATFORM_META[selectedThread.platform].label} · {selectedThread.lastMessageTime}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
                   <Button size="sm" variant="ghost" onClick={() => togglePin(selectedThread.id)} title="تثبيت">
-                    <Pin className={cn('w-4 h-4', selectedThread.pinned && 'text-electric fill-electric/20')} />
+                    <Pin className={cn('w-4 h-4', selectedThread.pinned && 'text-[#7C3AED] fill-electric/20')} />
                   </Button>
                   <Button size="sm" variant="ghost" title="تحديد كمقروء">
                     <CheckCheck className="w-4 h-4" />
@@ -437,10 +437,10 @@ export const SocialInboxPage: React.FC = () => {
                     <div className={cn(
                       'max-w-[75%] px-4 py-2.5 rounded-2xl',
                       msg.direction === 'inbound'
-                        ? 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-tr-sm shadow-sm'
+                        ? 'bg-[#1E1B3A] text-[#A1A1C2] rounded-tr-sm shadow-sm'
                         : (msg.sender === 'MARKETRON Bot'
-                            ? 'bg-gradient-to-br from-electric to-purple text-white rounded-tl-sm'
-                            : 'bg-gradient-to-r from-electric to-cyan text-white rounded-tl-sm')
+                            ? 'bg-gradient-to-br from-[#7C3AED] to-[#7C3AED] text-white rounded-tl-sm'
+                            : 'bg-gradient-to-r from-[#7C3AED] to-[#06B6D4] text-white rounded-tl-sm shadow-[0_0_15px_rgba(124,58,237,0.2)]')
                     )}>
                       {msg.sender === 'MARKETRON Bot' && (
                         <div className="flex items-center gap-1 text-[10px] opacity-90 mb-0.5">
@@ -449,7 +449,7 @@ export const SocialInboxPage: React.FC = () => {
                         </div>
                       )}
                       <p className="text-sm whitespace-pre-line leading-relaxed">{msg.text}</p>
-                      <p className={cn('text-[10px] mt-1', msg.direction === 'outbound' ? 'text-white/70' : 'text-gray-400')}>
+                      <p className={cn('text-[10px] mt-1', msg.direction === 'outbound' ? 'text-white/70' : 'text-[#A1A1C2]/60')}>
                         {msg.time} · {msg.status === 'read' ? '✓✓ مقروء' : msg.status === 'delivered' ? '✓✓ مستلم' : '✓ مرسل'}
                       </p>
                     </div>
@@ -459,7 +459,7 @@ export const SocialInboxPage: React.FC = () => {
 
               <AiReplyPanel lastInbound={lastInbound} onSend={handleSendReply} />
 
-              <div className="p-3 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+              <div className="p-3 border-t border-[#7C3AED]/20 bg-[#14102B]">
                 <div className="flex gap-2">
                   <Input
                     placeholder="اكتب رسالتك أو اختر رد ذكي من الأعلى..."
@@ -482,8 +482,8 @@ export const SocialInboxPage: React.FC = () => {
                 <div className="w-16 h-16 rounded-2xl gradient-brand mx-auto mb-3 flex items-center justify-center">
                   <MessageCircle className="w-8 h-8 text-white" />
                 </div>
-                <p className="font-semibold text-gray-700 dark:text-gray-200">مرحباً بك في صندوق MARKETRON</p>
-                <p className="text-sm text-gray-500 mt-1">اختر محادثة من اليمين للبدء، أو ربط منصتك من الإعدادات.</p>
+                <p className="font-semibold text-[#A1A1C2]">مرحباً بك في صندوق MARKETRON</p>
+                <p className="text-sm text-[#A1A1C2] mt-1">اختر محادثة من اليمين للبدء، أو ربط منصتك من الإعدادات.</p>
               </div>
             </div>
           )}

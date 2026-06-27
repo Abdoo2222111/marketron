@@ -1,107 +1,98 @@
-# 🚀 منصة التسويق الإلكتروني الشاملة (Marketing Platform)
+# 🚀 MARKETRON AI Suite — منصة إدارة الحملات الإعلانية الذكية
 
-> منصة متكاملة لإدارة الحملات الإعلانية على **فيسبوك، إنستجرام، تيك توك، سناب شات** — مع الذكاء الاصطناعي لتوليد المحتوى، تحليل المنافسين، أبحاث السوق، وتوصيات ذكية
+> منصة SaaS متكاملة تجمع بين إدارة الحملات الإعلانية (فيسبوك، إنستجرام، Google، TikTok)، توليد المحتوى بالذكاء الاصطناعي، تحليل الأداء، الرد الآلي على واتساب، وتقارير ذكية — كل هذا في لوحة تحكم واحدة.
 
 ## 📋 المميزات الرئيسية
 
 | الميزة | الوصف |
 |--------|-------|
-| 🎯 **إدارة الحملات** | إنشاء، إدارة، تتبع جميع الحملات الإعلانية من مكان واحد |
-| 🤖 **توليد المحتوى بالذكاء الاصطناعي** | نصوص إعلانية، صور، فيديوهات، هاشتاجات — بالعربية |
-| 📊 **تحليلات متقدمة** | لوحة تحكم تفاعلية مع رسوم بيانية وتقارير PDF/Excel |
-| 🔍 **تحليل المنافسين** | تتبع إعلانات المنافسين، تحليل استراتيجياتهم |
-| 🌍 **أبحاث السوق** | تحليل أي منتج في أي سوق عربي (السعودية، الإمارات، مصر...) |
-| 💡 **توصيات ذكية** | "ليه مش ببيع؟" + توصيات الميزانية والجمهور والتوقيت |
-| 🔗 **ربط المنصات** | فيسبوك، إنستجرام، تيك توك، سناب شات — من واجهة واحدة |
-| 👥 **إدارة الفريق** | صلاحيات مختلفة (مدير، محرر، مشاهد) |
-| 📱 **دعم كامل للعربية** | واجهة RTL، أرقام عربية، تقارير بالعربية |
+| 🎯 **إدارة الحملات** | إنشاء، إدارة، تتبع جميع الحملات الإعلانية من مكان واحد مع دعم Meta وGoogle وTikTok |
+| 🤖 **توليد المحتوى بالذكاء الاصطناعي** | نصوص إعلانية، صور، توصيات — بالعربية والإنجليزية. يدعم 8 مزودين (OpenAI, Claude, Gemini, Groq, DeepSeek...) |
+| 📊 **تحليلات متقدمة** | لوحة تحكم تفاعلية مع رسوم بيانية، تقارير PDF/Excel، تحليل الجمهور والأداء |
+| 🔍 **تحليل المنافسين** | تتبع إعلانات المنافسين، تحليل استراتيجياتهم، مقارنة الأداء |
+| 💡 **توصيات ذكية** | "ليه مش ببيع؟" — تحليل عميق لأسباب ضعف المبيعات + توصيات قابلة للتنفيذ |
+| 📱 **واتساب موحّد** | Unified Inbox مع Evolution API — ردود تلقائية ذكية، تحويل للموظف البشري، قواعد تصنيف |
+| 👥 **إدارة الفريق** | صلاحيات مختلفة (مالك، مدير، عضو) مع Workspace متعدد المستأجرين |
+| 🔐 **متعدد المستأجرين (Multi-Tenant)** | البنية تدعم منظمات متعددة من اليوم الأول |
+| 🌐 **عربي / English** | دعم كامل للعربية RTL كلغة أساسية + الإنجليزية كلغة ثانية |
 
 ## 🏗️ المكونات
 
 ```
 marketing-platform/
-├── frontend/          # واجهة المستخدم (React + TypeScript + Tailwind)
-├── backend/           # API Server (Node.js + Express + Prisma + PostgreSQL)
-├── ai-services/       # خدمات الذكاء الاصطناعي (Python FastAPI + LangChain)
-├── integrations/      # تكاملات المنصات الإعلانية (FB, IG, TikTok, Snap)
-├── dashboard/         # لوحة التحكم والتحليلات (React + Recharts + AG Grid)
-├── deployment/        # البنية التحتية والنشر (Docker, CI/CD, Vercel, Render)
-├── shared/            # أنواع وواجهات مشتركة
-└── scripts/           # سكريبتات مساعدة
+├── frontend/           # Next.js 14 + TypeScript + Tailwind + shadcn/ui (Vercel)
+├── backend/            # Express + Prisma + PostgreSQL (Railway)
+│   ├── prisma/         # 30+ نموذج قاعدة بيانات
+│   └── src/
+│       ├── routes/     # 15 وحدة مسارات
+│       ├── services/   # 16 خدمة أعمال
+│       ├── middleware/  # Auth, error, rate-limit, CSRF
+│       └── integrations/ # AI (8 مزودين), Meta Graph, Evolution API
+├── ai-services/        # خدمات AI إضافية (Python FastAPI + Node.js)
+├── integrations/       # تكاملات منصات الإعلانات (OAuth + API)
+├── dashboard/          # لوحة تحكم وتحليلات (React + Recharts + AG Grid)
+├── shared/             # أنواع TypeScript مشتركة
+├── evolution-api-deploy/ # Dockerfile لـ Evolution API
+└── deployment/         # Docker, CI/CD, nginx, scripts
 ```
 
 ## 🛠️ التقنيات
 
-| المكون | التقنية |
-|--------|---------|
-| **Frontend** | React 18 + TypeScript + Vite + Tailwind CSS + React Query + Zustand |
-| **Backend** | Node.js + Express + TypeScript + Prisma ORM |
-| **Database** | PostgreSQL (Supabase / Neon) |
-| **AI** | Python + FastAPI + LangChain + OpenAI + Anthropic |
-| **Charts** | Recharts + D3.js |
-| **Tables** | AG Grid Community |
-| **PDF** | jsPDF + html2canvas |
-| **Excel** | SheetJS (xlsx) |
-| **Auth** | JWT + bcrypt |
-| **CI/CD** | GitHub Actions |
-| **Hosting** | Vercel (Frontend) + Render (Backend/AI) |
-| **Storage** | Supabase Storage / Cloudinary |
-| **Email** | Resend |
-| **Monitoring** | Sentry + UptimeRobot |
+| المكون | التقنية | الاستضافة |
+|--------|---------|-----------|
+| **Frontend** | Next.js 14 (App Router) + TypeScript + Tailwind + shadcn/ui | Vercel (مجاني) |
+| **Backend** | Express + TypeScript + Prisma ORM | Railway (مجاني) |
+| **Database** | PostgreSQL 15 | Railway (مجاني) |
+| **Cache** | Redis | Railway (مجاني) |
+| **WhatsApp** | Evolution API (Docker) | Railway (مجاني) |
+| **AI Layer** | 8 مزودين (OpenAI, Claude, Gemini, Groq, DeepSeek, Mistral, Cohere, Perplexity) | — |
+| **File Storage** | Supabase Storage (1GB مجاني) | Supabase (مجاني) |
+| **Auth** | JWT (access + refresh) + bcrypt | — |
+| **Charts** | Recharts + D3.js | — |
+| **Forms** | react-hook-form + zod | — |
+| **i18n** | i18next + react-i18next (415 مفتاح لكل لغة) | — |
+
+## 🚀 النشر المباشر (Already Deployed)
+
+| الخدمة | الرابط | الحالة |
+|--------|--------|--------|
+| **Frontend** | https://frontend-one-virid-95.vercel.app | ✅ شغال |
+| **Backend API** | https://marketron-backend-production.up.railway.app | ✅ شغال |
+| **Evolution API** | https://evolution-api-production-5e16.up.railway.app | ✅ شغال |
+| **Health Check** | https://marketron-backend-production.up.railway.app/api/v1/health | ✅ شغال |
 
 ## 🚀 البدء السريع (Local Development)
 
-### المتطلبات
-- Node.js 20+
-- Python 3.11+
-- PostgreSQL 15+
-- npm or yarn
-
-### 1. تثبيت الاعتمادات
 ```bash
-cd D:\marketing-platform
+# 1. Clone
+git clone https://github.com/Abdoo2222111/marketron.git
+cd marketron
 
-# Frontend
-cd frontend && npm install
+# 2. Backend
+cd backend
+cp .env.example .env.local  # عدّل القيم
+npm install
+npx prisma generate
+npx prisma migrate dev
+npm run dev
 
-# Backend
-cd ../backend && npm install
-
-# AI Services
-cd ../ai-services && pip install -r requirements.txt
-
-# Dashboard
-cd ../dashboard && npm install
-```
-
-### 2. إعداد متغيرات البيئة
-```bash
-# انسخ ملفات .env.example
-cp backend/.env.example backend/.env
-cp ai-services/.env.example ai-services/.env
-cp frontend/.env.example frontend/.env
-```
-
-### 3. تشغيل المشروع
-```bash
-# من المجلد الرئيسي
+# 3. Frontend (نافذة جديدة)
+cd frontend
+npm install
 npm run dev
 ```
 
-## 🌐 النشر (Deployment)
+## 📚 التوثيق
 
-انظر [دليل النشر الكامل](deployment/GUIDE.md) للرفع على:
-- **Vercel** (Frontend) — مجاني
-- **Render** (Backend) — مجاني
-- **Supabase** (Database) — مجاني
-- **Railway** (AI Services) — مجاني
+- [`ARCHITECTURE.md`](ARCHITECTURE.md) — البنية التقنية الكاملة
+- [`DEPLOYMENT.md`](DEPLOYMENT.md) — دليل النشر المجاني (عربي)
+- [`WHATSAPP_SETUP.md`](WHATSAPP_SETUP.md) — ربط واتساب عبر Evolution API
+- [`DECISIONS.md`](DECISIONS.md) — القرارات التقنية ولماذا
+- [`backend/.env.example`](backend/.env.example) — كل المتغيرات البيئية
 
 ## 📄 الترخيص
 MIT
 
-## 👥 المساهمة
-نرحب بالمساهمات! الرجاء فتح Issue أو Pull Request.
-
 ---
 
-**بُني بـ ❤️ للسوق العربي**
+**بُني بـ ❤️ للسوق العربي — MARKETRON AI Suite**

@@ -7,7 +7,8 @@ import { useSettingsStore } from '@/store/settingsStore';
 import {
   LayoutDashboard, Megaphone, Palette, BarChart3, Users, Search,
   Building2, Settings, ChevronDown, Menu, X, Globe, Moon, Sun,
-  LogOut, ChevronLeft, Bell, MessageCircle, Bot
+  LogOut, ChevronLeft, Bell, MessageCircle, Bot, Link2, Sparkles,
+  Rocket, FlaskConical,
 } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 
@@ -15,12 +16,16 @@ const navItems = [
   { path: '/ar/dashboard', label: 'لوحة التحكم', icon: LayoutDashboard },
   { path: '/ar/dashboard/campaigns', label: 'الحملات', icon: Megaphone },
   { path: '/ar/dashboard/content', label: 'المحتوى', icon: Palette },
+  { path: '/ar/dashboard/content-studio', label: 'استوديو AI', icon: Sparkles },
   { path: '/ar/dashboard/analytics', label: 'التحليلات', icon: BarChart3 },
+  { path: '/ar/dashboard/channels', label: 'القنوات', icon: Link2 },
   { path: '/ar/dashboard/social', label: 'الرسائل', icon: MessageCircle },
   { path: '/ar/dashboard/ai-agents', label: 'الوكلاء الذكيين', icon: Bot },
   { path: '/ar/dashboard/workspace', label: 'مساحة العمل', icon: Building2 },
   { path: '/ar/dashboard/competitors', label: 'المنافسون', icon: Users },
   { path: '/ar/dashboard/market-research', label: 'أبحاث السوق', icon: Search },
+  { path: '/ar/dashboard/onboarding', label: 'إعداد النشاط', icon: Rocket },
+  { path: '/ar/dashboard/sandbox', label: 'اختبر الوكيل', icon: FlaskConical },
   { path: '/ar/dashboard/settings', label: 'الإعدادات', icon: Settings },
 ];
 

@@ -25,6 +25,11 @@ import socialRoutes from './routes/social.routes';
 import aiAgentRoutes from './routes/aiAgent.routes';
 import workspaceRoutes from './routes/workspace.routes';
 import platformRoutes from './routes/platform.routes';
+import demoRoutes from './routes/demo.routes';
+import organizationRoutes from './routes/organization.routes';
+import conversationRoutes from './routes/conversation.routes';
+import onboardingRoutes from './routes/onboarding.routes';
+import sandboxRoutes from './routes/sandbox.routes';
 
 const app: Express = express();
 
@@ -62,6 +67,8 @@ app.use(cors({
     'http://localhost:3000',
     'http://localhost:5173',
     'https://frontend-one-virid-95.vercel.app',
+    'https://www.azizmedia.site',
+    'https://azizmedia.site',
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -114,7 +121,7 @@ app.get('/favicon.ico', (_req: Request, res: Response) => {
 });
 
 app.use('/api/v1/auth', authRateLimiter, authRoutes);
-app.use('/api/v1/campaigns', authRoutes);
+app.use('/api/v1/campaigns', campaignRoutes);
 app.use('/api/v1/analytics', analyticsRoutes);
 app.use('/api/v1/content', contentRoutes);
 app.use('/api/v1/competitors', competitorRoutes);
@@ -128,6 +135,11 @@ app.use('/api/v1/social', socialRoutes);
 app.use('/api/v1/ai-agents', aiAgentRoutes);
 app.use('/api/v1/workspace', workspaceRoutes);
 app.use('/api/v1/platforms', platformRoutes);
+app.use('/api/v1/demo', demoRoutes);
+app.use('/api/v1/organizations', organizationRoutes);
+app.use('/api/v1/conversations', conversationRoutes);
+app.use('/api/v1/onboarding', onboardingRoutes);
+app.use('/api/v1/sandbox', sandboxRoutes);
 
 app.use(express.static('public'));
 

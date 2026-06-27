@@ -4,7 +4,7 @@ export interface Campaign {
   id: string;
   name: string;
   platform: string;
-  status: 'active' | 'paused' | 'draft' | 'completed';
+  status: 'active' | 'paused' | 'draft' | 'completed' | 'draft_pending_approval' | 'approved' | 'published';
   budget: number;
   spent: number;
   impressions: number;
@@ -14,6 +14,8 @@ export interface Campaign {
   cpc: number;
   startDate?: string;
   endDate?: string;
+  description?: string;
+  createdAt: string;
 }
 
 export interface CampaignStats {
@@ -203,10 +205,57 @@ export interface AiProviderInfo {
   models: string[];
 }
 
+export interface AiGenerationResult {
+  text: string;
+  provider: string;
+  model: string;
+  tokensUsed: number;
+}
+
+export interface AiAdTextResult {
+  headline: string;
+  mainText: string;
+  cta: string;
+  variations: string[];
+}
+
+export interface AiImageResult {
+  imageUrl: string;
+  thumbnailUrl: string;
+  altText: string;
+  style: string;
+  variations: string[];
+}
+
+export interface AiAnalysisResult {
+  campaignName: string;
+  overallPerformance: string;
+  metrics: { impressions: number; clicks: number; conversions: number; spend: number; ctr: number; cpc: number; roas: number };
+  strengths: string[];
+  weaknesses: string[];
+  recommendations: string[];
+}
+
+export interface AiRecommendationResult {
+  general: Array<{ title: string; description: string; priority: string; expectedImpact: string }>;
+  platformSpecific: string[];
+}
+
 export const aiProvidersApi = {
   list: () => api.get('/ai/providers'),
-  generate: (data: { prompt: string; provider?: string; model?: string; systemPrompt?: string }) =>
+  generate: (data: { prompt: string; provider?: string; model?: string; systemPrompt?: string; temperature?: number; maxTokens?: number }) =>
     api.post('/ai/generate', data),
+  getHistory: () => api.get('/ai/history'),
+  generateAdText: (data: { prompt: string; platform?: string; tone?: string; language?: string }) =>
+    api.post('/ai/generate-text', data),
+  generateImage: (data: { prompt: string; style?: string; platform?: string }) =>
+    api.post('/ai/generate-image', data),
+  analyzeCampaign: (campaignId: string) =>
+    api.post('/ai/analyze-campaign', { campaignId }),
+  getRecommendations: (data?: { campaignId?: string; platform?: string }) =>
+    api.post('/ai/recommend', data || {}),
+  whyNotSelling: (data: { product: string; country: string; campaignId?: string }) =>
+    api.post('/ai/why-not-selling', data),
 };
 
 // ── Google OAuth ─────────────────────────────────────────
@@ -244,4 +293,97 @@ export const platformsApi = {
   sendMessage: (platform: string, recipientId: string, text: string) =>
     api.post(`/platforms/${platform}/send`, { recipientId, text }),
   getFacebookOAuthUrl: () => api.get('/platforms/facebook/oauth-url'),
+};
+
+// ── V2: Organizations & Onboarding ────────────────────
+export interface Organization {
+  id: string;
+  name: string;
+  domainSlug?: string;
+  mode: string;
+  businessProfile?: BusinessProfile;
+  personaConfig?: PersonaConfig;
+  _count?: { users: number; campaigns: number; conversations: number };
+}
+
+export interface BusinessProfile {
+  id: string;
+  organizationId: string;
+  industry?: string;
+  productsServices?: string;
+  priceRange?: string;
+  targetAudience?: string;
+  toneOfVoice?: string;
+  faqs?: string;
+  sourceUrl?: string;
+  enrichedByAi: boolean;
+}
+
+export interface PersonaConfig {
+  id: string;
+  organizationId: string;
+  agentName?: string;
+  greetingMessage?: string;
+  escalationRules?: string;
+  activeMode: string;
+}
+
+export const organizationsApi = {
+  list: () => api.get('/organizations'),
+  get: (id: string) => api.get(`/organizations/${id}`),
+  create: (data: { name: string; domainSlug?: string; mode?: string }) => api.post('/organizations', data),
+  update: (id: string, data: any) => api.put(`/organizations/${id}`, data),
+  getBusinessProfile: (id: string) => api.get(`/organizations/${id}/business-profile`),
+  updateBusinessProfile: (id: string, data: any) => api.put(`/organizations/${id}/business-profile`, data),
+  getPersonaConfig: (id: string) => api.get(`/organizations/${id}/persona`),
+  updatePersonaConfig: (id: string, data: any) => api.put(`/organizations/${id}/persona`, data),
+};
+
+export const onboardingApi = {
+  start: (data: { name?: string; industry?: string; productsServices?: string; sourceUrl?: string; domainSlug?: string }) =>
+    api.post('/onboarding/start', data),
+  step2: (data: { productsServices?: string[]; priceRange?: string; targetAudience?: any; toneOfVoice?: string; faqs?: any[] }) =>
+    api.post('/onboarding/step-2', data),
+  step3: (data: { sourceUrl?: string }) => api.post('/onboarding/step-3', data),
+  step4: (data: { agentName?: string; greetingMessage?: string; activeMode?: string }) =>
+    api.post('/onboarding/step-4', data),
+  status: () => api.get('/onboarding/status'),
+};
+
+// ── V2: Conversations & Messages ─────────────────────
+export interface Conversation {
+  id: string;
+  organizationId: string;
+  customerName?: string;
+  customerPhone?: string;
+  status: string;
+  lastMessageAt?: string;
+  _count?: { messages: number };
+  messages?: Message[];
+}
+
+export interface Message {
+  id: string;
+  conversationId: string;
+  direction: string;
+  senderType: string;
+  content: string;
+  aiConfidenceScore?: number;
+  createdAt: string;
+}
+
+export const conversationsApi = {
+  list: (params?: { status?: string }) => api.get('/conversations', { params }),
+  get: (id: string) => api.get(`/conversations/${id}`),
+  create: (data: { content: string; customerPhone?: string; customerName?: string }) => api.post('/conversations', data),
+  generateAiReply: (id: string) => api.post(`/conversations/${id}/ai-reply`),
+  resolve: (id: string) => api.post(`/conversations/${id}/resolve`),
+};
+
+// ── V2: Sandbox / AI Brain ───────────────────────────
+export const sandboxApi = {
+  chat: (data: { message: string; history?: { role: string; content: string }[] }) =>
+    api.post('/sandbox/chat', data),
+  generateCampaignDraft: (brief: string) => api.post('/sandbox/campaign-draft', { brief }),
+  enrich: (url: string) => api.post('/sandbox/enrich', { url }),
 };

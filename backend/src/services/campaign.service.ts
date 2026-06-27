@@ -92,11 +92,34 @@ export class CampaignService {
    * Create a new campaign
    */
   async create(userId: string, data: any) {
+    const { budget, targetAudience, content, ...rest } = data;
+
+    const createData: any = {
+      ...rest,
+      userId,
+      budgetAmount: budget ?? rest.budgetAmount,
+    };
+
+    if (targetAudience) {
+      createData.targetCountry = targetAudience.country ?? targetAudience.targetCountry;
+      createData.targetAgeMin = targetAudience.ageMin ?? targetAudience.targetAgeMin;
+      createData.targetAgeMax = targetAudience.ageMax ?? targetAudience.targetAgeMax;
+      createData.targetGender = targetAudience.gender ?? targetAudience.targetGender;
+      createData.targetInterests = targetAudience.interests
+        ? JSON.stringify(targetAudience.interests)
+        : targetAudience.targetInterests;
+    }
+
+    if (content) {
+      createData.creativeText = content.primaryText ?? content.creativeText;
+      createData.creativeHeadline = content.headline ?? content.creativeHeadline;
+      createData.creativeCta = content.cta ?? content.creativeCta;
+      createData.creativeImageUrl = content.imageUrl ?? content.creativeImageUrl;
+      createData.creativeVideoUrl = content.videoUrl ?? content.creativeVideoUrl;
+    }
+
     const campaign = await prisma.campaign.create({
-      data: {
-        ...data,
-        userId,
-      },
+      data: createData,
       include: {
         _count: { select: { ads: true } },
       },

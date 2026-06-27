@@ -17,13 +17,20 @@ export class CreditsService {
   async ensureCredits(userId: string): Promise<void> {
     const existing = await prisma.userCredits.findUnique({ where: { userId } });
     if (!existing) {
-      await prisma.userCredits.create({
-        data: {
-          userId,
-          balance: config.credits.freeTierCredits,
-          totalPurchased: config.credits.freeTierCredits,
-        },
-      });
+      try {
+        await prisma.userCredits.create({
+          data: {
+            userId,
+            balance: config.credits.freeTierCredits,
+            totalPurchased: config.credits.freeTierCredits,
+          },
+        });
+      } catch (e: any) {
+        if (e?.code === 'P2002') {
+          return;
+        }
+        throw e;
+      }
       await this.logTransaction(userId, config.credits.freeTierCredits, 'bonus', 'رصيد ترحيبي مجاني', config.credits.freeTierCredits);
       logger.info(`Initialized credits for user ${userId}: ${config.credits.freeTierCredits}`);
     }

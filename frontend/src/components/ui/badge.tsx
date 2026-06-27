@@ -10,16 +10,16 @@ interface BadgeProps {
 
 export const Badge: React.FC<BadgeProps> = ({ children, variant = 'neutral', size = 'sm', className }) => {
   const variants = {
-    primary: 'bg-primary-600 text-white',
-    default: 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400',
-    success: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
-    warning: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400',
-    error: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
-    info: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
-    neutral: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400',
-    outline: 'border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 bg-transparent',
-    secondary: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300',
-    destructive: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
+    primary: 'bg-[#7C3AED] text-white shadow-[0_0_10px_rgba(124,58,237,0.3)]',
+    default: 'bg-[#7C3AED]/20 text-[#7C3AED] border border-[#7C3AED]/20',
+    success: 'bg-[#10D9A0]/20 text-[#10D9A0] border border-[#10D9A0]/20',
+    warning: 'bg-[#FBBF24]/20 text-[#FBBF24] border border-[#FBBF24]/20',
+    error: 'bg-[#F43F5E]/20 text-[#F43F5E] border border-[#F43F5E]/20',
+    info: 'bg-[#06B6D4]/20 text-[#06B6D4] border border-[#06B6D4]/20',
+    neutral: 'bg-[#A1A1C2]/10 text-[#A1A1C2] border border-[#A1A1C2]/20',
+    outline: 'border border-[#7C3AED]/30 text-[#7C3AED] bg-transparent',
+    secondary: 'bg-[#14102B] text-[#A1A1C2] border border-[#7C3AED]/15',
+    destructive: 'bg-[#F43F5E]/20 text-[#F43F5E] border border-[#F43F5E]/20',
   };
 
   const sizes = {

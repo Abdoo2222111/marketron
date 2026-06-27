@@ -201,26 +201,26 @@ export default function SettingsPage({ params: { locale } }: { params: { locale:
       <div className="space-y-6" dir="rtl">
         <div>
           <h1 className="text-2xl font-black gradient-brand-text">الإعدادات</h1>
-          <p className="text-muted-foreground text-sm mt-1">إدارة حسابك ومنصاتك في MARKETRON</p>
+          <p className="text-[#A1A1C2] text-sm mt-1">إدارة حسابك ومنصاتك في MARKETRON</p>
         </div>
 
         {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-3 flex items-center gap-2 text-sm text-red-600 dark:text-red-300">
+          <div className="bg-[#F43F5E]/10 border border-[#F43F5E]/20 rounded-xl p-3 flex items-center gap-2 text-sm text-[#F43F5E]">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             {error}
-            <button onClick={() => setError(null)} className="mr-auto text-red-400 hover:text-red-600">✕</button>
+            <button onClick={() => setError(null)} className="mr-auto text-[#F43F5E]/60 hover:text-[#F43F5E]">✕</button>
           </div>
         )}
 
         {success && (
-          <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-3 flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-300">
+          <div className="bg-[#10B981]/10 border border-[#10B981]/20 rounded-xl p-3 flex items-center gap-2 text-sm text-[#10B981]">
             <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
             {success}
           </div>
         )}
 
         {/* Tabs */}
-        <div className="flex gap-2 flex-wrap border-b border-gray-200 dark:border-gray-800 pb-3">
+        <div className="flex gap-2 flex-wrap border-b border-[#7C3AED]/20 pb-3">
           {[
             { id: 'platforms', label: 'المنصات', icon: LinkIcon },
             { id: 'profile', label: 'الملف الشخصي', icon: User },
@@ -233,9 +233,9 @@ export default function SettingsPage({ params: { locale } }: { params: { locale:
                 onClick={() => setTab(t.id)}
                 className={cn(
                   'flex items-center gap-2 text-sm px-4 py-2 rounded-lg transition-all',
-                  tab === t.id
-                    ? 'bg-gradient-to-r from-electric/10 to-cyan/10 text-electric font-semibold'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    tab === t.id
+                      ? 'bg-gradient-to-r from-[#7C3AED]/10 to-[#06B6D4]/10 text-[#7C3AED] font-semibold'
+                      : 'text-[#A1A1C2] hover:bg-[#7C3AED]/10'
                 )}
               >
                 <Icon size={16} />
@@ -250,7 +250,7 @@ export default function SettingsPage({ params: { locale } }: { params: { locale:
           <div className="space-y-6">
             {loading ? (
               <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-electric" />
+                <Loader2 className="w-8 h-8 animate-spin text-[#7C3AED]" />
               </div>
             ) : (
               <>
@@ -260,7 +260,7 @@ export default function SettingsPage({ params: { locale } }: { params: { locale:
                     const conn = getConnection(p.id);
                     const isConnecting = connecting === p.id;
                     return (
-                      <Card key={p.id} className={cn('border-0 shadow-md overflow-hidden', conn && 'ring-2 ring-emerald-500/30')}>
+                      <Card key={p.id} className={cn('overflow-hidden', conn && 'ring-2 ring-[#10B981]/50')}>
                         <div className={cn('h-2 bg-gradient-to-r', p.color)} />
                         <CardContent className="p-5">
                           <div className="flex items-start justify-between mb-3">
@@ -270,7 +270,7 @@ export default function SettingsPage({ params: { locale } }: { params: { locale:
                               </div>
                               <div>
                                 <h3 className="font-bold">{p.label}</h3>
-                                <p className="text-xs text-muted-foreground">{p.desc}</p>
+                                <p className="text-xs text-[#A1A1C2]">{p.desc}</p>
                               </div>
                             </div>
                             {conn ? (
@@ -284,27 +284,27 @@ export default function SettingsPage({ params: { locale } }: { params: { locale:
 
                           {/* Connection details */}
                           {conn && (
-                            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 mb-3 text-sm space-y-1">
+                            <div className="bg-[#1E1B3A]/50 rounded-lg p-3 mb-3 text-sm space-y-1">
                               <div className="flex items-center justify-between">
-                                <span className="text-muted-foreground">الحساب:</span>
+                                <span className="text-[#A1A1C2]">الحساب:</span>
                                 <span className="font-medium">{conn.platformAccountName || conn.platformAccountId}</span>
                               </div>
                               <div className="flex items-center justify-between">
-                                <span className="text-muted-foreground">الحالة:</span>
+                                <span className="text-[#A1A1C2]">الحالة:</span>
                                 <Badge variant={STATUS_BADGES[conn.status]?.variant || 'secondary'} className="text-xs">
                                   {STATUS_BADGES[conn.status]?.label || conn.status}
                                 </Badge>
                               </div>
                               {conn.createdAt && (
                                 <div className="flex items-center justify-between">
-                                  <span className="text-muted-foreground">تاريخ الربط:</span>
+                                  <span className="text-[#A1A1C2]">تاريخ الربط:</span>
                                   <span className="text-xs">{formatDate(conn.createdAt)}</span>
                                 </div>
                               )}
                               {conn.tokenExpiresAt && (
                                 <div className="flex items-center justify-between">
-                                  <span className="text-muted-foreground">انتهاء الرمز:</span>
-                                  <span className={cn('text-xs', new Date(conn.tokenExpiresAt) < new Date() ? 'text-red-500 font-bold' : '')}>
+                                  <span className="text-[#A1A1C2]">انتهاء الرمز:</span>
+                                      <span className={cn('text-xs', new Date(conn.tokenExpiresAt) < new Date() ? 'text-[#F43F5E] font-bold' : '')}>
                                     {formatDate(conn.tokenExpiresAt)}
                                   </span>
                                 </div>
@@ -320,7 +320,7 @@ export default function SettingsPage({ params: { locale } }: { params: { locale:
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    className="flex-1 border-amber-300 text-amber-600 hover:bg-amber-50"
+                                    className="flex-1 border-[#F59E0B]/30 text-[#F59E0B] hover:bg-[#F59E0B]/10"
                                     onClick={() => handleRefreshToken(p.id)}
                                     disabled={connecting === `refresh-${p.id}`}
                                   >
@@ -335,7 +335,7 @@ export default function SettingsPage({ params: { locale } }: { params: { locale:
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    className="flex-1"
+                                    className="flex-1 border-[#7C3AED]/20"
                                     onClick={() => handleSync(p.id)}
                                     disabled={connecting === `sync-${p.id}`}
                                   >
@@ -351,7 +351,7 @@ export default function SettingsPage({ params: { locale } }: { params: { locale:
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="text-amber-500 hover:text-amber-600"
+                                    className="text-[#F59E0B] hover:text-[#F59E0B]/80"
                                     onClick={() => handleRefreshToken(p.id)}
                                     disabled={connecting === `refresh-${p.id}`}
                                     title="تحديث رمز الوصول"
@@ -360,9 +360,9 @@ export default function SettingsPage({ params: { locale } }: { params: { locale:
                                   </Button>
                                 )}
                                 <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-red-500 hover:text-red-600"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-[#F43F5E] hover:text-[#F43F5E]/80"
                                   onClick={() => handleDisconnect(p.id)}
                                   disabled={isConnecting}
                                 >
@@ -374,13 +374,13 @@ export default function SettingsPage({ params: { locale } }: { params: { locale:
 
                           {/* Warning for expired/error connections */}
                           {conn?.status === 'expired' && (
-                            <div className="mt-2 flex items-center gap-1 text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 rounded-lg p-2">
+                            <div className="mt-2 flex items-center gap-1 text-xs text-[#F59E0B] bg-[#F59E0B]/10 rounded-lg p-2">
                               <AlertTriangle className="w-3 h-3 flex-shrink-0" />
                               انتهت صلاحية الرمز. اضغط "تحديث الرمز" لتجديده.
                             </div>
                           )}
                           {conn?.status === 'error' && (
-                            <div className="mt-2 flex items-center gap-1 text-xs text-red-600 bg-red-50 dark:bg-red-900/20 rounded-lg p-2">
+                            <div className="mt-2 flex items-center gap-1 text-xs text-[#F43F5E] bg-[#F43F5E]/10 rounded-lg p-2">
                               <AlertTriangle className="w-3 h-3 flex-shrink-0" />
                               الرمز غير صالح. اربط الحساب مجدداً.
                             </div>
@@ -410,7 +410,7 @@ export default function SettingsPage({ params: { locale } }: { params: { locale:
                                 {isConnecting ? <Loader2 className="w-4 h-4 ml-1 animate-spin" /> : <Facebook className="w-4 h-4 ml-1" />}
                                 ربط فيسبوك
                               </Button>
-                              <p className="text-[10px] text-muted-foreground text-center">
+                              <p className="text-[10px] text-[#A1A1C2] text-center">
                                 احصل على Token من Facebook Developers → Graph API Explorer
                               </p>
                             </div>
@@ -446,13 +446,13 @@ export default function SettingsPage({ params: { locale } }: { params: { locale:
                           {/* WhatsApp QR display */}
                           {p.id === 'whatsapp' && conn && waQR && (
                             <div className="mt-3 border-t pt-3 text-center">
-                              <p className="text-xs text-muted-foreground mb-2">امسح الـ QR code بواسطة واتساب:</p>
+                              <p className="text-xs text-[#A1A1C2] mb-2">امسح الـ QR code بواسطة واتساب:</p>
                               {waQR.startsWith('data:') || waQR.startsWith('http') ? (
                                 <img src={waQR} alt="WhatsApp QR" className="mx-auto rounded-lg" style={{ maxWidth: 250 }} />
                               ) : (
-                                <div className="bg-white p-4 rounded-lg inline-block">
-                                  <pre className="text-xs text-gray-700">{waQR}</pre>
-                                </div>
+                                  <div className="bg-[#1E1B3A] p-4 rounded-lg inline-block">
+                                    <pre className="text-xs text-[#A1A1C2]">{waQR}</pre>
+                                  </div>
                               )}
                             </div>
                           )}
@@ -562,18 +562,18 @@ function ProfileTab() {
   if (loading) return <div className="flex justify-center py-8"><Loader2 className="w-8 h-8 animate-spin text-electric" /></div>;
 
   return (
-    <Card className="border-0 shadow-md">
+    <Card>
       <CardHeader>
         <CardTitle className="text-lg">المعلومات الشخصية</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-3 flex items-center gap-2 text-sm text-red-600 dark:text-red-300">
+          <div className="bg-[#F43F5E]/10 border border-[#F43F5E]/20 rounded-xl p-3 flex items-center gap-2 text-sm text-[#F43F5E]">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />{error}
           </div>
         )}
         {success && (
-          <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-3 flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-300">
+          <div className="bg-[#10B981]/10 border border-[#10B981]/20 rounded-xl p-3 flex items-center gap-2 text-sm text-[#10B981]">
             <CheckCircle2 className="w-4 h-4 flex-shrink-0" />{success}
           </div>
         )}
@@ -644,11 +644,11 @@ function BillingTab() {
   return (
     <div className="space-y-6">
       {/* Current Balance */}
-      <Card className="border-0 shadow-md bg-gradient-to-br from-electric/5 via-transparent to-purple/5">
+      <Card className="bg-gradient-to-br from-[#7C3AED]/5 via-transparent to-[#06B6D4]/5">
         <CardContent className="p-6 text-center">
-          <p className="text-sm text-muted-foreground mb-2">رصيدك الحالي</p>
+          <p className="text-sm text-[#A1A1C2] mb-2">رصيدك الحالي</p>
           <p className="text-5xl font-black gradient-brand-text mb-4">{balance ?? 0}</p>
-          <p className="text-xs text-muted-foreground">توكن (1 توكن = 1 عملية ذكاء اصطناعي)</p>
+          <p className="text-xs text-[#A1A1C2]">توكن (1 توكن = 1 عملية ذكاء اصطناعي)</p>
         </CardContent>
       </Card>
 
@@ -660,10 +660,10 @@ function BillingTab() {
           { amount: 1000, price: '$35', label: '1000 توكن' },
           { amount: 5000, price: '$150', label: '5000 توكن' },
         ].map(pkg => (
-          <Card key={pkg.amount} className={cn('border-0 shadow-md text-center relative', pkg.popular && 'ring-2 ring-electric')}>
+          <Card key={pkg.amount} className={cn('text-center relative', pkg.popular && 'ring-2 ring-[#7C3AED]')}>
             {pkg.popular && (
               <div className="absolute -top-2 right-1/2 translate-x-1/2">
-                <Badge className="gradient-brand text-white border-0 text-xs">الأفضل قيمة</Badge>
+                <Badge className="text-xs">الأفضل قيمة</Badge>
               </div>
             )}
             <CardContent className="p-4">

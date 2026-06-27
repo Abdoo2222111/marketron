@@ -18,23 +18,23 @@ export const Button: React.FC<ButtonProps> = ({
   disabled,
   ...props
 }) => {
-  const baseStyles = 'inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-dark-bg disabled:opacity-50 disabled:cursor-not-allowed';
+  const baseStyles = 'inline-flex items-center justify-center gap-2 font-medium rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/50 disabled:opacity-50 disabled:cursor-not-allowed';
 
   const variants = {
-    default: 'bg-primary-600 hover:bg-primary-700 text-white shadow-sm hover:shadow-md',
-    primary: 'bg-primary-600 hover:bg-primary-700 text-white shadow-sm hover:shadow-md',
-    secondary: 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300',
-    outline: 'border-2 border-primary-600 text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20',
-    danger: 'bg-red-600 hover:bg-red-700 text-white shadow-sm',
-    destructive: 'bg-red-600 hover:bg-red-700 text-white shadow-sm',
-    premium: 'bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-sm',
-    ghost: 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400',
+    default: 'bg-[#7C3AED] hover:bg-[#6D28D9] text-white shadow-[0_0_20px_rgba(124,58,237,0.3)] hover:shadow-[0_0_30px_rgba(124,58,237,0.5)]',
+    primary: 'bg-gradient-to-r from-[#7C3AED] to-[#06B6D4] text-white shadow-[0_0_20px_rgba(124,58,237,0.3)] hover:shadow-[0_0_30px_rgba(124,58,237,0.5)]',
+    secondary: 'bg-[#14102B] hover:bg-[#1C1545] text-[#F5F3FF] border border-[#7C3AED]/20',
+    outline: 'border-2 border-[#06B6D4] text-[#06B6D4] hover:bg-[#06B6D4]/10 shadow-[0_0_10px_rgba(6,182,212,0.1)] hover:shadow-[0_0_20px_rgba(6,182,212,0.2)]',
+    danger: 'bg-[#F43F5E] hover:bg-[#E11D48] text-white shadow-[0_0_20px_rgba(244,63,94,0.3)]',
+    destructive: 'bg-[#F43F5E] hover:bg-[#E11D48] text-white shadow-[0_0_20px_rgba(244,63,94,0.3)]',
+    premium: 'bg-gradient-to-r from-[#7C3AED] via-[#06B6D4] to-[#22D3EE] text-white shadow-[0_0_30px_rgba(124,58,237,0.4)] hover:shadow-[0_0_50px_rgba(124,58,237,0.6)]',
+    ghost: 'hover:bg-[#14102B] text-[#A1A1C2] hover:text-[#F5F3FF]',
   };
 
   const sizes = {
     sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2 text-sm',
-    lg: 'px-6 py-3 text-base',
+    md: 'px-5 py-2.5 text-sm',
+    lg: 'px-8 py-3 text-base',
     icon: 'h-10 w-10',
   };
 

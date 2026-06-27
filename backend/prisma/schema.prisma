@@ -1,543 +1,191 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// MARKETRON Prisma Schema — PostgreSQL for production, SQLite for dev
+// Run: DATABASE_URL="file:./dev.db" npx prisma db push   (dev)
+// Run: npx prisma migrate deploy                        (prod)
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = env("DB_PROVIDER")
+  url       = env("DATABASE_URL")
 }
 
-// Seed configuration
-// Run: npx prisma db seed
+// ========================
+// 0. ORGANIZATIONS & PERSONA (V2 Multi-Tenant Core)
+// ========================
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  domainSlug String? @unique @map("domain_slug")
+  mode      String   @default("client") // acquire_for_marketron | client
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  users             User[]
+  businessProfile   BusinessProfile?
+  personaConfig     PersonaConfig?
+  campaigns         Campaign[]
+  conversations     Conversation[]
+  platformConnections PlatformConnection[]
+  contents          Content[]
+
+  @@map("organizations")
+}
+
+model BusinessProfile {
+  id          String   @id @default(uuid())
+  orgId       String   @unique @map("org_id")
+  companyName String?  @map("company_name")
+  industry    String?
+  website     String?
+  description String?
+  logoUrl     String?  @map("logo_url")
+  phone       String?
+  address     String?
+  targetAudience String? @map("target_audience")
+  products    String?  // JSON array of products/services
+  pricingTier String?  @map("pricing_tier")
+  toneOfVoice String?  @map("tone_of_voice")
+  faqData     String?  @map("faq_data") // JSON
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@map("business_profiles")
+}
+
+model PersonaConfig {
+  id            String   @id @default(uuid())
+  orgId         String   @unique @map("org_id")
+  agentName     String?  @map("agent_name")
+  agentRole     String?  @map("agent_role")
+  welcomeMessage String? @map("welcome_message")
+  personality   String?  // JSON: traits, style, etc.
+  maxContextLength Int   @default(20) @map("max_context_length")
+  fallbackResponse String? @map("fallback_response")
+  companyInfo   String?  @map("company_info")
+  customPrompt  String?  @map("custom_prompt")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@map("persona_configs")
+}
 
 // ========================
 // 1. USERS & AUTH
 // ========================
 
 model User {
-  id            String   @id @default(uuid())
-  name          String  
-  email         String   @unique
-  phone         String? 
-  passwordHash  String   @map("password_hash")
-  role          String @default("client")
-  avatar        String?
-  company       String? 
-  isActive      Boolean  @default(true) @map("is_active")
-  isEmailVerified Boolean @default(false) @map("is_email_verified")
-  emailVerificationToken String? @map("email_verification_token")
-  emailVerificationExpires DateTime? @map("email_verification_expires")
-  passwordResetToken String? @map("password_reset_token")
-  passwordResetExpires DateTime? @map("password_reset_expires")
-  lastLoginAt   DateTime? @map("last_login_at")
-  lastLoginIp   String?  @map("last_login_ip")
-  mfaSecret     String?  @map("mfa_secret")
-  mfaEnabled    Boolean  @default(false) @map("mfa_enabled")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id             String   @id @default(uuid())
+  email          String   @unique
+  password       String
+  name           String
+  provider       String   @default("local")
+  providerId     String?  @map("provider_id")
+  role           String   @default("member") // admin | member
+  phone          String?
+  company        String?
+  avatarUrl      String?  @map("avatar_url")
+  isActive       Boolean  @default(true) @map("is_active")
+  isVerified     Boolean  @default(false) @map("is_verified")
+  verificationToken String? @map("verification_token")
+  credits        Int      @default(100)
+  organizationId String?  @map("org_id")
+  lastLoginAt    DateTime? @map("last_login_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
-  // Relations
-  clientProfile        ClientProfile?
-  teamsOwned           Team[]             @relation("TeamOwner")
-  teamMembers          TeamMember[]
-  platformConnections  PlatformConnection[]
-  campaigns            Campaign[]
-  contents             Content[]
-  competitors          Competitor[]
-  marketReports        MarketReport[]
-  aiGenerations        AiGeneration[]
-  analyticsReports     AnalyticsReport[]
-  invoices             Invoice[]
-  notifications        Notification[]
-  apiKeys              ApiKey[]
-  socialInboxes        SocialInbox[]
-  socialMessages       SocialMessage[]
-  aiAgents             AiAgent[]
-  aiAgentMessages      AiAgentMessage[]
-  aiReplyRules         AiReplyRule[]
-  ownedWorkspaces      ClientWorkspace[] @relation("WorkspaceOwner")
-  workspaceClients     WorkspaceClient[]
-  whatsAppSessions     WhatsAppSession[]
-  credits              UserCredits?
-  creditTransactions   CreditTransaction[]
-  subscription         Subscription?
-  payments             Payment[]
-  refreshTokens        RefreshToken[]
-  auditLogs            AuditLog[]
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  campaigns      Campaign[]
+  platformConnections PlatformConnection[]
+  notifications  Notification[]
+  socialInboxes  SocialInbox[]
 
   @@map("users")
 }
 
-model ClientProfile {
-  id           String   @id @default(uuid())
-  userId       String   @unique @map("user_id")
-  companyName  String?  @map("company_name")
-  companySize  String?  @map("company_size")
-  industry     String? 
-  country      String? 
-  city         String? 
-  vatNumber    String?  @map("vat_number")
-  logo         String?
-  settings     String?    @default("{}")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("client_profiles")
-}
-
-// ========================
-// 2. TEAMS
-// ========================
-
-model Team {
+model RefreshToken {
   id        String   @id @default(uuid())
-  name      String  
-  ownerId   String   @map("owner_id")
+  token     String   @unique
+  userId    String   @map("user_id")
+  userAgent String?  @map("user_agent")
+  ipAddress String?  @map("ip_address")
+  expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
 
-  // Relations
-  owner    User         @relation("TeamOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  members  TeamMember[]
-  campaigns Campaign[]
-
-  @@map("teams")
-}
-
-model TeamMember {
-  id           String           @id @default(uuid())
-  teamId       String           @map("team_id")
-  userId       String?          @map("user_id")
-  role         String   @default("viewer")
-  status       String @default("pending")
-  invitedEmail String?          @map("invited_email")
-  createdAt    DateTime         @default(now()) @map("created_at")
-
-  // Relations
-  team Team  @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  @@map("team_members")
+  @@index([userId])
+  @@map("refresh_tokens")
 }
 
 // ========================
-// 3. PLATFORM CONNECTIONS
-// ========================
-
-model PlatformConnection {
-  id                  String       @id @default(uuid())
-  userId              String       @map("user_id")
-  platform            String
-  accessToken         String       @map("access_token")
-  refreshToken        String?      @map("refresh_token")
-  tokenExpiresAt      DateTime?    @map("token_expires_at")
-  platformAccountId   String       @map("platform_account_id")
-  platformAccountName String?      @map("platform_account_name")
-  status              String       @default("active")
-  createdAt           DateTime     @default(now()) @map("created_at")
-  updatedAt           DateTime     @updatedAt @map("updated_at")
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("platform_connections")
-}
-
-// ========================
-// 4. CAMPAIGNS & ADS
+// 2. CAMPAIGNS
 // ========================
 
 model Campaign {
-  id              String            @id @default(uuid())
-  userId          String            @map("user_id")
-  teamId          String?           @map("team_id")
-  platform        String
-  name            String           
-  objective       String @default("awareness")
-  status          String    @default("draft")
-  budgetType      String        @default("daily") @map("budget_type")
-  budgetAmount    Float?            @map("budget_amount")
-  budgetCurrency  String            @default("USD") @map("budget_currency")
-  startDate       DateTime?         @map("start_date")
-  endDate         DateTime?         @map("end_date")
-  targetCountry   String?           @map("target_country")
-  targetAgeMin    Int?              @map("target_age_min")
-  targetAgeMax    Int?              @map("target_age_max")
-  targetGender    String?           @map("target_gender")
-  targetInterests String?             @map("target_interests")
-  creativeText    String?           @map("creative_text")
-  creativeHeadline String?          @map("creative_headline")
-  creativeCta     String?           @map("creative_cta")
-  creativeImageUrl String?          @map("creative_image_url")
-  creativeVideoUrl String?          @map("creative_video_url")
-  platformCampaignId String?        @map("platform_campaign_id")
-  impressions     BigInt            @default(0)
-  clicks          BigInt            @default(0)
-  conversions     BigInt            @default(0)
-  spend           Float             @default(0)
-  ctr             Float             @default(0)
-  cpc             Float             @default(0)
-  cpm             Float             @default(0)
-  cpa             Float             @default(0)
-  roas            Float             @default(0)
-  revenue         Float             @default(0)
-  lastSyncedAt    DateTime?         @map("last_synced_at")
-  createdAt       DateTime          @default(now()) @map("created_at")
-  updatedAt       DateTime          @updatedAt @map("updated_at")
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  platform    String   // facebook | instagram | tiktok | snapchat | whatsapp | messenger | twitter | telegram
+  status      String   @default("draft_pending_approval") // draft_pending_approval | approved | published | active | paused | completed
+  objective   String   @default("awareness")
+  budget      Float    @default(0)
+  spent       Float    @default(0)
+  impressions Int      @default(0)
+  clicks      Int      @default(0)
+  conversions Int      @default(0)
+  ctr         Float    @default(0)
+  cpc         Float    @default(0)
+  startDate   DateTime? @map("start_date")
+  endDate     DateTime? @map("end_date")
+  targetUrl   String?  @map("target_url")
+  targetAudience String? @map("target_audience")
+  creativeIds  String?  @map("creative_ids") // JSON array
+  settings     String?  // JSON
+  aiGenerated  Boolean  @default(false) @map("ai_generated")
+  approvedBy   String?  @map("approved_by")
+  approvedAt   DateTime? @map("approved_at")
+  organizationId String? @map("org_id")
+  userId       String   @map("user_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
-  // Relations
-  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  team       Team?        @relation(fields: [teamId], references: [id], onDelete: SetNull)
-  ads        Ad[]
-  adSnapshots AdSnapshot[]
+  user         User       @relation(fields: [userId], references: [id])
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
 
   @@index([userId])
-  @@index([teamId])
+  @@index([organizationId])
   @@index([status])
   @@index([platform])
   @@map("campaigns")
 }
 
-model Ad {
-  id               String   @id @default(uuid())
-  campaignId       String   @map("campaign_id")
-  platform         String
-  name             String  
-  status           String   @default("active")
-  creativeText     String?  @map("creative_text")
-  creativeHeadline String?  @map("creative_headline")
-  creativeCta      String?  @map("creative_cta")
-  creativeImageUrl String?  @map("creative_image_url")
-  creativeVideoUrl String?  @map("creative_video_url")
-  platformAdId     String?  @map("platform_ad_id")
-  impressions      BigInt   @default(0)
-  clicks           BigInt   @default(0)
-  conversions      BigInt   @default(0)
-  spend            Float    @default(0)
-  ctr              Float    @default(0)
-  cpc              Float    @default(0)
-  cpm              Float    @default(0)
-  cpa              Float    @default(0)
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  campaign    Campaign      @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  adSnapshots AdSnapshot[]
-
-  @@index([campaignId])
-  @@map("ads")
-}
-
-model AdSnapshot {
-  id          String   @id @default(uuid())
-  campaignId  String   @map("campaign_id")
-  adId        String?  @map("ad_id")
-  platform    String
-  date        DateTime @map("date")
-  impressions BigInt   @default(0)
-  clicks      BigInt   @default(0)
-  conversions BigInt   @default(0)
-  spend       Float    @default(0)
-  ctr         Float    @default(0)
-  cpc         Float    @default(0)
-  cpm         Float    @default(0)
-  cpa         Float    @default(0)
-  revenue     Float    @default(0)
-  createdAt   DateTime @default(now()) @map("created_at")
-
-  // Relations
-  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  ad       Ad?       @relation(fields: [adId], references: [id], onDelete: SetNull)
-
-  @@index([campaignId])
-  @@index([date])
-  @@map("ad_snapshots")
-}
-
 // ========================
-// 5. CONTENT
-// ========================
-
-model Content {
-  id          String      @id @default(uuid())
-  userId      String      @map("user_id")
-  type        String
-  platform    String?
-  title       String?    
-  description String?    
-  fileUrl     String      @map("file_url")
-  thumbnailUrl String?    @map("thumbnail_url")
-  fileSize    Int?        @map("file_size")
-  tags        String?       @default("[]")
-  metadata    String?       @default("{}")
-  createdAt   DateTime    @default(now()) @map("created_at")
-  updatedAt   DateTime    @updatedAt @map("updated_at")
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([type])
-  @@map("contents")
-}
-
-// ========================
-// 6. COMPETITORS
-// ========================
-
-model Competitor {
-  id              String   @id @default(uuid())
-  userId          String   @map("user_id")
-  name            String  
-  platform        String
-  platformPageId  String?  @map("platform_page_id")
-  platformUsername String? @map("platform_username")
-  notes           String? 
-  estimatedSpend  Float?   @map("estimated_spend")
-  activeAdsCount  Int?     @map("active_ads_count") @default(0)
-  lastAnalyzedAt  DateTime? @map("last_analyzed_at")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  competitorAds CompetitorAd[]
-
-  @@index([userId])
-  @@map("competitors")
-}
-
-model CompetitorAd {
-  id            String   @id @default(uuid())
-  competitorId  String   @map("competitor_id")
-  platform      String
-  snapshotDate  DateTime @map("snapshot_date") @default(now())
-  headline      String? 
-  text          String? 
-  cta           String? 
-  imageUrl      String?  @map("image_url")
-  videoUrl      String?  @map("video_url")
-  likes         BigInt   @default(0)
-  comments      BigInt   @default(0)
-  shares        BigInt   @default(0)
-  estimatedSpend Float?  @map("estimated_spend")
-  createdAt     DateTime @default(now()) @map("created_at")
-
-  // Relations
-  competitor Competitor @relation(fields: [competitorId], references: [id], onDelete: Cascade)
-
-  @@index([competitorId])
-  @@map("competitor_ads")
-}
-
-// ========================
-// 7. MARKET RESEARCH
-// ========================
-
-model MarketReport {
-  id            String   @id @default(uuid())
-  userId        String   @map("user_id")
-  productName   String   @map("product_name")
-  productCategory String? @map("product_category")
-  country       String  
-  reportData    String     @map("report_data")
-  reportSummary String?  @map("report_summary")
-  createdAt     DateTime @default(now()) @map("created_at")
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@map("market_reports")
-}
-
-// ========================
-// 8. AI GENERATIONS
-// ========================
-
-model AiGeneration {
-  id         String           @id @default(uuid())
-  userId     String           @map("user_id")
-  type       String
-  inputData  String             @map("input_data")
-  outputData String             @map("output_data")
-  modelUsed  String?          @map("model_used")
-  tokensUsed Int?             @map("tokens_used")
-  createdAt  DateTime         @default(now()) @map("created_at")
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([type])
-  @@map("ai_generations")
-}
-
-// ========================
-// 9. ANALYTICS
-// ========================
-
-model AnalyticsReport {
-  id         String     @id @default(uuid())
-  userId     String     @map("user_id")
-  name       String    
-  type       String @default("overview")
-  filters    String?      @default("{}")
-  chartData  String?      @map("chart_data")
-  createdAt  DateTime   @default(now()) @map("created_at")
-  updatedAt  DateTime   @updatedAt @map("updated_at")
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@map("analytics_reports")
-}
-
-// ========================
-// 10. INVOICES
-// ========================
-
-model Invoice {
-  id            String        @id @default(uuid())
-  userId        String        @map("user_id")
-  teamId        String?       @map("team_id")
-  invoiceNumber String        @unique @map("invoice_number")
-  amount        Float
-  currency      String        @default("USD")
-  status        String @default("pending")
-  planType      String?       @map("plan_type")
-  periodStart   DateTime?     @map("period_start")
-  periodEnd     DateTime?     @map("period_end")
-  paymentMethod String?       @map("payment_method")
-  paidAt        DateTime?     @map("paid_at")
-  createdAt     DateTime      @default(now()) @map("created_at")
-  updatedAt     DateTime      @updatedAt @map("updated_at")
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([status])
-  @@map("invoices")
-}
-
-// ========================
-// 11. NOTIFICATIONS
-// ========================
-
-model Notification {
-  id        String           @id @default(uuid())
-  userId    String           @map("user_id")
-  type      String @default("system")
-  title     String          
-  message   String?         
-  link      String?         
-  isRead    Boolean          @default(false) @map("is_read")
-  createdAt DateTime         @default(now()) @map("created_at")
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([isRead])
-  @@map("notifications")
-}
-
-// ========================
-// 12. API KEYS
-// ========================
-
-model ApiKey {
-  id          String   @id @default(uuid())
-  userId      String   @map("user_id")
-  name        String  
-  keyHash     String   @unique @map("key_hash")
-  permissions String?    @default("[]")
-  lastUsedAt  DateTime? @map("last_used_at")
-  createdAt   DateTime @default(now()) @map("created_at")
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@map("api_keys")
-}
-
-// ========================
-// 20. REFRESH TOKENS (rotation)
-// ========================
-
-model RefreshToken {
-  id        String   @id @default(uuid())
-  userId    String   @map("user_id")
-  tokenHash String   @unique @map("token_hash")
-  expiresAt DateTime @map("expires_at")
-  createdAt DateTime @default(now()) @map("created_at")
-  revokedAt DateTime? @map("revoked_at")
-  replacedBy String? @map("replaced_by")
-  userAgent String?  @map("user_agent")
-  ipAddress String?  @map("ip_address")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([tokenHash])
-  @@map("refresh_tokens")
-}
-
-// ========================
-// 21. AUDIT LOGS
-// ========================
-
-model AuditLog {
-  id        String   @id @default(uuid())
-  userId    String?  @map("user_id")
-  action    String
-  resource  String?
-  resourceId String? @map("resource_id")
-  details   String?    @default("{}")
-  ipAddress String?  @map("ip_address")
-  userAgent String?  @map("user_agent")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  @@index([userId])
-  @@index([action])
-  @@index([createdAt])
-  @@map("audit_logs")
-}
-
-// ========================
-// 13. SOCIAL INBOX / UNIFIED MESSAGING
+// 3. SOCIAL / INBOX
 // ========================
 
 model SocialInbox {
-  id        String          @id @default(uuid())
-  userId    String          @map("user_id")
-  name      String         
-  platform  String
-  platformAccountId String? @map("platform_account_id")
-  phoneNumber String?       @map("phone_number")
-  qrCodeUrl String?         @map("qr_code_url")
-  webhookToken String?      @map("webhook_token")
-  isActive  Boolean         @default(true) @map("is_active")
-  settings  String?           @default("{}")
-  lastSyncedAt DateTime?    @map("last_synced_at")
-  createdAt DateTime         @default(now()) @map("created_at")
-  updatedAt DateTime         @updatedAt @map("updated_at")
+  id                String   @id @default(uuid())
+  platform          String   // facebook | instagram | whatsapp | telegram | messenger | twitter
+  platformAccountId String   @map("platform_account_id")
+  platformAccountName String? @map("platform_account_name")
+  status            String   @default("active")
+  isConnected       Boolean  @default(false) @map("is_connected")
+  webhookToken      String?  @unique @map("webhook_token")
+  lastSyncAt        DateTime? @map("last_sync_at")
+  userId            String   @map("user_id")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
 
-  // Relations
-  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages SocialMessage[]
-  whatsAppSessions WhatsAppSession[]
+  user              User         @relation(fields: [userId], references: [id])
+  messages          SocialMessage[]
+  whatsAppSessions  WhatsAppSession[]
+  platformConnection PlatformConnection?
 
   @@index([userId])
   @@index([platform])
@@ -545,293 +193,231 @@ model SocialInbox {
 }
 
 model SocialMessage {
-  id            String          @id @default(uuid())
-  inboxId       String          @map("inbox_id")
-  userId        String          @map("user_id")
-  platform      String
-  direction     String @default("inbound")
-  status        String   @default("unread")
-  senderName    String?         @map("sender_name")
-  senderId      String?         @map("sender_id")
-  phoneNumber   String?         @map("phone_number")
-  messageText   String?         @map("message_text")
-  mediaUrl      String?         @map("media_url")
-  platformMessageId String?     @map("platform_message_id")
-  metadata      String?           @default("{}")
-  replyFromAi   Boolean         @default(false) @map("reply_from_ai")
-  aiReplyText   String?         @map("ai_reply_text")
-  aiAgentId     String?         @map("ai_agent_id")
-  readAt        DateTime?       @map("read_at")
-  repliedAt     DateTime?       @map("replied_at")
-  createdAt     DateTime        @default(now()) @map("created_at")
+  id          String   @id @default(uuid())
+  inboxId     String   @map("inbox_id")
+  direction   String   // inbound | outbound
+  status      String   @default("unread") // unread | read | replied
+  senderName  String   @map("sender_name")
+  senderId    String   @map("sender_id")
+  phoneNumber String?  @map("phone_number")
+  messageText String   @map("message_text")
+  mediaUrl    String?  @map("media_url")
+  aiReply     String?  @map("ai_reply")
+  aiUsed      Boolean  @default(false) @map("ai_used")
+  sentAt      DateTime @default(now()) @map("sent_at")
+  createdAt   DateTime @default(now()) @map("created_at")
 
-  // Relations
   inbox SocialInbox @relation(fields: [inboxId], references: [id], onDelete: Cascade)
-  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([inboxId])
-  @@index([userId])
-  @@index([status])
-  @@index([platform])
-  @@index([createdAt])
+  @@index([sentAt])
   @@map("social_messages")
 }
 
-// ========================
-// 14. AI AGENTS & CHAT
-// ========================
-
-model AiAgent {
-  id          String       @id @default(uuid())
-  userId      String       @map("user_id")
-  name        String      
-  type        String
-  description String?     
-  systemPrompt String?     @map("system_prompt")
-  modelName   String?      @map("model_name") @default("gpt-4")
-  temperature Float?       @default(0.7)
-  maxTokens   Int?         @map("max_tokens") @default(2000)
-  isActive    Boolean      @default(true) @map("is_active")
-  tools       String?        @default("[]")
-  createdAt   DateTime     @default(now()) @map("created_at")
-  updatedAt   DateTime     @updatedAt @map("updated_at")
-
-  // Relations
-  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages   AiAgentMessage[]
-  replyRules AiReplyRule[]
-
-  @@index([userId])
-  @@index([type])
-  @@map("ai_agents")
-}
-
-model AiAgentMessage {
-  id        String   @id @default(uuid())
-  agentId   String   @map("agent_id")
-  userId    String   @map("user_id")
-  role      String   @default("user")
-  content   String  
-  metadata  String?    @default("{}")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  // Relations
-  agent AiAgent @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  user  User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([agentId])
-  @@index([userId])
-  @@index([createdAt])
-  @@map("ai_agent_messages")
-}
-
-// ========================
-// 15. AI AUTO-REPLY RULES
-// ========================
-
-model AiReplyRule {
-  id            String   @id @default(uuid())
-  userId        String   @map("user_id")
-  agentId       String?  @map("agent_id")
-  name          String  
-  platform      String?
-  triggerType   String   @map("trigger_type") // keyword, sentiment, all
-  triggerValue  String?  @map("trigger_value") // keywords or conditions
-  responseTemplate String? @map("response_template")
-  useAi         Boolean  @default(true) @map("use_ai")
-  aiPrompt      String?  @map("ai_prompt")
-  isActive      Boolean  @default(true) @map("is_active")
-  priority      Int      @default(0)
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  user  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  agent AiAgent? @relation(fields: [agentId], references: [id], onDelete: SetNull)
-
-  @@index([userId])
-  @@index([platform])
-  @@map("ai_reply_rules")
-}
-
-// ========================
-// 16. CLIENT WORKSPACE (Multi-tenant)
-// ========================
-
-model ClientWorkspace {
-  id              String           @id @default(uuid())
-  ownerId         String           @map("owner_id")
-  companyName     String           @map("company_name")
-  companySize     String?          @map("company_size")
-  industry        String?         
-  country         String?         
-  city            String?         
-  vatNumber       String?          @map("vat_number")
-  logo            String?
-  status          String  @default("trial")
-  subscriptionTier String @default("starter") @map("subscription_tier")
-  subscriptionEndsAt DateTime?     @map("subscription_ends_at")
-  maxUsers        Int              @default(5) @map("max_users")
-  maxCampaigns    Int              @default(10) @map("max_campaigns")
-  storageLimit    BigInt           @default(1073741824) @map("storage_limit") // 1GB default
-  storageUsed     BigInt           @default(0) @map("storage_used")
-  settings        String?            @default("{}")
-  metadata        String?            @default("{}")
-  createdAt       DateTime         @default(now()) @map("created_at")
-  updatedAt       DateTime         @updatedAt @map("updated_at")
-
-  // Relations
-  owner    User     @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  clients  WorkspaceClient[]
-  billing  WorkspaceBilling[]
-
-  @@index([ownerId])
-  @@index([status])
-  @@map("client_workspaces")
-}
-
-model WorkspaceClient {
-  id          String   @id @default(uuid())
-  workspaceId String   @map("workspace_id")
-  userId      String   @map("user_id")
-  role        String   @default("member") // owner, admin, member, viewer
-  permissions String?    @default("[]")
-  isActive    Boolean  @default(true) @map("is_active")
-  joinedAt    DateTime @default(now()) @map("joined_at")
-
-  // Relations
-  workspace ClientWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([workspaceId, userId])
-  @@map("workspace_clients")
-}
-
-model WorkspaceBilling {
-  id              String   @id @default(uuid())
-  workspaceId     String   @map("workspace_id")
-  stripeCustomerId String? @map("stripe_customer_id")
-  stripeSubscriptionId String? @map("stripe_subscription_id")
-  planType        String
-  amount          Float
-  currency        String   @default("USD")
-  billingCycle    String   @default("monthly") // monthly, yearly
-  status          String   @default("active")
-  nextBillingDate DateTime? @map("next_billing_date")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  workspace ClientWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-
-  @@map("workspace_billing")
-}
-
-// ========================
-// 17. WHATSAPP SESSIONS
-// ========================
-
 model WhatsAppSession {
-  id            String   @id @default(uuid())
-  inboxId       String   @map("inbox_id")
-  userId        String   @map("user_id")
-  phoneNumber   String?  @map("phone_number")
-  qrCode        String?  @map("qr_code")
-  qrCodeExpiresAt DateTime? @map("qr_code_expires_at")
-  sessionData   String?    @map("session_data")
-  webhookUrl    String?  @map("webhook_url")
-  status        String   @default("pending") // pending, connected, expired, disconnected
-  lastConnectedAt DateTime? @map("last_connected_at")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id         String   @id @default(uuid())
+  inboxId    String   @map("inbox_id")
+  instance   String
+  status     String   @default("pending")
+  qrCode     String?  @map("qr_code")
+  phoneNumber String? @map("phone_number")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
-  // Relations
   inbox SocialInbox @relation(fields: [inboxId], references: [id], onDelete: Cascade)
-  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([inboxId])
-  @@index([userId])
   @@map("whatsapp_sessions")
 }
 
-// ========================
-// 18. CREDITS & TOKENS
-// ========================
+model PlatformConnection {
+  id                 String   @id @default(uuid())
+  platform           String   @unique
+  platformAccountId  String?  @map("platform_account_id")
+  platformAccountName String? @map("platform_account_name")
+  accessToken        String?  @map("access_token")
+  refreshToken       String?  @map("refresh_token")
+  tokenExpiresAt     DateTime? @map("token_expires_at")
+  webhookSecret      String?  @map("webhook_secret")
+  settings           String?  // JSON
+  status             String   @default("active")
+  lastSyncAt         DateTime? @map("last_sync_at")
+  metadata           String?  // JSON
+  organizationId     String?  @map("org_id")
+  userId             String   @map("user_id")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
-model UserCredits {
-  id            String   @id @default(uuid())
-  userId        String   @unique @map("user_id")
-  balance       Int      @default(100) @map("balance")
-  totalSpent    Int      @default(0) @map("total_spent")
-  totalPurchased Int     @default(0) @map("total_purchased")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  user               User           @relation(fields: [userId], references: [id])
+  organization       Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  inbox              SocialInbox?
 
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("user_credits")
+  @@index([userId])
+  @@index([organizationId])
+  @@map("platform_connections")
 }
 
-model CreditTransaction {
+// ========================
+// 4. CONTENT STUDIO
+// ========================
+
+model Content {
   id          String   @id @default(uuid())
+  type        String   // text | image | video | carousel | story
+  title       String?
+  body        String?
+  platform    String?
+  status      String   @default("draft") // draft | published | archived
+  mediaUrl    String?  @map("media_url")
+  thumbnailUrl String? @map("thumbnail_url")
+  metadata    String?  // JSON
+  tags        String?  // JSON array
+  aiGenerated Boolean  @default(false) @map("ai_generated")
+  organizationId String? @map("org_id")
   userId      String   @map("user_id")
-  amount      Int
-  type        String   // purchase, spend, refund, bonus, admin
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([type])
+  @@map("contents")
+}
+
+// ========================
+// 5. ANALYTICS & COMPETITORS
+// ========================
+
+model AnalyticsSnapshot {
+  id              String @id @default(uuid())
+  date            DateTime @map("date")
+  totalCampaigns  Int    @default(0) @map("total_campaigns")
+  activeCampaigns Int    @default(0) @map("active_campaigns")
+  totalSpend      Float  @default(0) @map("total_spend")
+  totalImpressions Int   @default(0) @map("total_impressions")
+  totalClicks     Int    @default(0) @map("total_clicks")
+  totalConversions Int   @default(0) @map("total_conversions")
+  avgCtr          Float  @default(0) @map("avg_ctr")
+  avgCpc          Float  @default(0) @map("avg_cpc")
+  platformBreakdown String? @map("platform_breakdown") // JSON
+  userId          String @map("user_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@index([userId, date])
+  @@map("analytics_snapshots")
+}
+
+model Competitor {
+  id          String   @id @default(uuid())
+  name        String
+  platform    String?
+  website     String?
   description String?
-  metadata    String?    @default("{}")
-  balanceAfter Int      @map("balance_after")
+  metrics     String?  // JSON
+  alerts      String?  // JSON
+  userId      String   @map("user_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@map("competitors")
+}
+
+// ========================
+// 6. AI & NOTIFICATIONS
+// ========================
+
+model AiRequest {
+  id          String   @id @default(uuid())
+  type        String   // generate | analyze | recommend | enhance
+  prompt      String?
+  response    String?
+  model       String   @default("deepseek")
+  provider    String   @default("deepseek")
+  tokensUsed  Int      @default(0) @map("tokens_used")
+  duration    Int      @default(0)
+  status      String   @default("success") // success | error | pending
+  errorMsg    String?  @map("error_msg")
+  userId      String   @map("user_id")
   createdAt   DateTime @default(now()) @map("created_at")
 
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+  @@index([createdAt])
+  @@map("ai_requests")
+}
+
+model AiAgent {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  systemPrompt String? @map("system_prompt")
+  temperature Float    @default(0.7)
+  maxTokens   Int      @default(2000) @map("max_tokens")
+  model       String   @default("deepseek")
+  provider    String   @default("deepseek")
+  isActive    Boolean  @default(true) @map("is_active")
+  userId      String   @map("user_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   @@index([userId])
-  @@index([type])
-  @@map("credit_transactions")
+  @@map("ai_agents")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  title     String
+  message   String?
+  type      String   @default("info") // info | success | warning | error
+  link      String?
+  isRead    Boolean  @default(false) @map("is_read")
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("notifications")
 }
 
 // ========================
-// 19. SUBSCRIPTIONS (Stripe)
+// 7. CONVERSATIONS (V2 Unified Inbox)
 // ========================
 
-model Subscription {
-  id                  String   @id @default(uuid())
-  userId              String   @unique @map("user_id")
-  plan                String   @default("free") // free, starter, professional, enterprise
-  status              String   @default("active") // active, canceled, past_due, trialing
-  stripeCustomerId    String?  @map("stripe_customer_id")
-  stripeSubscriptionId String? @map("stripe_subscription_id")
-  stripePriceId       String?  @map("stripe_price_id")
-  currentPeriodStart  DateTime? @map("current_period_start")
-  currentPeriodEnd    DateTime? @map("current_period_end")
-  cancelAtPeriodEnd   Boolean  @default(false) @map("cancel_at_period_end")
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @updatedAt @map("updated_at")
+model Conversation {
+  id        String   @id @default(uuid())
+  orgId     String   @map("org_id")
+  platform  String   // whatsapp | facebook | instagram | telegram | messenger | twitter
+  contactId String   @map("contact_id")
+  contactName String  @map("contact_name")
+  contactPhone String? @map("contact_phone")
+  status    String   @default("open") // open | resolved | archived
+  unread    Int      @default(0)
+  lastMessageAt DateTime @map("last_message_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  org      Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  messages Message[]
 
-  @@index([userId])
-  @@index([status])
-  @@map("subscriptions")
+  @@index([orgId, status])
+  @@index([platform])
+  @@map("conversations")
 }
 
-model Payment {
-  id              String   @id @default(uuid())
-  userId          String   @map("user_id")
-  amount          Float
-  currency        String   @default("USD")
-  status          String   @default("pending") // pending, completed, failed, refunded
-  type            String   // subscription, credits, one_time
-  stripePaymentIntentId String? @map("stripe_payment_intent_id")
-  stripeInvoiceId String?  @map("stripe_invoice_id")
-  description     String?
-  metadata        String?    @default("{}")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+model Message {
+  id          String   @id @default(uuid())
+  conversationId String @map("conversation_id")
+  direction   String   // inbound | outbound
+  text        String
+  sender      String   // customer | agent | bot
+  status      String   @default("sent") // sent | delivered | read | failed
+  mediaUrl    String?  @map("media_url")
+  metadata    String?  // JSON
+  createdAt   DateTime @default(now()) @map("created_at")
 
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
-  @@index([status])
-  @@map("payments")
+  @@index([conversationId, createdAt])
+  @@map("messages")
 }
-

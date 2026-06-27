@@ -3,6 +3,7 @@ import { hashPassword, comparePassword } from '../utils/password';
 import { generateTokenPair, verifyRefreshToken, JwtPayload } from '../utils/jwt';
 import { ApiError } from '../utils/apiError';
 import { sendPasswordResetEmail } from './email.service';
+import { demoDataService } from './demoData.service';
 import { Prisma } from '@prisma/client';
 
 export class AuthService {
@@ -47,6 +48,11 @@ export class AuthService {
         userId: user.id,
         companyName: data.company,
       },
+    });
+
+    // Seed demo data in background (non-blocking)
+    demoDataService.seedForUser(user.id).catch((err) => {
+      console.warn('Demo data seeding skipped:', err.message);
     });
 
     // Generate tokens

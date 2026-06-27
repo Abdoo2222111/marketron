@@ -11,9 +11,7 @@ module.exports = {
     container: {
       center: true,
       padding: '2rem',
-      screens: {
-        '2xl': '1400px',
-      },
+      screens: { '2xl': '1400px' },
     },
     extend: {
       colors: {
@@ -23,50 +21,46 @@ module.exports = {
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         primary: {
-          DEFAULT: 'hsl(var(--primary))',
-          foreground: 'hsl(var(--primary-foreground))',
-          50: '#eef4ff',
-          100: '#d9e7ff',
-          200: '#bcd5ff',
-          300: '#8ebaff',
-          400: '#5a91ff',
-          500: '#3a6dff',
-          600: '#2250f5',
-          700: '#1b3ee0',
-          800: '#1d36b5',
-          900: '#1d348f',
+          DEFAULT: '#7C3AED',
+          foreground: '#FFFFFF',
+          dark: '#4C1D95',
         },
         secondary: {
           DEFAULT: 'hsl(var(--secondary))',
           foreground: 'hsl(var(--secondary-foreground))',
         },
         destructive: {
-          DEFAULT: 'hsl(var(--destructive))',
-          foreground: 'hsl(var(--destructive-foreground))',
+          DEFAULT: '#F43F5E',
+          foreground: '#FFFFFF',
         },
         muted: {
           DEFAULT: 'hsl(var(--muted))',
           foreground: 'hsl(var(--muted-foreground))',
         },
         accent: {
-          DEFAULT: 'hsl(var(--accent))',
-          foreground: 'hsl(var(--accent-foreground))',
+          DEFAULT: '#06B6D4',
+          foreground: '#FFFFFF',
         },
         popover: {
           DEFAULT: 'hsl(var(--popover))',
           foreground: 'hsl(var(--popover-foreground))',
         },
         card: {
-          DEFAULT: 'hsl(var(--card))',
-          foreground: 'hsl(var(--card-foreground))',
+          DEFAULT: '#14102B',
+          foreground: '#F5F3FF',
         },
         marketron: {
-          blue: '#1d3ee0',
-          electric: '#3a6dff',
-          cyan: '#22d3ee',
-          purple: '#7c3aed',
-          violet: '#5b21b6',
+          purple: '#7C3AED',
+          'purple-dark': '#4C1D95',
+          cyan: '#06B6D4',
+          'cyan-glow': '#22D3EE',
+          pink: '#EC4899',
+          dark: '#0B0A1A',
+          'dark-secondary': '#14102B',
         },
+        success: '#10D9A0',
+        warning: '#FBBF24',
+        danger: '#F43F5E',
         facebook: '#1877F2',
         instagram: '#E4405F',
         tiktok: '#000000',
@@ -98,4 +92,4 @@ module.exports = {
     },
   },
   plugins: [require('tailwindcss-animate')],
-}
+};
