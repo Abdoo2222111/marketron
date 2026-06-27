@@ -1,0 +1,6 @@
+// Dev-only schema (SQLite) — copy to schema.prisma for local development
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+// All models are in schema.prisma — keep them identical
