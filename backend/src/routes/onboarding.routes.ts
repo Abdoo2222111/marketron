@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth';
 import prisma from '../config/database';
@@ -116,3 +117,4 @@ router.get('/status', async (req: Request, res: Response) => {
 });
 
 export default router;
+

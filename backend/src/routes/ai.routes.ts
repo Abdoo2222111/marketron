@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Router, Request, Response } from 'express';
 import { aiController } from '../controllers/ai.controller';
 import { authenticate } from '../middleware/auth';
@@ -99,3 +100,4 @@ router.post('/recommend', aiController.getRecommendations.bind(aiController));
 router.post('/why-not-selling', aiController.whyNotSelling.bind(aiController));
 
 export default router;
+

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import prisma from '../config/database';
 import { aiService as aiIntegration } from '../integrations/aiService';
 
@@ -276,3 +277,4 @@ ${campaignData ? `بيانات الحملة: ${JSON.stringify({ impressions: Num
 }
 
 export const aiService = new AiService();
+

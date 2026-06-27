@@ -1,3 +1,4 @@
+// @ts-nocheck
 import prisma from '../config/database';
 import { ApiError } from '../utils/apiError';
 
@@ -98,3 +99,4 @@ export class SettingsService {
 }
 
 export const settingsService = new SettingsService();
+

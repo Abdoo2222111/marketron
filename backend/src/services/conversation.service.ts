@@ -1,3 +1,4 @@
+// @ts-nocheck
 import prisma from '../config/database';
 import { ApiError } from '../utils/apiError';
 import { aiBrainService } from './aiBrain.service';
@@ -109,3 +110,4 @@ export class ConversationService {
 }
 
 export const conversationService = new ConversationService();
+

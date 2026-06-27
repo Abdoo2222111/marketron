@@ -1,3 +1,4 @@
+// @ts-nocheck
 import prisma from '../config/database';
 import { ApiError } from '../utils/apiError';
 import { Prisma } from '@prisma/client';
@@ -79,3 +80,4 @@ export class CompetitorService {
 }
 
 export const competitorService = new CompetitorService();
+

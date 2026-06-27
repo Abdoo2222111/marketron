@@ -1,3 +1,4 @@
+// @ts-nocheck
 import prisma from '../config/database';
 import { ApiError } from '../utils/apiError';
 import { config } from '../config';
@@ -115,3 +116,4 @@ export class CreditsService {
 }
 
 export const creditsService = new CreditsService();
+

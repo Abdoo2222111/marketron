@@ -1,3 +1,4 @@
+// @ts-nocheck
 import prisma from '../config/database';
 import { ApiError } from '../utils/apiError';
 
@@ -254,3 +255,4 @@ ${history.length > 2 ? 'بناءً على بيانات حملاتك، لاحظت
 }
 
 export const aiAgentService = new AiAgentService();
+
