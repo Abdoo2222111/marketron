@@ -105,9 +105,9 @@ export class SocialInboxService {
   ) {
     const { page, limit, inboxId, platform, status } = params;
     const skip = (page - 1) * limit;
-    const where: any = { userId };
+    const where: any = {};
+    if (userId) where.inbox = { userId };
     if (inboxId) where.inboxId = inboxId;
-    if (platform) where.platform = platform;
     if (status) where.status = status;
 
     const [messages, total] = await Promise.all([
@@ -116,7 +116,7 @@ export class SocialInboxService {
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
-        include: { inbox: { select: { name: true, platform: true } } },
+        include: { inbox: { select: { platform: true, platformAccountName: true } } },
       }),
       prisma.socialMessage.count({ where }),
     ]);
@@ -136,8 +136,12 @@ export class SocialInboxService {
   }
 
   async markAllAsRead(userId: string, inboxId?: string) {
-    const where: any = { userId, status: 'unread' };
-    if (inboxId) where.inboxId = inboxId;
+    const where: any = { status: 'unread' };
+    if (inboxId) {
+      where.inboxId = inboxId;
+    } else {
+      where.inbox = { userId };
+    }
     await prisma.socialMessage.updateMany({
       where,
       data: { status: 'read', readAt: new Date() },
@@ -147,7 +151,7 @@ export class SocialInboxService {
 
   async sendReply(userId: string, messageId: string, text: string) {
     const original = await prisma.socialMessage.findFirst({
-      where: { id: messageId, userId },
+      where: { id: messageId, inbox: { userId } },
       include: { inbox: true },
     });
     if (!original) throw ApiError.notFound('الرسالة غير موجودة');
