@@ -150,7 +150,8 @@ export class AuthService {
       throw ApiError.notFound('المستخدم غير موجود');
     }
 
-    return user;
+    const { password, ...safeUser } = user;
+    return safeUser;
   }
 
   /**
