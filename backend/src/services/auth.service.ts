@@ -43,14 +43,6 @@ export class AuthService {
       },
     });
 
-    // Create client profile
-    await prisma.clientProfile.create({
-      data: {
-        userId: user.id,
-        companyName: data.company,
-      },
-    });
-
     // Seed demo data in background (non-blocking)
     demoDataService.seedForUser(user.id).catch((err) => {
       console.warn('Demo data seeding skipped:', err.message);
@@ -142,7 +134,6 @@ export class AuthService {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
-        clientProfile: true,
         platformConnections: {
           select: {
             id: true,
@@ -180,14 +171,6 @@ export class AuthService {
         avatar: data.avatar,
       },
     });
-
-    // Update client profile if exists
-    if (data.company) {
-      await prisma.clientProfile.updateMany({
-        where: { userId },
-        data: { companyName: data.company },
-      });
-    }
 
     return this.sanitizeUser(user);
   }
@@ -354,9 +337,6 @@ export class AuthService {
           password: `google_oauth_${googleUser.id}`,
           role: 'client',
         },
-      });
-      await prisma.clientProfile.create({
-        data: { userId: user.id },
       });
     } else if (!user.isActive) {
       throw ApiError.forbidden('هذا الحساب معطل. تواصل مع الدعم');

@@ -72,27 +72,6 @@ export class SettingsService {
       },
     });
 
-    if (data.companyName || data.country || data.city || data.industry) {
-      await prisma.clientProfile.upsert({
-        where: { userId },
-        create: {
-          userId,
-          companyName: data.companyName,
-          country: data.country,
-          city: data.city,
-          industry: data.industry,
-          settings: data.settings || {},
-        },
-        update: {
-          companyName: data.companyName,
-          country: data.country,
-          city: data.city,
-          industry: data.industry,
-          settings: data.settings,
-        },
-      });
-    }
-
     const { password, ...safeUser } = user;
     return safeUser;
   }
