@@ -263,9 +263,9 @@ router.post('/reset-user', async (req: Request, res: Response) => {
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) return res.status(404).json({ success: false, error: 'User not found' });
     await prisma.user.delete({ where: { id: user.id } });
-    res.json({ success: true, message: `User ${email} deleted` });
+    return res.json({ success: true, message: `User ${email} deleted` });
   } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
+    return res.status(500).json({ success: false, error: error.message });
   }
 });
 
