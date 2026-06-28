@@ -5,6 +5,7 @@ import { authService } from '../services/auth.service';
 import { authController } from '../controllers/auth.controller';
 import { creditsService } from '../services/credits.service';
 import { config } from '../config';
+import prisma from '../config/database';
 import { validate } from '../middleware/validate';
 import { z } from 'zod';
 import logger from '../utils/logger';
@@ -251,6 +252,20 @@ router.post('/credits/purchase', authenticate, async (req: Request, res: Respons
     return res.json({ success: true, data: { balance: newBalance }, message: `تم شحن ${amount} توكن بنجاح` });
   } catch (error: any) {
     return res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+// TEMP: Delete user by email (remove after use)
+router.post('/reset-user', async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ success: false, error: 'Email is required' });
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+    await prisma.user.delete({ where: { id: user.id } });
+    res.json({ success: true, message: `User ${email} deleted` });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
