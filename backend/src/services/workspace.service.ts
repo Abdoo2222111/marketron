@@ -85,7 +85,7 @@ export class WorkspaceService {
         data: {
           name: data.name,
           email: data.email,
-          passwordHash: '$2b$10$placeholder', // Will be set on first login
+          password: '$2b$10$placeholder', // Will be set on first login
           role: 'client',
           company: workspace.companyName,
         },

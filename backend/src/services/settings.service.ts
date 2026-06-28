@@ -93,7 +93,7 @@ export class SettingsService {
       });
     }
 
-    const { passwordHash, ...safeUser } = user;
+    const { password, ...safeUser } = user;
     return safeUser;
   }
 }

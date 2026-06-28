@@ -29,7 +29,7 @@ export class AuthService {
     }
 
     // Hash password
-    const passwordHash = await hashPassword(data.password);
+    const password = await hashPassword(data.password);
 
     // Create user
     const user = await prisma.user.create({
@@ -37,7 +37,7 @@ export class AuthService {
         name: data.name,
         email: data.email,
         phone: data.phone,
-        passwordHash,
+        password,
         company: data.company,
         role: (data.role as any) || 'client',
       },
@@ -87,7 +87,7 @@ export class AuthService {
     }
 
     // Check password
-    const isValid = await comparePassword(password, user.passwordHash);
+    const isValid = await comparePassword(password, user.password);
     if (!isValid) {
       throw ApiError.unauthorized('البريد الإلكتروني أو كلمة المرور غير صحيحة');
     }
@@ -264,11 +264,11 @@ export class AuthService {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw ApiError.notFound('المستخدم غير موجود');
 
-    const isValid = await comparePassword(oldPassword, user.passwordHash);
+    const isValid = await comparePassword(oldPassword, user.password);
     if (!isValid) throw ApiError.unauthorized('كلمة المرور الحالية غير صحيحة');
 
-    const passwordHash = await hashPassword(newPassword);
-    await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+    const password = await hashPassword(newPassword);
+    await prisma.user.update({ where: { id: userId }, data: { password } });
 
     return { message: 'تم تغيير كلمة المرور بنجاح' };
   }
@@ -304,11 +304,11 @@ export class AuthService {
   async resetPassword(token: string, newPassword: string) {
     try {
       const decoded = verifyRefreshToken(token);
-      const passwordHash = await hashPassword(newPassword);
+      const password = await hashPassword(newPassword);
 
       await prisma.user.update({
         where: { id: decoded.userId },
-        data: { passwordHash },
+        data: { password },
       });
 
       return { message: 'تم إعادة تعيين كلمة المرور بنجاح' };
@@ -351,7 +351,7 @@ export class AuthService {
           name: googleUser.name,
           email: googleUser.email,
           avatar: googleUser.picture,
-          passwordHash: `google_oauth_${googleUser.id}`,
+          password: `google_oauth_${googleUser.id}`,
           role: 'client',
         },
       });
@@ -378,7 +378,7 @@ export class AuthService {
    * Remove sensitive fields from user object
    */
   private sanitizeUser(user: any) {
-    const { passwordHash, ...safeUser } = user;
+    const { password, ...safeUser } = user;
     return safeUser;
   }
 }
