@@ -30,7 +30,6 @@ const loginSchema = z.object({
 router.post('/register', validate(registerSchema), async (req: Request, res: Response) => {
   try {
     const result = await authService.register(req.body);
-    await creditsService.ensureCredits(result.user.id);
     res.status(201).json({
       success: true,
       data: {
@@ -50,7 +49,6 @@ router.post('/login', validate(loginSchema), async (req: Request, res: Response)
   try {
     const { email, password } = req.body;
     const result = await authService.login(email, password);
-    await creditsService.ensureCredits(result.user.id);
     res.json({
       success: true,
       data: {
@@ -188,8 +186,6 @@ router.post('/google/callback', async (req: Request, res: Response) => {
       name: googleUser.name,
       picture: googleUser.picture,
     });
-
-    await creditsService.ensureCredits(result.user.id);
 
     return res.json({
       success: true,
