@@ -187,6 +187,10 @@ export const socialApi = {
 export const settingsApi = {
   getProfile: () => api.get('/settings/profile'),
   updateProfile: (data: any) => api.put('/settings/profile', data),
+  getAiProviders: () => api.get('/settings/ai-providers'),
+  upsertAiProvider: (provider: string, data: { apiKey: string; baseUrl?: string; defaultModel?: string; isActive?: boolean }) =>
+    api.put(`/settings/ai-providers/${provider}`, data),
+  deleteAiProvider: (provider: string) => api.delete(`/settings/ai-providers/${provider}`),
 };
 
 // ── Credits & Tokens ─────────────────────────────────────
@@ -386,4 +390,110 @@ export const sandboxApi = {
     api.post('/sandbox/chat', data),
   generateCampaignDraft: (brief: string) => api.post('/sandbox/campaign-draft', { brief }),
   enrich: (url: string) => api.post('/sandbox/enrich', { url }),
+};
+
+// ── BYOK (Bring Your Own Key) ──────────────────────────
+export interface ApiKeyVaultRecord {
+  id: string;
+  provider: string;
+  label?: string;
+  baseUrl?: string;
+  defaultModel?: string;
+  isDefaultForType?: 'text' | 'image' | 'audio' | null;
+  status: string;
+  lastUsedAt?: string;
+  createdAt: string;
+}
+
+export const apiKeysApi = {
+  list: () => api.get<{ success: boolean; data: ApiKeyVaultRecord[] }>('/api-keys'),
+  upsert: (provider: string, data: { apiKey: string; baseUrl?: string; defaultModel?: string; label?: string; isDefaultForType?: string }) =>
+    api.put<{ success: boolean; data: ApiKeyVaultRecord }>(`/api-keys/${provider}`, data),
+  delete: (id: string) => api.delete(`/api-keys/${id}`),
+  test: (provider: string, apiKey: string, baseUrl?: string) =>
+    api.post<{ success: boolean; data: { valid: boolean; error?: string } }>('/api-keys/test', { provider, apiKey, baseUrl }),
+};
+
+// ── Personas ────────────────────────────────────────────
+export interface PersonaDefinition {
+  section: string;
+  name: string;
+  emoji: string;
+  systemPrompt: string;
+  defaultTemperature: number;
+}
+
+export const personasApi = {
+  list: () => api.get<{ success: boolean; data: PersonaDefinition[] }>('/personas'),
+  get: (section: string) => api.get<{ success: boolean; data: PersonaDefinition }>(`/personas/${section}`),
+  update: (section: string, customPrompt: string) =>
+    api.put(`/personas/${section}`, { customPrompt }),
+  reset: (section: string) => api.delete(`/personas/${section}`),
+};
+
+// ── Engine Router (unified AI generation) ──────────────
+export const engineApi = {
+  generate: (data: { section: string; prompt: string; type: 'text' | 'image' | 'audio' | 'video' | 'embedding' | 'vision'; model?: string; temperature?: number; maxTokens?: number; size?: string; extraParams?: Record<string, any> }) =>
+    api.post('/engine/generate', data),
+};
+
+// ── Pollinations Rich AI (Image / Video / Audio / Vision / Embeddings) ──
+export interface PollinationsImageResult {
+  images: Array<{ url: string; b64_json?: string }>;
+  model: string;
+}
+
+export interface PollinationsVideoResult {
+  videoUrl: string;
+  model: string;
+}
+
+export interface PollinationsAudioResult {
+  audioUrl: string;
+  audioBase64?: string;
+  model: string;
+  duration: number;
+}
+
+export interface PollinationsTranscriptionResult {
+  text: string;
+  model: string;
+  duration: number;
+}
+
+export interface PollinationsEmbeddingResult {
+  embeddings: number[][];
+  model: string;
+  tokensUsed: number;
+}
+
+export interface PollinationsVisionResult {
+  text: string;
+  model: string;
+}
+
+export interface PollinationsModelInfo {
+  id: string;
+  input_modalities: string[];
+  output_modalities: string[];
+  supported_endpoints: string[];
+  tools?: boolean;
+  reasoning?: boolean;
+  context_length?: number;
+}
+
+export const pollinationsApi = {
+  listModels: () => api.get('/pollinations/models'),
+  generateImage: (data: { prompt: string; model?: string; negativePrompt?: string; size?: string; n?: number; quality?: 'standard' | 'hd'; style?: 'vivid' | 'natural' }) =>
+    api.post<{ success: boolean; data: PollinationsImageResult }>('/pollinations/image', data),
+  generateVideo: (data: { prompt: string; model?: string; imageUrl?: string; size?: string }) =>
+    api.post<{ success: boolean; data: PollinationsVideoResult }>('/pollinations/video', data),
+  generateAudio: (data: { text: string; model?: string; voice?: string; format?: 'mp3' | 'wav' | 'ogg' }) =>
+    api.post<{ success: boolean; data: PollinationsAudioResult }>('/pollinations/audio', data),
+  transcribe: (data: { audio: string; model?: string; language?: string; filename?: string }) =>
+    api.post<{ success: boolean; data: PollinationsTranscriptionResult }>('/pollinations/transcribe', data),
+  generateEmbeddings: (data: { input: string | string[]; model?: string; dimensions?: number }) =>
+    api.post<{ success: boolean; data: PollinationsEmbeddingResult }>('/pollinations/embeddings', data),
+  analyzeImage: (data: { imageUrl: string; prompt?: string; model?: string }) =>
+    api.post<{ success: boolean; data: PollinationsVisionResult }>('/pollinations/vision', data),
 };

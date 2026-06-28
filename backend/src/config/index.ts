@@ -163,6 +163,11 @@ export const config = {
         baseUrl: process.env.PERPLEXITY_BASE_URL || 'https://api.perplexity.ai',
         defaultModel: process.env.PERPLEXITY_MODEL || 'llama-3.1-sonar-large-128k-online',
       },
+      pollinations: {
+        apiKey: process.env.POLLINATIONS_API_KEY || 'sk_k7raJ5yGB7gX2yiG6rNG3lbg04D9kJXA',
+        baseUrl: process.env.POLLINATIONS_BASE_URL || 'https://gen.pollinations.ai',
+        defaultModel: 'openai',
+      },
     },
   },
 

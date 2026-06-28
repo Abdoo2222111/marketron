@@ -1,0 +1,60 @@
+{
+  "name": "marketron",
+  "services": [
+    {
+      "name": "postgres",
+      "image": "postgres:15-alpine",
+      "env": {
+        "POSTGRES_USER": "marketron",
+        "POSTGRES_PASSWORD": "${POSTGRES_PASSWORD}",
+        "POSTGRES_DB": "marketron"
+      },
+      "volumes": [
+        { "path": "/var/lib/postgresql/data", "type": "volume" }
+      ],
+      "ports": [{ "port": 5432, "type": "internal" }]
+    },
+    {
+      "name": "redis",
+      "image": "redis:7-alpine",
+      "ports": [{ "port": 6379, "type": "internal" }],
+      "healthCheck": {
+        "command": "redis-cli ping",
+        "interval": 10,
+        "timeout": 5
+      }
+    },
+    {
+      "name": "backend",
+      "build": {
+        "context": "./backend",
+        "dockerfile": "Dockerfile"
+      },
+      "env": {
+        "NODE_ENV": "production",
+        "PORT": "4000",
+        "DATABASE_URL": "postgresql://marketron:${POSTGRES_PASSWORD}@postgres:5432/marketron",
+        "REDIS_URL": "redis://redis:6379",
+        "JWT_SECRET": "${JWT_SECRET}",
+        "JWT_REFRESH_SECRET": "${JWT_REFRESH_SECRET}",
+        "FRONTEND_URL": "${FRONTEND_URL}",
+        "AI_DEFAULT_PROVIDER": "pollinations"
+      },
+      "ports": [{ "port": 4000, "type": "http" }],
+      "dependsOn": ["postgres", "redis"]
+    },
+    {
+      "name": "frontend",
+      "build": {
+        "context": "./frontend",
+        "dockerfile": "Dockerfile"
+      },
+      "env": {
+        "NEXT_PUBLIC_API_URL": "${NEXT_PUBLIC_API_URL}",
+        "NEXT_PUBLIC_APP_URL": "${NEXT_PUBLIC_APP_URL}"
+      },
+      "ports": [{ "port": 3000, "type": "http", "public": true }],
+      "dependsOn": ["backend"]
+    }
+  ]
+}

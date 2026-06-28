@@ -30,6 +30,7 @@ model Organization {
   conversations     Conversation[]
   platformConnections PlatformConnection[]
   contents          Content[]
+  aiProviderConfigs AiProviderConfig[]
 
   @@map("organizations")
 }
@@ -106,6 +107,7 @@ model User {
   platformConnections PlatformConnection[]
   notifications  Notification[]
   socialInboxes  SocialInbox[]
+  aiProviderConfigs AiProviderConfig[]
 
   @@map("users")
 }
@@ -325,6 +327,64 @@ model Competitor {
 // ========================
 // 6. AI & NOTIFICATIONS
 // ========================
+
+model ApiKeyVault {
+  id              String   @id @default(uuid())
+  provider        String   // openai | anthropic | openrouter | deepseek | google | pollinations
+  keyEncrypted    String   @map("key_encrypted")
+  baseUrl         String?  @map("base_url")
+  defaultModel    String?  @map("default_model")
+  label           String?
+  isDefaultForType String? @map("is_default_for_type") // text | image | audio
+  status          String   @default("active") // active | invalid | quota_exceeded
+  lastUsedAt      DateTime? @map("last_used_at")
+  userId          String   @map("user_id")
+  orgId           String?  @map("org_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([orgId])
+  @@index([provider, userId])
+  @@map("api_key_vault")
+}
+
+model PersonaOverride {
+  id           String   @id @default(uuid())
+  section      String   // sales_agent | content_writer | art_director | campaign_analyst | business_researcher | ad_strategist
+  customPrompt String?  @map("custom_prompt")
+  temperature  Float?
+  userId       String   @map("user_id")
+  orgId        String?  @map("org_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@unique([section, userId])
+  @@index([userId])
+  @@index([orgId])
+  @@map("persona_overrides")
+}
+
+model AiProviderConfig {
+  id           String   @id @default(uuid())
+  provider     String   // openai | anthropic | gemini | groq | mistral | cohere | deepseek | perplexity
+  apiKey       String?  @map("api_key")
+  baseUrl      String?  @map("base_url")
+  defaultModel String?  @map("default_model")
+  isActive     Boolean  @default(true) @map("is_active")
+  organizationId String? @map("org_id")
+  userId       String   @map("user_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [id])
+
+  @@unique([provider, userId])
+  @@index([userId])
+  @@index([organizationId])
+  @@map("ai_provider_configs")
+}
 
 model AiRequest {
   id          String   @id @default(uuid())

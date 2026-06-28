@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
 
-type Locale = 'ar' | 'en';
+type Locale = 'ar' | 'en' | 'fr' | 'tr';
 type Direction = 'rtl' | 'ltr';
 
 interface LocalizationContextType {
@@ -77,6 +77,70 @@ const translations: Record<Locale, Record<string, string>> = {
     'auth.googleLogin': 'Login with Google',
     'auth.linkedinLogin': 'Login with LinkedIn',
   },
+  fr: {
+    'app.name': 'MARKETRON',
+    'app.tagline': 'Marketing + Automatisation',
+    'nav.dashboard': 'Tableau de bord',
+    'nav.campaigns': 'Campagnes',
+    'nav.content': 'Contenu',
+    'nav.analytics': 'Analytique',
+    'nav.competitors': 'Concurrents',
+    'nav.market': 'Étude de marché',
+    'nav.settings': 'Paramètres',
+    'common.search': 'Rechercher...',
+    'common.notifications': 'Notifications',
+    'common.profile': 'Profil',
+    'common.logout': 'Déconnexion',
+    'common.save': 'Enregistrer',
+    'common.cancel': 'Annuler',
+    'common.delete': 'Supprimer',
+    'common.edit': 'Modifier',
+    'common.create': 'Créer',
+    'common.loading': 'Chargement...',
+    'common.noData': 'Aucune donnée',
+    'common.error': 'Une erreur est survenue',
+    'common.success': 'Succès',
+    'common.confirm': 'Confirmer',
+    'auth.login': 'Connexion',
+    'auth.register': 'Créer un compte',
+    'auth.email': 'Email',
+    'auth.password': 'Mot de passe',
+    'auth.forgotPassword': 'Mot de passe oublié ?',
+    'auth.googleLogin': 'Connexion avec Google',
+    'auth.linkedinLogin': 'Connexion avec LinkedIn',
+  },
+  tr: {
+    'app.name': 'MARKETRON',
+    'app.tagline': 'Pazarlama + Otomasyon',
+    'nav.dashboard': 'Panel',
+    'nav.campaigns': 'Kampanyalar',
+    'nav.content': 'İçerik',
+    'nav.analytics': 'Analitik',
+    'nav.competitors': 'Rakipler',
+    'nav.market': 'Pazar Araştırması',
+    'nav.settings': 'Ayarlar',
+    'common.search': 'Ara...',
+    'common.notifications': 'Bildirimler',
+    'common.profile': 'Profil',
+    'common.logout': 'Çıkış Yap',
+    'common.save': 'Kaydet',
+    'common.cancel': 'İptal',
+    'common.delete': 'Sil',
+    'common.edit': 'Düzenle',
+    'common.create': 'Oluştur',
+    'common.loading': 'Yükleniyor...',
+    'common.noData': 'Veri bulunamadı',
+    'common.error': 'Bir hata oluştu',
+    'common.success': 'Başarılı',
+    'common.confirm': 'Onayla',
+    'auth.login': 'Giriş Yap',
+    'auth.register': 'Hesap Oluştur',
+    'auth.email': 'E-posta',
+    'auth.password': 'Şifre',
+    'auth.forgotPassword': 'Şifremi Unuttum?',
+    'auth.googleLogin': 'Google ile Giriş',
+    'auth.linkedinLogin': 'LinkedIn ile Giriş',
+  },
 };
 
 const LocalizationContext = createContext<LocalizationContextType | undefined>(undefined);
@@ -86,7 +150,7 @@ export function LocalizationProvider({ children }: { children: React.ReactNode }
 
   const setLocale = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale);
-    const direction = newLocale === 'ar' ? 'rtl' : 'ltr';
+    const direction: Direction = newLocale === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.dir = direction;
     document.documentElement.lang = newLocale;
     localStorage.setItem('locale', newLocale);

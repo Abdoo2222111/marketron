@@ -30,6 +30,10 @@ import organizationRoutes from './routes/organization.routes';
 import conversationRoutes from './routes/conversation.routes';
 import onboardingRoutes from './routes/onboarding.routes';
 import sandboxRoutes from './routes/sandbox.routes';
+import pollinationsRoutes from './routes/pollinations.routes';
+import apiKeysRoutes from './routes/apiKeys.routes';
+import personasRoutes from './routes/personas.routes';
+import engineRoutes from './routes/engine.routes';
 
 const app: Express = express();
 
@@ -140,6 +144,10 @@ app.use('/api/v1/organizations', organizationRoutes);
 app.use('/api/v1/conversations', conversationRoutes);
 app.use('/api/v1/onboarding', onboardingRoutes);
 app.use('/api/v1/sandbox', sandboxRoutes);
+app.use('/api/v1/pollinations', pollinationsRoutes);
+app.use('/api/v1/api-keys', apiKeysRoutes);
+app.use('/api/v1/personas', personasRoutes);
+app.use('/api/v1/engine', engineRoutes);
 
 app.use(express.static('public'));
 

@@ -139,6 +139,12 @@ export default function Header({ breadcrumbs, onMenuToggle }: HeaderProps) {
               <DropdownMenuItem onClick={() => setLocale('en')} className={cn(locale === 'en' && 'bg-accent')}>
                 English
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLocale('fr')} className={cn(locale === 'fr' && 'bg-accent')}>
+                Français
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLocale('tr')} className={cn(locale === 'tr' && 'bg-accent')}>
+                Türkçe
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
