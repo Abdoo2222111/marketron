@@ -3,6 +3,7 @@ import './globals.css';
 import { Providers } from './providers';
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://marketron.ai'),
   title: 'MARKETRON - التسويق والأتمتة الذكية',
   description: 'MARKETRON - منصة متكاملة للذكاء الاصطناعي والتسويق والأتمتة | إدارة الحملات الإعلانية، تحليل المنافسين، صندوق رسائل موحد، وبوت رد آلي ذكي',
   keywords: ['ماركترون', 'MARKETRON', 'تسويق', 'أتمتة', 'ذكاء اصطناعي', 'إعلانات', 'حملات', 'فيسبوك', 'انستجرام', 'تيك توك', 'سناب شات'],
@@ -12,6 +13,7 @@ export const metadata: Metadata = {
     description: 'MARKETING + AUTOMATION - منصة متكاملة للذكاء الاصطناعي والتسويق',
     type: 'website',
     locale: 'ar_SA',
+    images: [{ url: '/logo.svg', width: 800, height: 560, alt: 'MARKETRON' }],
   },
 };
 
@@ -23,6 +25,7 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <head>
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link

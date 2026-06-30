@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { Mail, Lock, Eye, EyeOff, Loader2, ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +12,7 @@ import { Card } from '@/components/ui/card';
 import { googleAuthApi } from '@/services/api-modules';
 
 export default function LoginPage({ params: { locale } }: { params: { locale: string } }) {
+  const { t } = useTranslation();
   const router = useRouter();
   const [showPassword, setShowPassword] = React.useState(false);
   const [email, setEmail] = React.useState('');
@@ -35,10 +37,10 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
         localStorage.setItem('refresh_token', data.data.refreshToken);
         router.push(`/${locale}/dashboard`);
       } else {
-        setError(data.error || 'فشل تسجيل الدخول');
+        setError(data.error || t('auth.loginFailed'));
       }
     } catch {
-      setError('فشل الاتصال بالخادم');
+      setError(t('auth.connectionFailed'));
     } finally {
       setLoading(false);
     }
@@ -51,10 +53,10 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
       if (res.data?.data?.url) {
         window.location.href = res.data.data.url;
       } else {
-        setError('Google OAuth غير مُفعّل');
+        setError(t('auth.googleNotConfigured'));
       }
     } catch {
-      setError('فشل تهيئة Google OAuth');
+      setError(t('auth.googleInitFailed'));
     } finally {
       setGoogleLoading(false);
     }
@@ -67,17 +69,16 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
         <div className="cube" /><div className="cube" />
       </div>
 
-      {/* Form Side */}
       <div className="w-full lg:w-[45%] xl:w-[40%] flex items-center justify-center p-6 relative z-10">
         <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} className="w-full max-w-sm">
           <Link href={`/${locale}`} className="inline-flex items-center gap-2 mb-8 text-[#A1A1C2] hover:text-[#F5F3FF] transition-colors text-sm">
-            <ChevronLeft className="w-4 h-4" /> العودة للرئيسية
+            <ChevronLeft className="w-4 h-4" /> {t('common.back')}
           </Link>
 
           <div className="mb-8">
-            <div className="w-12 h-12 rounded-2xl gradient-primary flex items-center justify-center font-black text-white text-xl mb-4 shadow-[0_0_20px_rgba(124,58,237,0.4)]">M</div>
-            <h1 className="text-2xl font-bold mb-1">تسجيل الدخول</h1>
-            <p className="text-[#A1A1C2] text-sm">أهلاً بك مرة أخرى</p>
+            <img src="/logo.svg" alt="MARKETRON" className="h-12 w-auto object-contain mb-4" />
+            <h1 className="text-2xl font-bold mb-1">{t('auth.login')}</h1>
+            <p className="text-[#A1A1C2] text-sm">{t('auth.welcomeBack')}</p>
           </div>
 
           <Card className="p-6 space-y-5">
@@ -86,7 +87,7 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
             )}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm text-[#A1A1C2] mb-1.5">البريد الإلكتروني</label>
+                <label className="block text-sm text-[#A1A1C2] mb-1.5">{t('common.email')}</label>
                 <div className="relative">
                   <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A1A1C2]" />
                   <Input type="email" placeholder="name@example.com" value={email}
@@ -95,8 +96,8 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
               </div>
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-sm text-[#A1A1C2]">كلمة المرور</label>
-                  <Link href={`/${locale}/auth/forgot-password`} className="text-xs text-[#06B6D4] hover:underline">نسيت كلمة المرور؟</Link>
+                  <label className="text-sm text-[#A1A1C2]">{t('common.password')}</label>
+                  <Link href={`/${locale}/auth/forgot-password`} className="text-xs text-[#06B6D4] hover:underline">{t('auth.forgotPassword')}</Link>
                 </div>
                 <div className="relative">
                   <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A1A1C2]" />
@@ -109,13 +110,13 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
                 </div>
               </div>
               <Button type="submit" className="w-full rounded-full" size="lg" loading={loading}>
-                {loading ? '' : 'تسجيل الدخول'}
+                {loading ? '' : t('auth.login')}
               </Button>
             </form>
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-[#7C3AED]/10" /></div>
-              <div className="relative flex justify-center"><span className="px-3 text-xs text-[#A1A1C2] bg-[#14102B]">أو</span></div>
+              <div className="relative flex justify-center"><span className="px-3 text-xs text-[#A1A1C2] bg-[#14102B]">{t('common.or')}</span></div>
             </div>
 
             <Button variant="outline" className="w-full rounded-full" size="lg" onClick={handleGoogleLogin} disabled={googleLoading}>
@@ -127,20 +128,19 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
                   <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                 </svg>
               )}
-              المتابعة باستخدام Google
+              {t('common.continueWithGoogle')}
             </Button>
 
             <p className="text-center text-sm text-[#A1A1C2]">
-              ليس لديك حساب؟{' '}
+              {t('auth.noAccount')}{' '}
               <Link href={`/${locale}/auth/register`} className="text-[#06B6D4] font-semibold hover:underline">
-                إنشاء حساب جديد
+                {t('auth.createAccount')}
               </Link>
             </p>
           </Card>
         </motion.div>
       </div>
 
-      {/* Visual Side */}
       <div className="hidden lg:flex lg:w-[55%] xl:w-[60%] bg-[#14102B] relative overflow-hidden items-center justify-center">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-[#7C3AED]/10 blur-[120px]" />
         <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] rounded-full bg-[#06B6D4]/5 blur-[80px]" />
@@ -149,9 +149,9 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
             <BarChart3 className="w-10 h-10 text-white" />
           </div>
           <p className="text-5xl sm:text-6xl font-black gradient-brand-text leading-tight mb-4">
-            أكثر من 10,000
+            {t('auth.statTitle')}
           </p>
-          <p className="text-xl text-[#A1A1C2]">حملة تم إنشاؤها وتحليلها بالذكاء الاصطناعي</p>
+          <p className="text-xl text-[#A1A1C2]">{t('auth.statDesc')}</p>
         </motion.div>
       </div>
     </div>
