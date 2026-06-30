@@ -244,7 +244,7 @@ router.get('/integrations/status', async (_req: Request, res: Response) => {
   try {
     const { evolutionApi } = await import('../integrations/evolutionApi');
     const { metaGraph } = await import('../integrations/metaGraph');
-    const { OPENAI_API_KEY } = await import('../config');
+    const { config } = await import('../config');
 
     res.json({
       success: true,
@@ -258,9 +258,9 @@ router.get('/integrations/status', async (_req: Request, res: Response) => {
           provider: 'Meta Graph API (Facebook / Messenger / Instagram)',
           configured: metaGraph.isEnabled(),
         },
-        openai: {
-          provider: 'OpenAI',
-          configured: !!OPENAI_API_KEY,
+        pollinations: {
+          provider: 'Pollinations AI',
+          configured: true,
         },
       },
     });

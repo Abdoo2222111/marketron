@@ -152,6 +152,7 @@ export const SocialInboxPage: React.FC = () => {
   const [replyText, setReplyText] = useState('');
   const [showCustomerPanel, setShowCustomerPanel] = useState(true);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const threads = useMemo(() => buildThreads(messages), [messages]);
   const selectedThread = threads.find(t => t.id === selectedThreadId) || null;
@@ -171,6 +172,7 @@ export const SocialInboxPage: React.FC = () => {
       setMessages(msgs);
       setInboxes(inboxRes.data?.data || []);
       setCustomers(buildCustomers(msgs));
+      setLastUpdated(new Date());
     } catch (err: any) {
       setError(err?.response?.data?.error || err.message || 'فشل تحميل البيانات');
     } finally {
@@ -263,6 +265,12 @@ export const SocialInboxPage: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 text-[11px] text-[#A1A1C2] bg-[#1E1B3A] px-3 py-1 rounded-full border border-[#7C3AED]/10">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.5)]" />
+            {lastUpdated
+              ? `آخر تحديث: ${lastUpdated.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}`
+              : 'مباشر'}
+          </div>
           <Button
             size="sm"
             variant="outline"

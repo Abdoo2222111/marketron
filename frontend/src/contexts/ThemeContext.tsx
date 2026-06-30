@@ -1,44 +1,41 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-
-type Theme = 'light' | 'dark';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 
 interface ThemeContextType {
-  theme: Theme;
-  toggleTheme: () => void;
-  setTheme: (theme: Theme) => void;
+  theme: 'dark' | 'light';
   isDark: boolean;
+  toggleTheme: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('light');
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
   useEffect(() => {
-    const stored = localStorage.getItem('theme') as Theme | null;
-    if (stored) {
-      setThemeState(stored);
-      document.documentElement.classList.toggle('dark', stored === 'dark');
-    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      setThemeState('dark');
+    const saved = localStorage.getItem('theme') as 'dark' | 'light' | null;
+    if (saved) {
+      setTheme(saved);
+      document.documentElement.classList.toggle('dark', saved === 'dark');
+      document.documentElement.style.colorScheme = saved;
+    } else {
       document.documentElement.classList.add('dark');
+      document.documentElement.style.colorScheme = 'dark';
+      localStorage.setItem('theme', 'dark');
     }
   }, []);
 
-  const setTheme = useCallback((newTheme: Theme) => {
-    setThemeState(newTheme);
-    localStorage.setItem('theme', newTheme);
-    document.documentElement.classList.toggle('dark', newTheme === 'dark');
-  }, []);
-
-  const toggleTheme = useCallback(() => {
-    setTheme(theme === 'light' ? 'dark' : 'light');
-  }, [theme, setTheme]);
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    document.documentElement.classList.toggle('dark', next === 'dark');
+    document.documentElement.style.colorScheme = next;
+    localStorage.setItem('theme', next);
+  };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme, isDark: theme === 'dark' }}>
+    <ThemeContext.Provider value={{ theme, isDark: theme === 'dark', toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );

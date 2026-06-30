@@ -772,8 +772,8 @@ export class SocialInboxService {
 
 رسالة العميل: "${message.messageText}"`;
 
-    if (!process.env.OPENAI_API_KEY) {
-      logger.warn('OPENAI_API_KEY not set, returning fallback AI reply');
+    if (!process.env.POLLINATIONS_API_KEY && !process.env.OPENAI_API_KEY) {
+      logger.warn('No AI API key set, returning fallback AI reply');
       return `شكراً لتواصلك مع MARKETRON! تم استلام رسالتك: "${message.messageText}". سيتواصل معك فريقنا قريباً.`;
     }
 

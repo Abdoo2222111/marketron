@@ -10,6 +10,8 @@ import { Bot, MessageCircle, FileText, BarChart3, Search, Megaphone, Headphones,
 import { cn } from '@/utils/helpers';
 import { aiAgentsApi, type AiAgent } from '@/services/api-modules';
 import { EmptyState } from '@/components/ui/empty-state';
+import ModelSelector from '@/components/ai/ModelSelector';
+import { chatWithClientAI } from '@/lib/client-ai';
 
 const AGENT_TYPES = [
   { id: 'campaign_agent', name: 'وكيل الحملات', icon: Megaphone, description: 'خبير في إدارة وتحسين الحملات الإعلانية', color: 'blue', bgColor: 'bg-blue-100 dark:bg-blue-900/30', textColor: 'text-blue-600' },
@@ -44,6 +46,9 @@ export const AiAgentsPage: React.FC = () => {
   const [createName, setCreateName] = useState('');
   const [createType, setCreateType] = useState('campaign_agent');
   const [createPrompt, setCreatePrompt] = useState('');
+  const [createModel, setCreateModel] = useState({ provider: '', model: '' });
+  const [chatModel, setChatModel] = useState({ provider: '', model: '' });
+  const [useChatModel, setUseChatModel] = useState(false);
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
@@ -86,8 +91,26 @@ export const AiAgentsPage: React.FC = () => {
     setMessageInput('');
     setSending(true);
     try {
-      const res = await aiAgentsApi.chat(chatAgent.id, sentMessage);
-      const aiReply = res.data?.data?.message?.content || res.data?.data?.content || res.data?.message || 'عذراً، لم أستطع معالجة طلبك الآن.';
+      const chatBody: any = { content: sentMessage };
+      if (useChatModel && chatModel.provider) {
+        chatBody.provider = chatModel.provider;
+        chatBody.model = chatModel.model || undefined;
+      }
+
+      let aiReply = '';
+      if (useChatModel && chatModel.provider === 'puter') {
+        const messages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [];
+        if (chatAgent.systemPrompt) messages.push({ role: 'system', content: chatAgent.systemPrompt });
+        messages.push(...chatMessages
+          .filter(m => m.role !== 'system')
+          .map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })));
+        messages.push({ role: 'user', content: sentMessage });
+        const result = await chatWithClientAI({ messages, provider: 'puter', model: chatModel.model || undefined });
+        aiReply = result.content;
+      } else {
+        const res = await aiAgentsApi.chat(chatAgent.id, chatBody);
+        aiReply = res.data?.data?.message?.content || res.data?.data?.content || res.data?.message || 'عذراً، لم أستطع معالجة طلبك الآن.';
+      }
       setChatMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
@@ -97,7 +120,7 @@ export const AiAgentsPage: React.FC = () => {
       setChatMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: `⚠️ ${err?.response?.data?.error || 'حدث خطأ في الاتصال بالوكيل'}`,
+        content: `⚠️ ${err?.response?.data?.error || err.message || 'حدث خطأ في الاتصال بالوكيل'}`,
       }]);
     } finally {
       setSending(false);
@@ -114,6 +137,8 @@ export const AiAgentsPage: React.FC = () => {
         description: createPrompt,
         systemPrompt: createPrompt,
         isActive: true,
+        provider: createModel.provider || undefined,
+        model: createModel.model || undefined,
       });
       setShowCreateDialog(false);
       setCreateName('');
@@ -189,20 +214,43 @@ export const AiAgentsPage: React.FC = () => {
           )}
         </div>
 
-        <div className="p-4 border-t dark:border-gray-700">
-          <div className="flex gap-2">
-            <Input
-              placeholder={t('aiAgents.typeMessage')}
-              value={messageInput}
-              onChange={(e) => setMessageInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-              className="flex-1"
-            />
-            <Button onClick={handleSendMessage} disabled={!messageInput.trim()}>
-              <Send className="w-4 h-4" />
-            </Button>
+          <div className="p-3 border-t dark:border-gray-700 flex items-center gap-3">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <input
+                type="checkbox"
+                id="use-chat-model"
+                checked={useChatModel}
+                onChange={e => setUseChatModel(e.target.checked)}
+                className="rounded border-[#7C3AED]/30"
+              />
+              <label htmlFor="use-chat-model" className="text-xs text-[#A1A1C2] cursor-pointer">تحديد نموذج</label>
+            </div>
+            {useChatModel && (
+              <div className="flex-1 max-w-xs">
+                <ModelSelector
+                  value={chatModel}
+                  onChange={setChatModel}
+                  providerLabel="مزود"
+                  modelLabel="نموذج"
+                  hideLabel
+                />
+              </div>
+            )}
           </div>
-        </div>
+          <div className="p-4 border-t dark:border-gray-700">
+            <div className="flex gap-2">
+              <Input
+                placeholder={t('aiAgents.typeMessage')}
+                value={messageInput}
+                onChange={(e) => setMessageInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                className="flex-1"
+              />
+              <Button onClick={handleSendMessage} disabled={!messageInput.trim()}>
+                <Send className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
       </div>
     </div>
   );
@@ -385,6 +433,13 @@ export const AiAgentsPage: React.FC = () => {
                 onChange={(e) => setCreatePrompt(e.target.value)}
               />
             </div>
+            <ModelSelector
+              value={createModel}
+              onChange={setCreateModel}
+              label="نموذج AI المخصص للوكيل"
+              providerLabel="المزود"
+              modelLabel="النموذج"
+            />
             <div className="flex gap-2 justify-end mt-4">
               <Button variant="outline" onClick={() => setShowCreateDialog(false)}>إلغاء</Button>
               <Button onClick={handleCreateAgent} disabled={creating || !createName.trim()} className="gradient-brand text-white border-0">

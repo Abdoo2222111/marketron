@@ -1,32 +1,18 @@
 ﻿import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-type Theme = 'light' | 'dark' | 'system';
 type Lang = 'ar' | 'en';
 
 interface SettingsState {
-  theme: Theme;
+  theme: 'dark';
   lang: Lang;
   sidebarOpen: boolean;
   mobileMenuOpen: boolean;
-  setTheme: (theme: Theme) => void;
+  setTheme: (theme: 'dark') => void;
   setLang: (lang: Lang) => void;
   toggleSidebar: () => void;
   setMobileMenuOpen: (open: boolean) => void;
 }
-
-const applyTheme = (theme: Theme) => {
-  const root = document.documentElement;
-  if (theme === 'dark') {
-    root.classList.add('dark');
-  } else if (theme === 'light') {
-    root.classList.remove('dark');
-  } else {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    if (prefersDark) root.classList.add('dark');
-    else root.classList.remove('dark');
-  }
-};
 
 const applyLang = (lang: Lang) => {
   const root = document.documentElement;
@@ -35,31 +21,34 @@ const applyLang = (lang: Lang) => {
   document.title = lang === 'ar' ? 'MARKETRON' : 'Marketing Platform';
 };
 
-const getInitialTheme = (): Theme => {
-  if (typeof window === 'undefined') return 'system';
-  const saved = localStorage.getItem('settings-theme');
-  if (saved === 'dark' || saved === 'light' || saved === 'system') return saved;
-  return 'system';
-};
-
 if (typeof window !== 'undefined') {
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-    const savedTheme = localStorage.getItem('settings-theme') || 'system';
-    if (savedTheme === 'system') applyTheme('system');
-  });
+  document.documentElement.classList.add('dark');
+  document.documentElement.style.colorScheme = 'dark';
+  localStorage.setItem('theme', 'dark');
 }
+
+const getInitialLang = (): Lang => {
+  if (typeof window === 'undefined') return 'ar';
+  const saved = localStorage.getItem('settings-store');
+  if (saved) {
+    try { const parsed = JSON.parse(saved); if (parsed?.state?.lang) return parsed.state.lang; }
+    catch { /* ignore */ }
+  }
+  const i18n = localStorage.getItem('i18nextLng');
+  return i18n?.startsWith('ar') ? 'ar' : 'en';
+};
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
-    (set, get) => ({
-      theme: getInitialTheme(),
-      lang: (typeof window !== 'undefined' && localStorage.getItem('i18nextLng')?.startsWith('ar') ? 'ar' : 'en') as Lang,
+    (set) => ({
+      theme: 'dark',
+      lang: getInitialLang(),
       sidebarOpen: true,
       mobileMenuOpen: false,
-      setTheme: (theme) => {
-        localStorage.setItem('settings-theme', theme);
-        applyTheme(theme);
-        set({ theme });
+      setTheme: () => {
+        document.documentElement.classList.add('dark');
+        document.documentElement.style.colorScheme = 'dark';
+        set({ theme: 'dark' });
       },
       setLang: (lang) => {
         localStorage.setItem('i18nextLng', lang);
@@ -74,7 +63,8 @@ export const useSettingsStore = create<SettingsState>()(
       partialize: (state) => ({ theme: state.theme, lang: state.lang }),
       onRehydrateStorage: () => (state) => {
         if (state) {
-          applyTheme(state.theme);
+          document.documentElement.classList.add('dark');
+          document.documentElement.style.colorScheme = 'dark';
           applyLang(state.lang);
         }
       },

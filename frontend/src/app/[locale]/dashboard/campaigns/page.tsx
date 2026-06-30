@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { campaignsApi, type Campaign } from '@/services/api-modules';
-import { formatCurrency, formatNumber } from '@/lib/utils';
+import { formatCurrency, formatNumber, cn } from '@/lib/utils';
 
 const platformLabels: Record<string, string> = {
   facebook: 'فيسبوك', instagram: 'انستجرام', tiktok: 'تيك توك',
@@ -88,6 +88,31 @@ export default function CampaignsPage({ params: { locale } }: { params: { locale
         {error && (
           <div className="p-3 rounded-xl bg-[#F43F5E]/10 border border-[#F43F5E]/20 text-[#F43F5E] text-sm flex items-center gap-2">
             <AlertCircle className="w-4 h-4" />{error}
+          </div>
+        )}
+
+        {/* Summary Bar */}
+        {!loading && filtered.length > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-[#1E1B3A]/60 backdrop-blur-sm rounded-xl px-4 py-3 border border-[#7C3AED]/10">
+              <p className="text-[10px] text-[#A1A1C2] uppercase tracking-wider">إجمالي</p>
+              <p className="text-lg font-bold mt-0.5">{filtered.length}</p>
+            </div>
+            <div className="bg-[#1E1B3A]/60 backdrop-blur-sm rounded-xl px-4 py-3 border border-[#7C3AED]/10">
+              <p className="text-[10px] text-[#A1A1C2] uppercase tracking-wider">نشطة</p>
+              <p className="text-lg font-bold mt-0.5 text-[#10B981] flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
+                {filtered.filter(c => c.status === 'active' || c.status === 'published').length}
+              </p>
+            </div>
+            <div className="bg-[#1E1B3A]/60 backdrop-blur-sm rounded-xl px-4 py-3 border border-[#7C3AED]/10">
+              <p className="text-[10px] text-[#A1A1C2] uppercase tracking-wider">الميزانية</p>
+              <p className="text-lg font-bold mt-0.5">{formatCurrency(filtered.reduce((s, c) => s + (c.budget || 0), 0))}</p>
+            </div>
+            <div className="bg-[#1E1B3A]/60 backdrop-blur-sm rounded-xl px-4 py-3 border border-[#7C3AED]/10">
+              <p className="text-[10px] text-[#A1A1C2] uppercase tracking-wider">الإنفاق</p>
+              <p className="text-lg font-bold mt-0.5">{formatCurrency(filtered.reduce((s, c) => s + (c.spent || 0), 0))}</p>
+            </div>
           </div>
         )}
 

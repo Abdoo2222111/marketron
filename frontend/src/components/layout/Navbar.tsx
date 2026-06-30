@@ -11,7 +11,7 @@ import { Avatar } from '@/components/ui/avatar';
 
 export const Navbar: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const { isDark, toggleTheme } = useTheme();
+  const { isDark } = useTheme();
   const { lang, setLang } = useSettingsStore();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -52,12 +52,9 @@ export const Navbar: React.FC = () => {
           <span className="text-xs mr-1 font-medium">{isRTL ? 'EN' : 'AR'}</span>
         </button>
 
-        {/* Theme Toggle */}
-        <button
-          onClick={toggleTheme}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-500 dark:text-gray-400 transition-colors"
-        >
-          {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+        {/* Theme Indicator */}
+        <button className="p-2 rounded-lg text-gray-500 dark:text-gray-400 cursor-default">
+          <Moon className="w-5 h-5" />
         </button>
 
         {/* Notifications */}

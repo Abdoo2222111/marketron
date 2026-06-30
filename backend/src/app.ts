@@ -5,9 +5,9 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import { config } from './config';
-import { globalRateLimiter, authRateLimiter, aiRateLimiter, registerRateLimiter } from './middleware/rateLimiter';
+import { globalRateLimiter, authRateLimiter, aiRateLimiter } from './middleware/rateLimiter';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
-import { csrfProtection } from './middleware/csrf';
+// csrfProtection available if needed: import { csrfProtection } from './middleware/csrf';
 import logger from './utils/logger';
 
 import authRoutes from './routes/auth.routes';
@@ -34,10 +34,21 @@ import pollinationsRoutes from './routes/pollinations.routes';
 import apiKeysRoutes from './routes/apiKeys.routes';
 import personasRoutes from './routes/personas.routes';
 import engineRoutes from './routes/engine.routes';
+import platformTokensRoutes from './routes/platformTokens.routes';
 
 const app: Express = express();
 
 app.set('trust proxy', 1);
+
+function splitOrigins(val: string): string[] {
+  return val.split(',').map(s => s.trim()).filter(Boolean);
+}
+
+const connectSrcOrigins = [
+  "'self'",
+  ...splitOrigins(config.frontendUrl),
+  ...splitOrigins(config.corsOrigin),
+];
 
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
@@ -48,7 +59,7 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
       fontSrc: ["'self'", 'https://fonts.gstatic.com'],
       imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
-      connectSrc: ["'self'", config.frontendUrl, config.corsOrigin, '*'],
+      connectSrc: connectSrcOrigins,
       frameSrc: ["'self'"],
       objectSrc: ["'none'"],
     },
@@ -65,15 +76,38 @@ app.use(helmet({
   hidePoweredBy: true,
 }));
 
+const allowedOrigins = [
+  config.frontendUrl,
+  config.corsOrigin,
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'https://frontend-one-virid-95.vercel.app',
+  'https://frontend-marketron.vercel.app',
+  'https://www.azizmedia.site',
+  'https://azizmedia.site',
+  'https://marketron.vercel.app',
+  /^https:\/\/frontend-.*\.vercel\.app$/,
+  /^https:\/\/.*\.azizmedia\.site$/,
+];
+
+function isOriginAllowed(origin: string | undefined): boolean {
+  if (!origin) return true;
+  return allowedOrigins.some(o => {
+    if (typeof o === 'string') {
+      return o.split(',').map(s => s.trim()).includes(origin);
+    }
+    return o.test(origin);
+  });
+}
+
 app.use(cors({
-  origin: [
-    config.frontendUrl,
-    'http://localhost:3000',
-    'http://localhost:5173',
-    'https://frontend-one-virid-95.vercel.app',
-    'https://www.azizmedia.site',
-    'https://azizmedia.site',
-  ],
+  origin: (origin, callback) => {
+    if (isOriginAllowed(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS not allowed'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'x-csrf-token'],
@@ -148,6 +182,7 @@ app.use('/api/v1/pollinations', pollinationsRoutes);
 app.use('/api/v1/api-keys', apiKeysRoutes);
 app.use('/api/v1/personas', personasRoutes);
 app.use('/api/v1/engine', engineRoutes);
+app.use('/api/v1/platform-tokens', platformTokensRoutes);
 
 app.use(express.static('public'));
 

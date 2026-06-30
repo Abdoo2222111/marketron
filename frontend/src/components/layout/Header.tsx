@@ -149,8 +149,8 @@ export default function Header({ breadcrumbs, onMenuToggle }: HeaderProps) {
           </DropdownMenu>
 
           {/* Theme Toggle */}
-          <Button variant="ghost" size="icon" onClick={toggleTheme}>
-            {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+          <Button variant="ghost" size="icon" onClick={toggleTheme} title={theme === 'dark' ? 'الوضع النهاري' : 'الوضع الليلي'}>
+            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           </Button>
 
           {/* Notifications */}
@@ -209,13 +209,17 @@ export default function Header({ breadcrumbs, onMenuToggle }: HeaderProps) {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <User className="ml-2 h-4 w-4" />
-                الملف الشخصي
+              <DropdownMenuItem asChild>
+                <Link href={`/${locale}/dashboard/settings`}>
+                  <User className="ml-2 h-4 w-4" />
+                  الملف الشخصي
+                </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Settings className="ml-2 h-4 w-4" />
-                الإعدادات
+              <DropdownMenuItem asChild>
+                <Link href={`/${locale}/dashboard/settings`}>
+                  <Settings className="ml-2 h-4 w-4" />
+                  الإعدادات
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={logout} className="text-red-500">

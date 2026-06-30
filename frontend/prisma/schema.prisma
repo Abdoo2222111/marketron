@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  phone     String?
+  company   String?
+  role      String   @default("user")
+  credits   Int      @default(100)
+  currency  String   @default("SAR")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  platformTokens PlatformToken[]
+  aiProviders    AiProvider[]
+
+  @@map("users")
+}
+
+model PlatformToken {
+  id           String   @id @default(cuid())
+  platform     String
+  label        String?
+  accessToken  String
+  refreshToken String?
+  expiresAt    DateTime?
+  status       String   @default("active")
+  metadata     Json?
+  userId       String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, platform])
+  @@map("platform_tokens")
+}
+
+model AiProvider {
+  id            String   @id @default(cuid())
+  provider      String
+  apiKey        String?
+  baseUrl       String?
+  defaultModel  String?
+  isActive      Boolean  @default(true)
+  isDefaultForType String?
+  userId        String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, provider])
+  @@map("ai_providers")
+}

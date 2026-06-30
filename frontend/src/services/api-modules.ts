@@ -138,6 +138,8 @@ export interface AiAgent {
   description?: string;
   systemPrompt?: string;
   modelName?: string;
+  provider?: string;
+  model?: string;
   temperature?: number;
   maxTokens?: number;
   isActive: boolean;
@@ -150,7 +152,7 @@ export const aiAgentsApi = {
   create: (data: Partial<AiAgent>) => api.post('/ai-agents', data),
   update: (id: string, data: Partial<AiAgent>) => api.put(`/ai-agents/${id}`, data),
   delete: (id: string) => api.delete(`/ai-agents/${id}`),
-  chat: (id: string, content: string) => api.post(`/ai-agents/${id}/chat`, { content }),
+  chat: (id: string, body: { content: string; provider?: string; model?: string }) => api.post(`/ai-agents/${id}/chat`, body),
   getConversation: (id: string) => api.get(`/ai-agents/${id}/conversation`),
   clearConversation: (id: string) => api.delete(`/ai-agents/${id}/conversation`),
   getTypes: () => api.get('/ai-agents/types'),
@@ -386,7 +388,7 @@ export const conversationsApi = {
 
 // ── V2: Sandbox / AI Brain ───────────────────────────
 export const sandboxApi = {
-  chat: (data: { message: string; history?: { role: string; content: string }[] }) =>
+  chat: (data: { message: string; history?: { role: string; content: string }[]; provider?: string; model?: string }) =>
     api.post('/sandbox/chat', data),
   generateCampaignDraft: (brief: string) => api.post('/sandbox/campaign-draft', { brief }),
   enrich: (url: string) => api.post('/sandbox/enrich', { url }),
@@ -496,4 +498,31 @@ export const pollinationsApi = {
     api.post<{ success: boolean; data: PollinationsEmbeddingResult }>('/pollinations/embeddings', data),
   analyzeImage: (data: { imageUrl: string; prompt?: string; model?: string }) =>
     api.post<{ success: boolean; data: PollinationsVisionResult }>('/pollinations/vision', data),
+};
+
+// ── Platform Tokens (Ad Platform API Keys) ───────────
+export interface PlatformToken {
+  id: string;
+  platform: string;
+  label: string;
+  accessToken: string;
+  refreshToken?: string;
+  tokenExpiresAt?: string;
+  status: string;
+  metadata?: any;
+  createdAt: string;
+}
+
+export const platformTokensApi = {
+  list: () => api.get<{ success: boolean; data: PlatformToken[] }>('/platform-tokens'),
+  upsert: (platform: string, data: { accessToken: string; refreshToken?: string; label?: string }) =>
+    api.put<{ success: boolean; data: PlatformToken }>(`/platform-tokens/${platform}`, data),
+  delete: (id: string) => api.delete(`/platform-tokens/${id}`),
+  validate: (platform: string) => api.post<{ success: boolean; data: { valid: boolean; permissions?: string[]; pages?: any[]; error?: string; expiresAt?: string } }>(`/platform-tokens/${platform}/validate`),
+};
+
+// ── Facebook Token Inspector ─────────────────────────
+export const facebookTokenApi = {
+  inspect: (accessToken: string) =>
+    api.post<{ success: boolean; data: { valid: boolean; appId?: string; appName?: string; expiresAt?: string; scopes?: string[]; userId?: string; userName?: string; pages?: Array<{ id: string; name: string; accessToken?: string; category?: string }>; adAccounts?: Array<{ id: string; name: string; accountStatus?: string }>; error?: string } }>('/platform-tokens/facebook/inspect', { accessToken }),
 };

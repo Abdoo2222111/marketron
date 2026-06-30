@@ -52,7 +52,7 @@ export class SettingsService {
       include: {
         members: {
           include: {
-            user: { select: { id: true, name: true, email: true, avatar: true, role: true } },
+            user: { select: { id: true, name: true, email: true, avatarUrl: true, role: true } },
           },
         },
       },

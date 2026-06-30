@@ -32,8 +32,9 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Cairo:wght@200;300;400;500;600;700;800;900&family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap"
           rel="stylesheet"
         />
+        <script src="https://puter.com"></script>
       </head>
-      <body className="min-h-screen bg-background antialiased">
+      <body className="min-h-screen bg-background antialiased noise-overlay">
         <Providers>{children}</Providers>
       </body>
     </html>

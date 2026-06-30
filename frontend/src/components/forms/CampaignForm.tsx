@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -54,6 +54,24 @@ export default function CampaignForm({ onSubmit, initialData, onAISuggestions }:
   const [step, setStep] = useState(0);
   const [selectedPlatform, setSelectedPlatform] = useState<PlatformType | null>(null);
   const [selectedObjective, setSelectedObjective] = useState<CampaignObjective | null>(null);
+  const [fbPages, setFbPages] = useState<any[]>([]);
+  const [selectedPage, setSelectedPage] = useState<string>('');
+  const [loadingPages, setLoadingPages] = useState(false);
+
+  useEffect(() => {
+    if (selectedPlatform === 'facebook') {
+      setLoadingPages(true);
+      fetch('/api/v1/platforms/facebook/pages')
+        .then(res => res.json())
+        .then(data => { setFbPages(data.data || []); if (data.data?.length === 1) setSelectedPage(data.data[0].id); })
+        .catch(() => setFbPages([]))
+        .finally(() => setLoadingPages(false));
+    } else {
+      setFbPages([]);
+      setSelectedPage('');
+    }
+  }, [selectedPlatform]);
+
   const [audience, setAudience] = useState({
     country: '',
     ageMin: 18,
@@ -71,7 +89,7 @@ export default function CampaignForm({ onSubmit, initialData, onAISuggestions }:
 
   const canProceed = () => {
     switch (step) {
-      case 0: return !!selectedPlatform;
+      case 0: return !!selectedPlatform && (selectedPlatform !== 'facebook' || !!selectedPage);
       case 1: return !!selectedObjective;
       case 2: return true;
       case 3: return budget >= 10;
@@ -82,10 +100,12 @@ export default function CampaignForm({ onSubmit, initialData, onAISuggestions }:
 
   const handleSubmit = () => {
     if (!selectedPlatform || !selectedObjective) return;
+    if (selectedPlatform === 'facebook' && !selectedPage) return;
     onSubmit({
       name: content.headline || 'حملة جديدة',
       description: content.description,
       platform: selectedPlatform,
+      pageId: selectedPage || undefined,
       objective: selectedObjective,
       budget,
       startDate: new Date().toISOString(),
@@ -134,6 +154,31 @@ export default function CampaignForm({ onSubmit, initialData, onAISuggestions }:
                 </button>
               ))}
             </div>
+            {selectedPlatform === 'facebook' && (
+              <div className="space-y-2">
+                <Label>الصفحة على فيسبوك</Label>
+                {loadingPages ? (
+                  <div className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground">
+                    جاري تحميل الصفحات...
+                  </div>
+                ) : fbPages.length === 0 ? (
+                  <div className="h-10 rounded-md border border-dashed border-input bg-background px-3 py-2 text-sm text-muted-foreground">
+                    لا توجد صفحات متصلة — اذهب إلى قنوات الاتصال لربط صفحة فيسبوك
+                  </div>
+                ) : (
+                  <select
+                    value={selectedPage}
+                    onChange={(e) => setSelectedPage(e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="">اختر الصفحة...</option>
+                    {fbPages.map((p: any) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            )}
           </div>
         );
 

@@ -1,18 +1,19 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { DashboardShell } from '@/components/layout/DashboardShell';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
   Facebook, Instagram, Music, Ghost, MessageCircle, Globe,
-  Plus, Check, X, RefreshCw, Loader2, Link2, Unlink, AlertCircle,
-  ExternalLink, Smartphone, Settings,
+  Plus, Check, Loader2, Link2, Unlink, AlertCircle,
+  ExternalLink, Settings, Eye, EyeOff,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const platforms = [
   {
@@ -20,21 +21,21 @@ const platforms = [
     name: 'فيسبوك',
     nameEn: 'Facebook',
     icon: Facebook,
-    color: 'bg-blue-500',
-    gradient: 'from-blue-500 to-blue-600',
+    gradient: 'from-blue-600 to-blue-800',
     description: 'إدارة إعلانات فيسبوك وجلب بيانات الحملات',
-    required: 'معرف التطبيق (App ID) + Secret',
-    docUrl: 'https://developers.facebook.com/docs/marketing-apis',
+    tokenLabel: 'Page Access Token',
+    tokenPlaceholder: 'أدخل Facebook Page Access Token',
+    docUrl: 'https://developers.facebook.com/docs/facebook-login/access-tokens',
   },
   {
     id: 'instagram',
     name: 'إنستجرام',
     nameEn: 'Instagram',
     icon: Instagram,
-    color: 'bg-pink-500',
-    gradient: 'from-pink-500 to-rose-500',
+    gradient: 'from-pink-500 via-rose-500 to-orange-500',
     description: 'إدارة إعلانات إنستجرام وجلب بيانات الأداء',
-    required: 'حساب إنستجرام أعمال مرتبط بفيسبوك',
+    tokenLabel: 'Instagram Graph API Token',
+    tokenPlaceholder: 'أدخل Instagram Access Token',
     docUrl: 'https://developers.facebook.com/docs/instagram-api',
   },
   {
@@ -42,10 +43,10 @@ const platforms = [
     name: 'تيك توك',
     nameEn: 'TikTok',
     icon: Music,
-    color: 'bg-gray-900',
     gradient: 'from-gray-900 to-gray-700',
     description: 'إدارة حملات تيك توك وجلب التحليلات',
-    required: 'معرف التطبيق (App ID) + Secret',
+    tokenLabel: 'TikTok Access Token',
+    tokenPlaceholder: 'أدخل TikTok Access Token',
     docUrl: 'https://ads.tiktok.com/marketing_api/docs',
   },
   {
@@ -53,10 +54,10 @@ const platforms = [
     name: 'سناب شات',
     nameEn: 'Snapchat',
     icon: Ghost,
-    color: 'bg-yellow-400',
     gradient: 'from-yellow-400 to-yellow-500',
     description: 'إدارة إعلانات سناب شات وجلب البيانات',
-    required: 'معرف التطبيق (App ID) + Secret',
+    tokenLabel: 'Snapchat Access Token',
+    tokenPlaceholder: 'أدخل Snapchat Access Token',
     docUrl: 'https://developers.snap.com/api/marketing',
   },
   {
@@ -64,10 +65,10 @@ const platforms = [
     name: 'واتساب',
     nameEn: 'WhatsApp',
     icon: MessageCircle,
-    color: 'bg-emerald-500',
     gradient: 'from-emerald-500 to-teal-500',
     description: 'صندوق رسائل موحد مع ردود ذكية عبر Evolution API',
-    required: 'Evolution API + QR code',
+    tokenLabel: 'Evolution API URL + Key',
+    tokenPlaceholder: 'رابط API',
     docUrl: 'https://evolution-api.com',
   },
   {
@@ -75,284 +76,232 @@ const platforms = [
     name: 'Google Ads',
     nameEn: 'Google Ads',
     icon: Globe,
-    color: 'bg-blue-600',
     gradient: 'from-blue-600 to-sky-500',
     description: 'إدارة حملات Google Ads وتحليلات البحث',
-    required: 'حساب Google Ads + OAuth',
+    tokenLabel: 'Google Ads OAuth Token',
+    tokenPlaceholder: 'أدخل Google Ads Refresh Token',
     docUrl: 'https://developers.google.com/google-ads/api',
   },
 ];
-
-interface PlatformState {
-  connected: boolean;
-  loading: boolean;
-  error: string | null;
-  accountName?: string;
-  expiresAt?: string;
-}
 
 export default function ChannelsPage() {
   const params = useParams();
   const locale = (params?.locale as string) || 'ar';
   const isRtl = locale === 'ar';
 
-  const [platformsState, setPlatformsState] = useState<Record<string, PlatformState>>({
-    facebook: { connected: false, loading: false, error: null },
-    instagram: { connected: false, loading: false, error: null },
-    tiktok: { connected: false, loading: false, error: null },
-    snapchat: { connected: false, loading: false, error: null },
-    whatsapp: { connected: true, loading: false, error: null, accountName: 'رقم واتساب الأعمال', expiresAt: new Date(Date.now() + 86400000 * 60).toISOString() },
-    google: { connected: false, loading: false, error: null },
-  });
+  const [loading, setLoading] = useState(true);
+  const [connections, setConnections] = useState<Record<string, any>>({});
+  const [connectPlatform, setConnectPlatform] = useState<string | null>(null);
+  const [tokenInput, setTokenInput] = useState('');
+  const [connecting, setConnecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showToken, setShowToken] = useState(false);
 
-  const [connectDialog, setConnectDialog] = useState<string | null>(null);
-  const [appId, setAppId] = useState('');
-  const [appSecret, setAppSecret] = useState('');
+  useEffect(() => {
+    loadConnections();
+  }, []);
 
-  const handleConnect = async (platformId: string) => {
-    setPlatformsState(prev => ({
-      ...prev,
-      [platformId]: { ...prev[platformId], loading: true, error: null },
-    }));
+  const loadConnections = async () => {
+    setLoading(true);
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/platforms/${platformId}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
-          },
-          body: JSON.stringify({ appId, appSecret }),
-        }
-      );
+      const res = await fetch('/api/v1/platforms');
+      const data = await res.json();
+      const conns: Record<string, any> = {};
+      (data.data || []).forEach((c: any) => {
+        conns[c.id || c.platform] = c;
+      });
+      setConnections(conns);
+    } catch { /* ignore */ }
+    finally { setLoading(false); }
+  };
+
+  const handleConnect = async () => {
+    if (!connectPlatform || !tokenInput.trim()) return;
+    setConnecting(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/v1/platforms/${connectPlatform}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+        },
+        body: JSON.stringify({ accessToken: tokenInput }),
+      });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || 'فشل الاتصال بالمنصة');
+        throw new Error(errData.error || 'فشل الاتصال');
       }
-      const data = await res.json();
-      setPlatformsState(prev => ({
-        ...prev,
-        [platformId]: {
-          connected: true,
-          loading: false,
-          error: null,
-          accountName: data.data?.name || platformId,
-          expiresAt: data.data?.tokenExpiresAt,
-        },
-      }));
-      setConnectDialog(null);
+      await loadConnections();
+      setConnectPlatform(null);
+      setTokenInput('');
     } catch (err: any) {
-      setPlatformsState(prev => ({
-        ...prev,
-        [platformId]: { ...prev[platformId], loading: false, error: err.message },
-      }));
+      setError(err.message);
+    } finally {
+      setConnecting(false);
     }
   };
 
   const handleDisconnect = async (platformId: string) => {
-    setPlatformsState(prev => ({
-      ...prev,
-      [platformId]: { ...prev[platformId], loading: true },
-    }));
+    setError(null);
     try {
-      await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/platforms/${platformId}`,
-        {
-          method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
-          },
-        }
-      );
-      setPlatformsState(prev => ({
-        ...prev,
-        [platformId]: { connected: false, loading: false, error: null, accountName: undefined, expiresAt: undefined },
-      }));
+      await fetch(`/api/v1/platforms/${platformId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+        },
+      });
+      await loadConnections();
     } catch {
-      setPlatformsState(prev => ({
-        ...prev,
-        [platformId]: { ...prev[platformId], loading: false },
-      }));
+      setError('فشل الفصل');
     }
   };
 
   return (
     <DashboardShell>
       <div className="space-y-6" dir={isRtl ? 'rtl' : 'ltr'}>
-        {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-black gradient-brand-text">ربط القنوات</h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              اربط حساباتك الإعلانية لإدارة كل شيء من مكان واحد
-            </p>
+            <p className="text-[#A1A1C2] text-sm mt-1">اربط حساباتك الإعلانية لإدارة كل شيء من مكان واحد</p>
           </div>
+          <Link href={`/${locale}/dashboard/settings`}>
+            <Button variant="outline" size="sm">
+              <Settings className="w-4 h-4 ml-1" />
+              الإعدادات المتقدمة
+            </Button>
+          </Link>
         </div>
 
-        {/* Platform Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {platforms.map((platform) => {
-            const state = platformsState[platform.id];
-            const Icon = platform.icon;
+        {error && (
+          <div className="bg-[#F43F5E]/10 border border-[#F43F5E]/20 rounded-xl p-3 flex items-center gap-2 text-sm text-[#F43F5E]">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            {error}
+            <button onClick={() => setError(null)} className="mr-auto text-[#F43F5E]/60 hover:text-[#F43F5E]">✕</button>
+          </div>
+        )}
 
-            return (
-              <Card key={platform.id} className={`border-0 shadow-md overflow-hidden ${state.connected ? 'ring-2 ring-emerald-500/50' : ''}`}>
-                {/* Platform header */}
-                <div className={`bg-gradient-to-r ${platform.gradient} px-5 py-4 text-white flex items-center gap-3`}>
-                  <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-sm">
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="font-bold">{isRtl ? platform.name : platform.nameEn}</p>
-                    <p className="text-xs text-white/80">{platform.description}</p>
-                  </div>
-                  {state.connected && (
-                    <Badge className="mr-auto bg-emerald-500/80 text-white border-0 text-xs">
-                      <Check className="w-3 h-3 ml-1" />
-                      متصل
-                    </Badge>
-                  )}
-                </div>
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <Card key={i} className="overflow-hidden">
+                <div className="h-24 bg-gradient-to-r from-[#1E1B3A] via-[#2D2B55] to-[#1E1B3A] animate-shimmer bg-[length:200%_100%]" />
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {platforms.map((platform) => {
+              const conn = connections[platform.id];
+              const Icon = platform.icon;
+              const isConnecting = connectPlatform === platform.id;
 
-                <CardContent className="p-5">
-                  {state.error && (
-                    <div className="mb-3 flex items-center gap-2 text-xs text-red-500 bg-red-50 dark:bg-red-900/20 p-2 rounded-lg">
-                      <AlertCircle className="w-3 h-3" />
-                      {state.error}
-                    </div>
-                  )}
-
-                  {state.connected ? (
-                    <div className="space-y-3">
-                      {state.accountName && (
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">الحساب:</span>
-                          <span className="font-medium">{state.accountName}</span>
-                        </div>
-                      )}
-                      {state.expiresAt && (
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">صلاحية الرمز:</span>
-                          <span className="text-xs">
-                            {new Date(state.expiresAt).toLocaleDateString(isRtl ? 'ar' : 'en')}
-                          </span>
-                        </div>
-                      )}
-                      <div className="flex gap-2 pt-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-1/2 border-red-200 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
-                          onClick={() => handleDisconnect(platform.id)}
-                          disabled={state.loading}
-                        >
-                          {state.loading ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                          ) : (
-                            <Unlink className="w-3 h-3 ml-1" />
-                          )}
-                          فصل
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-1/2"
-                          onClick={() => window.open(platform.docUrl, '_blank')}
-                        >
-                          <ExternalLink className="w-3 h-3 ml-1" />
-                          توثيق
-                        </Button>
+              return (
+                <Card key={platform.id} className={cn('overflow-hidden', conn ? 'ring-2 ring-[#10B981]/50' : '')}>
+                  <div className={cn('bg-gradient-to-r px-5 py-4 text-white', platform.gradient)}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-sm">
+                        <Icon className="w-5 h-5" />
                       </div>
+                      <div className="flex-1">
+                        <p className="font-bold">{isRtl ? platform.name : platform.nameEn}</p>
+                        <p className="text-xs text-white/80">{platform.description}</p>
+                      </div>
+                      {conn && (
+                        <Badge className="bg-emerald-500/80 text-white border-0 text-xs">
+                          <Check className="w-3 h-3 ml-1" /> متصل
+                        </Badge>
+                      )}
                     </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <p className="text-xs text-muted-foreground">
-                        المطلوب: {platform.required}
-                      </p>
-                      {connectDialog === platform.id ? (
-                        <div className="space-y-2" onClick={e => e.stopPropagation()}>
-                          <Input
-                            placeholder="App ID / Client ID"
-                            value={appId}
-                            onChange={e => setAppId(e.target.value)}
-                            dir="ltr"
-                          />
-                          <Input
-                            placeholder="App Secret / Client Secret"
-                            type="password"
-                            value={appSecret}
-                            onChange={e => setAppSecret(e.target.value)}
-                            dir="ltr"
-                          />
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              className="flex-1 gradient-brand text-white border-0"
-                              onClick={() => handleConnect(platform.id)}
-                              disabled={state.loading || !appId}
-                            >
-                              {state.loading ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                              ) : (
-                                <Link2 className="w-3 h-3 ml-1" />
-                              )}
-                              اتصال
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => { setConnectDialog(null); setAppId(''); setAppSecret(''); }}
-                            >
-                              إلغاء
-                            </Button>
+                  </div>
+
+                  <CardContent className="p-5">
+                    {conn ? (
+                      <div className="space-y-3">
+                        {conn.name && (
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-[#A1A1C2]">الحساب:</span>
+                            <span className="font-medium">{conn.name}</span>
                           </div>
+                        )}
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-[#A1A1C2]">الحالة:</span>
+                          <Badge variant={conn.connected || conn.status === 'active' ? 'success' : 'secondary'} className="text-[10px]">
+                            {conn.connected || conn.status === 'active' ? 'نشط' : 'غير نشط'}
+                          </Badge>
                         </div>
-                      ) : (
+                        <div className="flex gap-2 pt-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 border-[#F43F5E]/30 text-[#F43F5E] hover:bg-[#F43F5E]/10"
+                            onClick={() => handleDisconnect(platform.id)}
+                          >
+                            <Unlink className="w-3 h-3 ml-1" /> فصل
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => window.open(platform.docUrl, '_blank')}
+                          >
+                            <ExternalLink className="w-3 h-3 ml-1" /> توثيق
+                          </Button>
+                        </div>
+                      </div>
+                    ) : isConnecting ? (
+                      <div className="space-y-3">
+                        <p className="text-xs text-[#A1A1C2]">{platform.tokenLabel}</p>
+                        <div className="relative">
+                          <Input
+                            type={showToken ? 'text' : 'password'}
+                            placeholder={platform.tokenPlaceholder}
+                            value={tokenInput}
+                            onChange={e => setTokenInput(e.target.value)}
+                            dir="ltr"
+                            className="text-xs font-mono pl-8"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowToken(!showToken)}
+                            className="absolute left-2 top-1/2 -translate-y-1/2 text-[#A1A1C2] hover:text-white"
+                          >
+                            {showToken ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                          </button>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            className="flex-1 gradient-brand text-white border-0"
+                            onClick={handleConnect}
+                            disabled={connecting || !tokenInput.trim()}
+                          >
+                            {connecting ? <Loader2 className="w-3 h-3 animate-spin ml-1" /> : <Link2 className="w-3 h-3 ml-1" />}
+                            اتصال
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => { setConnectPlatform(null); setTokenInput(''); }}>
+                            إلغاء
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <p className="text-xs text-[#A1A1C2]">بوابة سريعة للربط. يمكنك أيضاً استخدام صفحة <Link href={`/${locale}/dashboard/settings`} className="text-[#7C3AED] underline">الإعدادات</Link> لإدارة متقدمة.</p>
                         <Button
                           className="w-full gradient-brand text-white border-0"
-                          onClick={() => {
-                            if (platform.id === 'whatsapp') {
-                              window.location.href = `/${locale}/dashboard/settings`;
-                            } else {
-                              setConnectDialog(platform.id);
-                            }
-                          }}
+                          onClick={() => { setConnectPlatform(platform.id); setTokenInput(''); setError(null); }}
                         >
                           <Plus className="w-4 h-4 ml-1" />
                           ربط {isRtl ? platform.name : platform.nameEn}
                         </Button>
-                      )}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-
-        {/* Info Card */}
-        <Card className="border-0 shadow-md bg-gradient-to-br from-purple-500/5 to-electric/5">
-          <CardContent className="p-6">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple to-electric flex items-center justify-center flex-shrink-0">
-                <Smartphone className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h3 className="font-bold text-lg mb-1">تحتاج مساعدة في ربط المنصات؟</h3>
-                <p className="text-sm text-muted-foreground mb-3">
-                  كل منصة إعلانية تتطلب إنشاء تطبيق (App) في لوحة المطورين الخاصة بها. اتبع الخطوات في صفحة الإعدادات أو راجع التوثيق الرسمي لكل منصة.
-                </p>
-                <Link href={`/${locale}/dashboard/settings`}>
-                  <Button variant="outline" size="sm">
-                    <Settings className="w-4 h-4 ml-1" />
-                    الذهاب للإعدادات
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
       </div>
     </DashboardShell>
   );

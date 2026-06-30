@@ -43,24 +43,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
     <>
       <aside
         className={cn(
-          'fixed top-0 right-0 h-full bg-white dark:bg-dark-card border-l border-gray-200 dark:border-dark-border z-30 transition-all duration-300 hidden lg:flex flex-col',
+          'fixed top-0 right-0 h-full bg-[#0B0A1A] border-l border-[#7C3AED]/10 z-30 transition-all duration-300 hidden lg:flex flex-col',
           sidebarOpen ? 'w-[260px]' : 'w-[72px]'
         )}
       >
-        <div className="flex items-center h-16 px-4 border-b border-gray-100 dark:border-dark-border">
+        <div className="flex items-center h-16 px-4 border-b border-[#7C3AED]/10">
           <Link href="/ar/dashboard" className="flex items-center gap-3 min-w-0" onClick={onNavigate}>
             <img src="/logo.svg" alt="MARKETRON" className="w-9 h-9 object-contain flex-shrink-0" />
             {sidebarOpen && (
-              <span className="font-black text-lg bg-gradient-to-r from-electric to-purple bg-clip-text text-transparent whitespace-nowrap tracking-tight">
+              <span className="font-black text-lg gradient-brand-text whitespace-nowrap tracking-tight">
                 MARKETRON
               </span>
             )}
           </Link>
           <button
             onClick={toggleSidebar}
-            className={cn('p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors mr-auto', !sidebarOpen && 'mr-0')}
+            className={cn('p-1.5 hover:bg-[#1E1B3A] rounded-lg transition-colors mr-auto', !sidebarOpen && 'mr-0')}
           >
-            <ChevronLeft className={cn('w-4 h-4 text-gray-400 transition-transform', !sidebarOpen && 'rotate-180')} />
+            <ChevronLeft className={cn('w-4 h-4 text-[#A1A1C2] transition-transform', !sidebarOpen && 'rotate-180')} />
           </button>
         </div>
 
@@ -76,8 +76,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
                 className={cn(
                   'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200',
                   isActive
-                    ? 'bg-gradient-to-r from-electric/10 to-cyan/10 text-electric dark:text-cyan font-semibold border-r-2 border-electric'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-dark-text'
+                    ? 'bg-gradient-to-r from-[#7C3AED]/10 to-[#06B6D4]/10 text-[#7C3AED] font-semibold border-r-2 border-[#7C3AED]'
+                    : 'text-[#A1A1C2] hover:bg-[#1E1B3A] hover:text-[#F5F3FF]'
                 )}
               >
                 <Icon className="w-5 h-5 flex-shrink-0" />
@@ -87,29 +87,29 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
           })}
         </nav>
 
-        <div className={cn('p-3 border-t border-gray-100 dark:border-dark-border', !sidebarOpen && 'text-center')}>
-          <Link href="/settings" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+        <div className={cn('p-3 border-t border-[#7C3AED]/10', !sidebarOpen && 'text-center')}>
+          <Link href="/settings" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#1E1B3A] transition-colors">
             <Avatar name="أحمد محمد" size="sm" />
             {sidebarOpen && (
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-gray-900 dark:text-dark-text truncate">أحمد محمد</p>
-                <p className="text-xs text-gray-500 truncate">a@example.com</p>
+                <p className="text-sm font-medium text-[#F5F3FF] truncate">أحمد محمد</p>
+                <p className="text-xs text-[#A1A1C2] truncate">a@example.com</p>
               </div>
             )}
           </Link>
         </div>
       </aside>
 
-      <div className="lg:hidden fixed top-0 inset-x-0 h-16 bg-white dark:bg-dark-card border-b border-gray-200 dark:border-dark-border z-30 flex items-center justify-between px-4">
+      <div className="lg:hidden fixed top-0 inset-x-0 h-16 bg-[#0B0A1A] border-b border-[#7C3AED]/10 z-30 flex items-center justify-between px-4">
         <Link href="/ar/dashboard" className="flex items-center gap-3">
           <img src="/logo.svg" alt="MARKETRON" className="w-8 h-8 object-contain" />
-          <span className="font-black text-lg bg-gradient-to-r from-electric to-cyan bg-clip-text text-transparent">MARKETRON</span>
+          <span className="font-black text-lg gradient-brand-text">MARKETRON</span>
         </Link>
         <button
           onClick={() => useSettingsStore.getState().setMobileMenuOpen(true)}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+          className="p-2 hover:bg-[#1E1B3A] rounded-lg"
         >
-          <Menu className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+          <Menu className="w-5 h-5 text-[#A1A1C2]" />
         </button>
       </div>
     </>
@@ -132,14 +132,14 @@ export const MobileNav: React.FC<MobileNavProps> = ({ isOpen, onClose }) => {
       )}
       <div
         className={cn(
-          'fixed top-0 right-0 bottom-0 w-[280px] bg-white dark:bg-dark-card z-50 transform transition-transform duration-300 lg:hidden shadow-2xl',
+          'fixed top-0 right-0 bottom-0 w-[280px] bg-[#0B0A1A] z-50 transform transition-transform duration-300 lg:hidden shadow-2xl',
           isOpen ? 'translate-x-0' : 'translate-x-full'
         )}
       >
-        <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-dark-border">
-          <span className="font-bold text-gray-900 dark:text-dark-text">القائمة</span>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
-            <X className="w-5 h-5 text-gray-500" />
+        <div className="flex items-center justify-between p-4 border-b border-[#7C3AED]/10">
+          <span className="font-bold text-[#F5F3FF]">القائمة</span>
+          <button onClick={onClose} className="p-2 hover:bg-[#1E1B3A] rounded-lg">
+            <X className="w-5 h-5 text-[#A1A1C2]" />
           </button>
         </div>
         <nav className="p-4 space-y-1">
@@ -154,8 +154,8 @@ export const MobileNav: React.FC<MobileNavProps> = ({ isOpen, onClose }) => {
                 className={cn(
                   'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors',
                   isActive
-                    ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    ? 'bg-[#7C3AED]/10 text-[#7C3AED] font-medium'
+                    : 'text-[#A1A1C2] hover:bg-[#1E1B3A]'
                 )}
               >
                 <Icon className="w-5 h-5" />

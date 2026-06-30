@@ -72,12 +72,6 @@ export const config = {
     version: process.env.SWAGGER_VERSION || '1.0.0',
   },
 
-  // OpenAI
-  openai: {
-    apiKey: process.env.OPENAI_API_KEY || '',
-    model: process.env.OPENAI_MODEL || 'gpt-4o',
-  },
-
   // Meta / Facebook / Instagram / Messenger
   meta: {
     pageAccessToken: process.env.FACEBOOK_PAGE_ACCESS_TOKEN || '',
@@ -121,50 +115,10 @@ export const config = {
 
   // ── AI Providers (Multi-Provider Support) ───────────────
   ai: {
-    defaultProvider: process.env.AI_DEFAULT_PROVIDER || 'openai',
+    defaultProvider: process.env.AI_DEFAULT_PROVIDER || 'pollinations',
     providers: {
-      openai: {
-        apiKey: process.env.OPENAI_API_KEY || '',
-        baseUrl: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1',
-        defaultModel: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-      },
-      anthropic: {
-        apiKey: process.env.ANTHROPIC_API_KEY || '',
-        baseUrl: process.env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com',
-        defaultModel: process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet-20241022',
-      },
-      gemini: {
-        apiKey: process.env.GEMINI_API_KEY || '',
-        baseUrl: process.env.GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta',
-        defaultModel: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
-      },
-      groq: {
-        apiKey: process.env.GROQ_API_KEY || '',
-        baseUrl: process.env.GROQ_BASE_URL || 'https://api.groq.com/openai/v1',
-        defaultModel: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
-      },
-      mistral: {
-        apiKey: process.env.MISTRAL_API_KEY || '',
-        baseUrl: process.env.MISTRAL_BASE_URL || 'https://api.mistral.ai/v1',
-        defaultModel: process.env.MISTRAL_MODEL || 'mistral-large-latest',
-      },
-      cohere: {
-        apiKey: process.env.COHERE_API_KEY || '',
-        baseUrl: process.env.COHERE_BASE_URL || 'https://api.cohere.com/v2',
-        defaultModel: process.env.COHERE_MODEL || 'command-r-plus',
-      },
-      deepseek: {
-        apiKey: process.env.DEEPSEEK_API_KEY || '',
-        baseUrl: process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com/v1',
-        defaultModel: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
-      },
-      perplexity: {
-        apiKey: process.env.PERPLEXITY_API_KEY || '',
-        baseUrl: process.env.PERPLEXITY_BASE_URL || 'https://api.perplexity.ai',
-        defaultModel: process.env.PERPLEXITY_MODEL || 'llama-3.1-sonar-large-128k-online',
-      },
       pollinations: {
-        apiKey: process.env.POLLINATIONS_API_KEY || 'sk_k7raJ5yGB7gX2yiG6rNG3lbg04D9kJXA',
+        apiKey: process.env.POLLINATIONS_API_KEY || '',
         baseUrl: process.env.POLLINATIONS_BASE_URL || 'https://gen.pollinations.ai',
         defaultModel: 'openai',
       },
@@ -221,8 +175,6 @@ export const CORS_ORIGIN = config.corsOrigin;
 export const DATABASE_URL = config.database.url;
 export const JWT_ACCESS_SECRET = config.jwt.accessSecret;
 export const JWT_REFRESH_SECRET = config.jwt.refreshSecret;
-export const OPENAI_API_KEY = config.openai.apiKey;
-export const OPENAI_MODEL = config.openai.model;
 export const META_PAGE_ACCESS_TOKEN = config.meta.pageAccessToken;
 export const META_APP_ID = config.meta.appId;
 export const META_APP_SECRET = config.meta.appSecret;

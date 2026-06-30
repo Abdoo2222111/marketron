@@ -15,7 +15,7 @@ export const globalRateLimiter = isTest ? skip : rateLimit({
 
 export const authRateLimiter = isTest ? skip : rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: 20,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, error: 'محاولات تسجيل دخول كثيرة. حاول بعد 15 دقيقة' },
@@ -23,7 +23,7 @@ export const authRateLimiter = isTest ? skip : rateLimit({
 
 export const registerRateLimiter = isTest ? skip : rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 3,
+  max: 10,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, error: 'محاولات تسجيل كثيرة. حاول بعد ساعة' },

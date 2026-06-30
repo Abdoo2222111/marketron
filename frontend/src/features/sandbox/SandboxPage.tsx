@@ -11,6 +11,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { sandboxApi } from '@/services/api-modules';
+import ModelSelector from '@/components/ai/ModelSelector';
+import { chatWithClientAI } from '@/lib/client-ai';
 
 export const SandboxPage: React.FC = () => {
   const [chatMessages, setChatMessages] = useState<{ role: string; content: string }[]>([]);
@@ -26,6 +28,8 @@ export const SandboxPage: React.FC = () => {
   const [enrichLoading, setEnrichLoading] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'chat' | 'campaign' | 'enrich'>('chat');
+  const [sandboxModel, setSandboxModel] = useState({ provider: '', model: '' });
+  const [useSandboxModel, setUseSandboxModel] = useState(false);
 
   const handleSend = async () => {
     if (!chatInput.trim()) return;
@@ -34,10 +38,25 @@ export const SandboxPage: React.FC = () => {
     setChatInput('');
     setChatLoading(true);
     try {
-      const res = await sandboxApi.chat({ message: userMsg, history: chatMessages.slice(-10) });
-      setChatMessages(prev => [...prev, { role: 'assistant', content: res.data?.data?.reply || '...' }]);
-    } catch {
-      setChatMessages(prev => [...prev, { role: 'assistant', content: 'عذراً، حدث خطأ في الاتصال.' }]);
+      let reply = '';
+      if (useSandboxModel && sandboxModel.provider === 'puter') {
+        const messages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [];
+        messages.push(...chatMessages.slice(-10).map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })));
+        messages.push({ role: 'user', content: userMsg });
+        const result = await chatWithClientAI({ messages, provider: 'puter', model: sandboxModel.model || undefined });
+        reply = result.content;
+      } else {
+        const chatOpts: any = { message: userMsg, history: chatMessages.slice(-10) };
+        if (useSandboxModel && sandboxModel.provider) {
+          chatOpts.provider = sandboxModel.provider;
+          chatOpts.model = sandboxModel.model || undefined;
+        }
+        const res = await sandboxApi.chat(chatOpts);
+        reply = res.data?.data?.reply || '...';
+      }
+      setChatMessages(prev => [...prev, { role: 'assistant', content: reply }]);
+    } catch (err: any) {
+      setChatMessages(prev => [...prev, { role: 'assistant', content: `عذراً، حدث خطأ في الاتصال: ${err.message || ''}` }]);
     }
     setChatLoading(false);
   };
@@ -122,6 +141,27 @@ export const SandboxPage: React.FC = () => {
                     <div className="p-3 rounded-xl bg-gray-200 dark:bg-gray-700 flex items-center gap-2 text-sm">
                       <Loader2 className="w-3 h-3 animate-spin" /> الوكيل يكتب...
                     </div>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-2 p-2 bg-[#1E1B3A]/50 rounded-lg mb-2">
+                <input
+                  type="checkbox"
+                  id="use-sandbox-model"
+                  checked={useSandboxModel}
+                  onChange={e => setUseSandboxModel(e.target.checked)}
+                  className="rounded border-[#7C3AED]/30"
+                />
+                <label htmlFor="use-sandbox-model" className="text-xs text-[#A1A1C2] cursor-pointer">تحديد نموذج AI</label>
+                {useSandboxModel && (
+                  <div className="flex-1 max-w-xs mr-auto">
+                    <ModelSelector
+                      value={sandboxModel}
+                      onChange={setSandboxModel}
+                      providerLabel="مزود"
+                      modelLabel="نموذج"
+                      hideLabel
+                    />
                   </div>
                 )}
               </div>

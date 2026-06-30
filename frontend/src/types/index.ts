@@ -200,6 +200,7 @@ export interface CreateCampaignData {
   name: string;
   description?: string;
   platform: PlatformType;
+  pageId?: string;
   objective: CampaignObjective;
   budget: number;
   startDate: string;

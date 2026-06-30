@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/utils/helpers';
 import { aiProvidersApi } from '@/services/api-modules';
+import ModelSelector from '@/components/ai/ModelSelector';
+import { generateClientText, generateClientImage } from '@/lib/client-ai';
 import type {
   AiAdTextResult, AiImageResult,
   AiAnalysisResult, AiRecommendationResult, AiGenerationResult,
@@ -30,6 +32,11 @@ interface GeneratedText extends AiAdTextResult {}
 export const ContentStudioPage: React.FC = () => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabId>('text');
+
+  // ── Model Selection State ──
+  const [textModel, setTextModel] = useState({ provider: '', model: '' });
+  const [imageModel, setImageModel] = useState({ provider: '', model: '' });
+  const [useCustomModel, setUseCustomModel] = useState(false);
 
   // ── Text Generation State ──
   const [textPrompt, setTextPrompt] = useState('');
@@ -69,12 +76,27 @@ export const ContentStudioPage: React.FC = () => {
     setTextLoading(true);
     setError(null);
     try {
-      const res = await aiProvidersApi.generateAdText({
-        prompt: textPrompt,
-        platform: textPlatform || undefined,
-        tone: textTone,
-      });
-      setGeneratedText(res.data?.data || res.data);
+      if (useCustomModel && textModel.provider) {
+        const result = await generateClientText({
+          prompt: textPrompt,
+          provider: textModel.provider,
+          model: textModel.model || undefined,
+          systemPrompt: `توليد نص إعلاني للمنصة: ${textPlatform || 'جميع المنصات'}، النغمة: ${textTone}`,
+        });
+        setGeneratedText({
+          headline: result.text.substring(0, 60) || '',
+          mainText: result.text || '',
+          cta: 'اعرف المزيد',
+          variations: [],
+        });
+      } else {
+        const res = await aiProvidersApi.generateAdText({
+          prompt: textPrompt,
+          platform: textPlatform || undefined,
+          tone: textTone,
+        });
+        setGeneratedText(res.data?.data || res.data);
+      }
     } catch (err: any) {
       const msg = err?.response?.data?.error || 'فشل التوليد النصي';
       setError(msg);
@@ -89,12 +111,42 @@ export const ContentStudioPage: React.FC = () => {
     setImageLoading(true);
     setError(null);
     try {
-      const res = await aiProvidersApi.generateImage({
-        prompt: imagePrompt,
-        style: imageStyle,
-        platform: imagePlatform || undefined,
-      });
-      setGeneratedImage(res.data?.data || res.data);
+      if (useCustomModel && imageModel.provider) {
+        if (imageModel.provider === 'puter') {
+          const result = await generateClientImage({
+            prompt: imagePrompt,
+            provider: imageModel.provider,
+            model: imageModel.model || undefined,
+          });
+          setGeneratedImage({
+            imageUrl: result.imageUrl,
+            thumbnailUrl: result.imageUrl,
+            altText: imagePrompt,
+            style: imageStyle,
+            variations: [],
+          });
+        } else {
+          const res = await aiProvidersApi.generate({
+            prompt: `توليد وصف صورة إعلانية: ${imagePrompt}`,
+            provider: imageModel.provider,
+            model: imageModel.model || undefined,
+          });
+          setGeneratedImage({
+            imageUrl: '',
+            thumbnailUrl: '',
+            altText: imagePrompt,
+            style: imageStyle,
+            variations: [res.data?.data?.text || ''],
+          });
+        }
+      } else {
+        const res = await aiProvidersApi.generateImage({
+          prompt: imagePrompt,
+          style: imageStyle,
+          platform: imagePlatform || undefined,
+        });
+        setGeneratedImage(res.data?.data || res.data);
+      }
     } catch (err: any) {
       const msg = err?.response?.data?.error || 'فشل توليد الصورة';
       setError(msg);
@@ -197,6 +249,25 @@ export const ContentStudioPage: React.FC = () => {
               </select>
             </div>
           </div>
+          <div className="flex items-center gap-2 p-2 bg-[#1E1B3A]/50 rounded-lg">
+            <input
+              type="checkbox"
+              id="use-custom-model-text"
+              checked={useCustomModel}
+              onChange={e => setUseCustomModel(e.target.checked)}
+              className="rounded border-[#7C3AED]/30"
+            />
+            <label htmlFor="use-custom-model-text" className="text-xs text-[#A1A1C2] cursor-pointer">اختيار نموذج AI محدد</label>
+          </div>
+          {useCustomModel && (
+            <ModelSelector
+              value={textModel}
+              onChange={setTextModel}
+              label="نموذج الذكاء الاصطناعي"
+              providerLabel="المزود"
+              modelLabel="النموذج"
+            />
+          )}
           <Button
             onClick={handleGenerateText}
             disabled={textLoading || !textPrompt.trim()}
@@ -367,6 +438,25 @@ export const ContentStudioPage: React.FC = () => {
               </select>
             </div>
           </div>
+          <div className="flex items-center gap-2 p-2 bg-[#1E1B3A]/50 rounded-lg">
+            <input
+              type="checkbox"
+              id="use-custom-model-image"
+              checked={useCustomModel}
+              onChange={e => setUseCustomModel(e.target.checked)}
+              className="rounded border-[#7C3AED]/30"
+            />
+            <label htmlFor="use-custom-model-image" className="text-xs text-[#A1A1C2] cursor-pointer">اختيار نموذج AI محدد</label>
+          </div>
+          {useCustomModel && (
+            <ModelSelector
+              value={imageModel}
+              onChange={setImageModel}
+              label="نموذج الذكاء الاصطناعي"
+              providerLabel="المزود"
+              modelLabel="النموذج"
+            />
+          )}
           <Button
             onClick={handleGenerateImage}
             disabled={imageLoading || !imagePrompt.trim()}

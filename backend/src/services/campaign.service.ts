@@ -294,18 +294,13 @@ export class CampaignService {
         name: true,
         status: true,
         platform: true,
-        budgetAmount: true,
-        budgetCurrency: true,
+        budget: true,
+        spent: true,
         impressions: true,
         clicks: true,
         conversions: true,
-        spend: true,
-        revenue: true,
         ctr: true,
         cpc: true,
-        cpm: true,
-        cpa: true,
-        roas: true,
         createdAt: true,
       },
     });
@@ -315,8 +310,7 @@ export class CampaignService {
     const totalImpressions = campaigns.reduce((sum, c) => sum + Number(c.impressions), 0);
     const totalClicks = campaigns.reduce((sum, c) => sum + Number(c.clicks), 0);
     const totalConversions = campaigns.reduce((sum, c) => sum + Number(c.conversions), 0);
-    const totalSpend = campaigns.reduce((sum, c) => sum + c.spend, 0);
-    const totalRevenue = campaigns.reduce((sum, c) => sum + c.revenue, 0);
+    const totalSpend = campaigns.reduce((sum, c) => sum + (c.spent ?? 0), 0);
 
     const platformBreakdown = this.groupByPlatform(campaigns);
     const statusBreakdown = this.groupByStatus(campaigns);
@@ -329,11 +323,9 @@ export class CampaignService {
         totalClicks,
         totalConversions,
         totalSpend,
-        totalRevenue,
         averageCtr: totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0,
         averageCpc: totalClicks > 0 ? totalSpend / totalClicks : 0,
         averageCpm: totalImpressions > 0 ? (totalSpend / totalImpressions) * 1000 : 0,
-        roas: totalSpend > 0 ? totalRevenue / totalSpend : 0,
       },
       platformBreakdown,
       statusBreakdown,
@@ -353,15 +345,13 @@ export class CampaignService {
           impressions: 0,
           clicks: 0,
           conversions: 0,
-          revenue: 0,
         };
       }
       groups[platform].count++;
-      groups[platform].spend += c.spend;
+      groups[platform].spend += (c.spent ?? 0);
       groups[platform].impressions += Number(c.impressions);
       groups[platform].clicks += Number(c.clicks);
       groups[platform].conversions += Number(c.conversions);
-      groups[platform].revenue += c.revenue;
     }
     return Object.values(groups);
   }
@@ -374,7 +364,7 @@ export class CampaignService {
         groups[status] = { status, count: 0, spend: 0 };
       }
       groups[status].count++;
-      groups[status].spend += c.spend;
+      groups[status].spend += (c.spent ?? 0);
     }
     return Object.values(groups);
   }

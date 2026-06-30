@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   User, Mail, Phone, Building2, Loader2, AlertCircle, Save, Plus, Trash2,
   Link as LinkIcon, CheckCircle2, RefreshCw, MessageCircle, QrCode, Facebook, Instagram, Send, AlertTriangle, Info,
-  Brain, Eye, EyeOff, Cpu, Bot,
+  Brain, Eye, EyeOff, Cpu, Bot, Key, Shield, Search, ExternalLink, Copy,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DashboardShell } from '@/components/layout/DashboardShell';
-import { platformsApi, settingsApi, type PlatformConnection } from '@/services/api-modules';
+import { platformsApi, settingsApi, platformTokensApi, facebookTokenApi, type PlatformConnection } from '@/services/api-modules';
 import { cn } from '@/lib/utils';
 
 const PLATFORMS = [
@@ -21,6 +22,14 @@ const PLATFORMS = [
   { id: 'whatsapp', label: 'واتساب', emoji: '💬', color: 'from-emerald-500 to-green-600', desc: 'ربط واتساب عبر Evolution API (QR Code)' },
   { id: 'telegram', label: 'تيليجرام', emoji: '✈️', color: 'from-cyan-400 to-cyan-600', desc: 'ربط بوت تيليجرام لاستقبال الرسائل' },
 ];
+
+interface FbPageInfo {
+  id: string;
+  name: string;
+  accessToken: string;
+  category?: string;
+  picture?: { data: { url: string } };
+}
 
 const STATUS_BADGES: Record<string, { label: string; variant: 'success' | 'warning' | 'destructive' | 'secondary' }> = {
   active: { label: 'نشط', variant: 'success' },
@@ -56,6 +65,18 @@ export default function SettingsPage({ params: { locale } }: { params: { locale:
   const [tgToken, setTgToken] = useState('');
 
   const [connecting, setConnecting] = useState<string | null>(null);
+  const [fbPages, setFbPages] = useState<FbPageInfo[]>([]);
+  const [loadingPages, setLoadingPages] = useState(false);
+
+  const fetchFbPages = async () => {
+    setLoadingPages(true);
+    try {
+      const res = await fetch('/api/v1/platforms/facebook/pages');
+      const data = await res.json();
+      if (data.data) setFbPages(data.data);
+    } catch {}
+    finally { setLoadingPages(false); }
+  };
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
@@ -64,13 +85,30 @@ export default function SettingsPage({ params: { locale } }: { params: { locale:
       return;
     }
     loadConnections();
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('fb_success') === 'true') {
+      const tokenFromUrl = params.get('fb_token');
+      if (tokenFromUrl) {
+        setFbToken(tokenFromUrl);
+        setTimeout(() => handleConnectFacebookWithToken(tokenFromUrl), 500);
+      }
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+    if (params.get('fb_error')) {
+      setError(params.get('fb_error'));
+      window.history.replaceState({}, '', window.location.pathname);
+    }
   }, []);
 
   const loadConnections = async () => {
     try {
       setLoading(true);
       const res = await platformsApi.list();
-      setConnections(res.data?.data || []);
+      const conns = res.data?.data || [];
+      setConnections(conns);
+      const fbConn = conns.find((c: PlatformConnection) => c.platform === 'facebook');
+      if (fbConn?.status === 'active') fetchFbPages();
     } catch (err: any) {
       setError(err?.response?.data?.error || 'فشل التحميل');
     } finally {
@@ -84,14 +122,29 @@ export default function SettingsPage({ params: { locale } }: { params: { locale:
   };
 
   // ── Connect Facebook ───────────────────────────────────
-  const handleConnectFacebook = async () => {
-    if (!fbToken.trim()) return;
+  const handleConnectFacebook = async (token?: string, pageId?: string) => {
+    const t = token || fbToken;
+    if (!t?.trim()) return;
     setConnecting('facebook');
     setError(null);
     try {
-      await platformsApi.connectFacebook(fbToken, fbPageId || undefined);
+      await platformsApi.connectFacebook(t, pageId || fbPageId || undefined);
       setFbToken('');
       setFbPageId('');
+      await loadConnections();
+      showSuccess('تم ربط فيسبوك بنجاح!');
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'فشل الربط');
+    } finally {
+      setConnecting(null);
+    }
+  };
+
+  const handleConnectFacebookWithToken = async (token: string) => {
+    setConnecting('facebook');
+    setError(null);
+    try {
+      await platformsApi.connectFacebook(token, undefined);
       await loadConnections();
       showSuccess('تم ربط فيسبوك بنجاح!');
     } catch (err: any) {
@@ -227,6 +280,8 @@ export default function SettingsPage({ params: { locale } }: { params: { locale:
             { id: 'profile', label: 'الملف الشخصي', icon: User },
             { id: 'ai-providers', label: 'مزودات الذكاء', icon: Brain },
             { id: 'ai-keys', label: 'مفاتيح API', icon: Cpu },
+            { id: 'platform-tokens', label: 'توكنات الإعلانات', icon: Key },
+            { id: 'facebook-inspector', label: 'فحص توكن فيسبوك', icon: Shield },
             { id: 'personas', label: 'شخصيات AI', icon: Bot },
             { id: 'billing', label: 'الرصيد والفواتير', icon: Building2 },
           ].map(t => {
@@ -311,6 +366,34 @@ export default function SettingsPage({ params: { locale } }: { params: { locale:
                                       <span className={cn('text-xs', new Date(conn.tokenExpiresAt) < new Date() ? 'text-[#F43F5E] font-bold' : '')}>
                                     {formatDate(conn.tokenExpiresAt)}
                                   </span>
+                                </div>
+                              )}
+                              {/* Connected Pages */}
+                              {p.id === 'facebook' && conn.status === 'active' && fbPages.length > 0 && (
+                                <div className="border-t border-[#7C3AED]/10 pt-2 mt-2">
+                                  <p className="text-xs text-[#A1A1C2] mb-2">الصفحات المتصلة ({fbPages.length})</p>
+                                  <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                                    {fbPages.map(page => (
+                                      <div key={page.id} className="flex items-center gap-2 bg-[#14102B] rounded-lg p-1.5">
+                                        {page.picture?.data?.url ? (
+                                          <img src={page.picture.data.url} alt="" className="w-6 h-6 rounded-full" />
+                                        ) : (
+                                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#7C3AED] to-[#06B6D4] flex items-center justify-center text-[10px] text-white font-bold">
+                                            {page.name?.[0]}
+                                          </div>
+                                        )}
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-xs font-medium truncate">{page.name}</p>
+                                          <p className="text-[10px] text-[#A1A1C2] truncate">{page.category || ''}</p>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {p.id === 'facebook' && conn.status === 'active' && loadingPages && (
+                                <div className="flex items-center gap-2 text-xs text-[#A1A1C2] py-1">
+                                  <Loader2 className="w-3 h-3 animate-spin" /> جاري تحميل الصفحات...
                                 </div>
                               )}
                             </div>
@@ -405,14 +488,14 @@ export default function SettingsPage({ params: { locale } }: { params: { locale:
                                 onChange={e => setFbPageId(e.target.value)}
                                 className="text-xs"
                               />
-                              <Button
-                                size="sm"
-                                className="w-full gradient-brand text-white border-0"
-                                onClick={handleConnectFacebook}
-                                disabled={isConnecting || !fbToken.trim()}
-                              >
-                                {isConnecting ? <Loader2 className="w-4 h-4 ml-1 animate-spin" /> : <Facebook className="w-4 h-4 ml-1" />}
-                                ربط فيسبوك
+      <Button
+          size="sm"
+          className="w-full gradient-brand text-white border-0"
+          onClick={() => handleConnectFacebook()}
+          disabled={isConnecting || !fbToken.trim()}
+        >
+          {isConnecting ? <Loader2 className="w-4 h-4 ml-1 animate-spin" /> : <Facebook className="w-4 h-4 ml-1" />}
+          ربط فيسبوك
                               </Button>
                               <p className="text-[10px] text-[#A1A1C2] text-center">
                                 احصل على Token من Facebook Developers → Graph API Explorer
@@ -517,6 +600,12 @@ export default function SettingsPage({ params: { locale } }: { params: { locale:
         {/* ── AI Keys (BYOK) Tab ── */}
         {tab === 'ai-keys' && <AiKeysTab />}
 
+        {/* ── Platform Tokens Tab ── */}
+        {tab === 'platform-tokens' && <PlatformTokensTab />}
+
+        {/* ── Facebook Token Inspector Tab ── */}
+        {tab === 'facebook-inspector' && <FacebookInspectorTab />}
+
         {/* ── Personas Tab ── */}
         {tab === 'personas' && <PersonasTab />}
 
@@ -526,6 +615,368 @@ export default function SettingsPage({ params: { locale } }: { params: { locale:
         )}
       </div>
     </DashboardShell>
+  );
+}
+
+// ── Platform Tokens Component (Social Ad Platform Keys) ───
+const AD_PLATFORMS = [
+  { id: 'facebook', label: 'فيسبوك / ميتا', icon: '📘', color: 'from-blue-600 to-blue-800', desc: 'Page Access Token لإدارة الإعلانات والصفحات', docUrl: 'https://developers.facebook.com/docs/facebook-login/access-tokens' },
+  { id: 'instagram', label: 'إنستجرام', icon: '📸', color: 'from-pink-500 via-rose-500 to-orange-500', desc: 'Instagram Graph API Token للرسائل والإعلانات', docUrl: 'https://developers.facebook.com/docs/instagram-api' },
+  { id: 'google', label: 'Google Ads', icon: '🔵', color: 'from-blue-400 to-blue-600', desc: 'Google Ads API Token (OAuth 2.0)', docUrl: 'https://developers.google.com/google-ads/api/docs/oauth/overview' },
+  { id: 'tiktok', label: 'TikTok', icon: '🎵', color: 'from-gray-800 to-gray-900', desc: 'TikTok Business API Access Token', docUrl: 'https://developers.tiktok.com/' },
+  { id: 'snapchat', label: 'Snapchat', icon: '👻', color: 'from-yellow-300 to-yellow-500', desc: 'Snapchat Ads API Access Token', docUrl: 'https://developers.snap.com/api/advertising' },
+  { id: 'twitter', label: 'Twitter / X', icon: '🐦', color: 'from-sky-400 to-sky-600', desc: 'X Ads API Token', docUrl: 'https://developer.x.com/' },
+  { id: 'pinterest', label: 'Pinterest', icon: '📌', color: 'from-red-500 to-red-700', desc: 'Pinterest Ads API Token', docUrl: 'https://developers.pinterest.com/' },
+];
+
+function PlatformTokensTab() {
+  const [tokens, setTokens] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [formData, setFormData] = useState<Record<string, { accessToken: string; label: string }>>({});
+  const [validating, setValidating] = useState<string | null>(null);
+  const [validationResult, setValidationResult] = useState<Record<string, any>>({});
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  useEffect(() => { loadTokens(); }, []);
+
+  const loadTokens = async () => {
+    try {
+      setLoading(true);
+      const res = await platformTokensApi.list();
+      setTokens(res.data?.data || []);
+    } catch { setError('فشل تحميل التوكنات'); }
+    finally { setLoading(false); }
+  };
+
+  const handleSave = async (platform: string) => {
+    const data = formData[platform];
+    if (!data?.accessToken) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await platformTokensApi.upsert(platform, data);
+      setEditing(null);
+      setSuccess('تم حفظ التوكن بنجاح');
+      setTimeout(() => setSuccess(null), 3000);
+      await loadTokens();
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'فشل حفظ التوكن');
+    } finally { setSaving(false); }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('هل أنت متأكد من حذف هذا التوكن؟')) return;
+    try {
+      await platformTokensApi.delete(id);
+      await loadTokens();
+      setSuccess('تم حذف التوكن');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch { setError('فشل حذف التوكن'); }
+  };
+
+  const handleValidate = async (platform: string) => {
+    setValidating(platform);
+    try {
+      const res = await platformTokensApi.validate(platform);
+      setValidationResult(prev => ({ ...prev, [platform]: res.data?.data }));
+    } catch (err: any) {
+      setValidationResult(prev => ({ ...prev, [platform]: { valid: false, error: err?.response?.data?.error || 'فشل التحقق' } }));
+    } finally { setValidating(null); }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-bold">توكنات منصات الإعلانات</h2>
+        <p className="text-sm text-[#A1A1C2]">قم بإضافة توكنات API لمنصات الإعلانات المختلفة لتتمكن من إدارة حملاتك مباشرة من MARKETRON</p>
+      </div>
+
+      {error && <div className="bg-[#F43F5E]/10 border border-[#F43F5E]/20 rounded-xl p-3 flex items-center gap-2 text-sm text-[#F43F5E]"><AlertCircle className="w-4 h-4" />{error}</div>}
+      {success && <div className="bg-[#10B981]/10 border border-[#10B981]/20 rounded-xl p-3 flex items-center gap-2 text-sm text-[#10B981]"><CheckCircle2 className="w-4 h-4" />{success}</div>}
+
+      {loading ? (
+        <div className="flex items-center justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-[#7C3AED]" /></div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {AD_PLATFORMS.map(p => {
+            const token = tokens.find(t => t.platform === p.id);
+            const isEditing = editing === p.id;
+            const result = validationResult[p.id];
+            return (
+              <Card key={p.id} className={cn('overflow-hidden', token && 'ring-2 ring-[#10B981]/50')}>
+                <div className={cn('h-2 bg-gradient-to-r', p.color)} />
+                <CardContent className="p-5">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className={cn('w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center text-2xl', p.color)}>{p.icon}</div>
+                      <div>
+                        <h3 className="font-bold">{p.label}</h3>
+                        <p className="text-xs text-[#A1A1C2]">{p.desc}</p>
+                      </div>
+                    </div>
+                    {token ? (
+                      <Badge variant="success" className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> مضاف</Badge>
+                    ) : (
+                      <Badge variant="secondary">غير مضاف</Badge>
+                    )}
+                  </div>
+
+                  {isEditing ? (
+                    <div className="space-y-3 mt-4">
+                      <div>
+                        <Label>Access Token</Label>
+                        <Input
+                          type="password"
+                          value={formData[p.id]?.accessToken || ''}
+                          onChange={e => setFormData(prev => ({ ...prev, [p.id]: { ...prev[p.id], accessToken: e.target.value, label: prev[p.id]?.label || p.label } }))}
+                          placeholder={`أدخل ${p.label} Access Token`}
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={() => handleSave(p.id)} disabled={saving || !formData[p.id]?.accessToken}>
+                          {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />} حفظ
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setEditing(null)}>إلغاء</Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <Button size="sm" variant="outline" onClick={() => {
+                        setEditing(p.id);
+                        setFormData(prev => ({ ...prev, [p.id]: { accessToken: token?.accessToken || '', label: token?.label || p.label } }));
+                      }}>
+                        {token ? 'تحديث' : 'إضافة'} التوكن
+                      </Button>
+                      {token && (
+                        <>
+                          <Button size="sm" variant="outline" onClick={() => handleValidate(p.id)} disabled={validating === p.id}>
+                            {validating === p.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Search className="w-3 h-3" />} تحقق
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => handleDelete(token.id)}>
+                            <Trash2 className="w-3 h-3" /> حذف
+                          </Button>
+                        </>
+                      )}
+                      <a href={p.docUrl} target="_blank" rel="noopener noreferrer">
+                        <Button size="sm" variant="ghost"><ExternalLink className="w-3 h-3" /> كيف أحصل على التوكن؟</Button>
+                      </a>
+                    </div>
+                  )}
+
+                  {result && (
+                    <div className={cn('mt-3 p-3 rounded-lg text-sm', result.valid ? 'bg-[#10B981]/10 text-[#10B981]' : 'bg-[#F43F5E]/10 text-[#F43F5E]')}>
+                      {result.valid ? (
+                        <div className="space-y-1">
+                          <p className="font-medium flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> التوكن صالح</p>
+                          {result.pages?.length > 0 && <p>الصفحات: {result.pages.map((p: any) => p.name).join(', ')}</p>}
+                          {result.adAccounts?.length > 0 && <p>حسابات الإعلانات: {result.adAccounts.map((a: any) => a.name).join(', ')}</p>}
+                          {result.expiresAt && <p>تاريخ الانتهاء: {new Date(result.expiresAt).toLocaleDateString('ar-EG')}</p>}
+                        </div>
+                      ) : (
+                        <p className="flex items-center gap-1"><AlertCircle className="w-3.5 h-3.5" /> {result.error || 'التوكن غير صالح'}</p>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Facebook Token Inspector Component ─────────────────
+function FacebookInspectorTab() {
+  const [token, setToken] = useState('');
+  const [inspecting, setInspecting] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleInspect = async () => {
+    if (!token.trim()) return;
+    setInspecting(true);
+    setError(null);
+    setResult(null);
+    try {
+      const res = await facebookTokenApi.inspect(token);
+      setResult(res.data?.data);
+      if (!res.data?.data?.valid) {
+        setError(res.data?.data?.error || 'التوكن غير صالح');
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'فشل فحص التوكن');
+    } finally { setInspecting(false); }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-bold">🔍 فحص توكن فيسبوك</h2>
+        <p className="text-sm text-[#A1A1C2]">أدخل Facebook Access Token لفحص صلاحيته والحصول على معلومات مفصلة عنه</p>
+      </div>
+
+      <Card>
+        <CardContent className="p-5 space-y-4">
+          <div>
+            <Label>Facebook Access Token</Label>
+            <div className="flex gap-2 mt-1">
+              <Input
+                type="password"
+                value={token}
+                onChange={e => setToken(e.target.value)}
+                placeholder="أدخل Facebook Access Token..."
+                className="flex-1"
+                onKeyDown={e => e.key === 'Enter' && handleInspect()}
+              />
+              <Button onClick={handleInspect} disabled={inspecting || !token.trim()}>
+                {inspecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                فحص
+              </Button>
+            </div>
+          </div>
+
+          <div className="bg-[#1E1B3A]/50 rounded-lg p-3 text-sm text-[#A1A1C2] space-y-1">
+            <p className="font-medium text-[#E2E8F0]">💡 كيف تحصل على التوكن؟</p>
+            <p>1. اذهب إلى <a href="https://developers.facebook.com/tools/access_token" target="_blank" rel="noopener noreferrer" className="text-[#7C3AED] underline">Facebook Access Token Tool</a></p>
+            <p>2. اختر التطبيق المناسب</p>
+            <p>3. انسخ الـ Token<br />أو استخدم <a href="https://developers.facebook.com/tools/debug/accesstoken" target="_blank" rel="noopener noreferrer" className="text-[#7C3AED] underline">Token Debugger</a> للتحقق أولاً</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {inspecting && (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="w-8 h-8 animate-spin text-[#7C3AED]" />
+        </div>
+      )}
+
+      {error && !inspecting && (
+        <div className="bg-[#F43F5E]/10 border border-[#F43F5E]/20 rounded-xl p-4">
+          <div className="flex items-center gap-2 text-[#F43F5E]">
+            <AlertCircle className="w-5 h-5" />
+            <span className="font-medium">التوكن غير صالح</span>
+          </div>
+          <p className="text-sm text-[#F43F5E]/80 mt-1">{error}</p>
+        </div>
+      )}
+
+      {result?.valid && !inspecting && (
+        <div className="space-y-4">
+          {/* Token Status */}
+          <Card>
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-[#10B981]/20 flex items-center justify-center">
+                  <CheckCircle2 className="w-6 h-6 text-[#10B981]" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg">التوكن صالح ✅</h3>
+                  <p className="text-sm text-[#A1A1C2]">تم فحص التوكن بنجاح</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-[#1E1B3A]/50 rounded-lg p-3">
+                  <p className="text-xs text-[#A1A1C2]">App ID</p>
+                  <p className="font-mono text-sm flex items-center gap-2">
+                    {result.appId || 'غير معروف'}
+                    {result.appId && (
+                      <button onClick={() => copyToClipboard(result.appId)} className="text-[#7C3AED] hover:text-[#7C3AED]/80">
+                        {copied ? <CheckCircle2 className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      </button>
+                    )}
+                  </p>
+                </div>
+                <div className="bg-[#1E1B3A]/50 rounded-lg p-3">
+                  <p className="text-xs text-[#A1A1C2]">App Name</p>
+                  <p className="text-sm">{result.appName || 'غير معروف'}</p>
+                </div>
+                <div className="bg-[#1E1B3A]/50 rounded-lg p-3">
+                  <p className="text-xs text-[#A1A1C2]">User ID</p>
+                  <p className="font-mono text-sm">{result.userId || 'غير معروف'}</p>
+                </div>
+                <div className="bg-[#1E1B3A]/50 rounded-lg p-3">
+                  <p className="text-xs text-[#A1A1C2]">User Name</p>
+                  <p className="text-sm">{result.userName || 'غير معروف'}</p>
+                </div>
+                <div className="bg-[#1E1B3A]/50 rounded-lg p-3 sm:col-span-2">
+                  <p className="text-xs text-[#A1A1C2]">تاريخ الانتهاء</p>
+                  <p className="text-sm">{result.expiresAt ? new Date(result.expiresAt).toLocaleString('ar-EG') : 'لا ينتهي (Never Expires)'}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Permissions / Scopes */}
+          {result.scopes?.length > 0 && (
+            <Card>
+              <CardContent className="p-5">
+                <h3 className="font-bold mb-3 flex items-center gap-2"><Shield className="w-4 h-4" /> الصلاحيات ({result.scopes.length})</h3>
+                <div className="flex flex-wrap gap-2">
+                  {result.scopes.map((scope: string, i: number) => (
+                    <Badge key={i} variant="secondary" className="text-xs">{scope}</Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Pages */}
+          {result.pages?.length > 0 && (
+            <Card>
+              <CardContent className="p-5">
+                <h3 className="font-bold mb-3 flex items-center gap-2"><Facebook className="w-4 h-4" /> الصفحات ({result.pages.length})</h3>
+                <div className="space-y-2">
+                  {result.pages.map((page: any, i: number) => (
+                    <div key={i} className="bg-[#1E1B3A]/50 rounded-lg p-3 flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-sm">{page.name}</p>
+                        <p className="text-xs text-[#A1A1C2]">ID: {page.id}</p>
+                        {page.category && <p className="text-xs text-[#A1A1C2]">{page.category}</p>}
+                      </div>
+                      {page.accessToken && (
+                        <Button size="sm" variant="ghost" onClick={() => copyToClipboard(page.accessToken)}>
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Ad Accounts */}
+          {result.adAccounts?.length > 0 && (
+            <Card>
+              <CardContent className="p-5">
+                <h3 className="font-bold mb-3 flex items-center gap-2"><Building2 className="w-4 h-4" /> حسابات الإعلانات ({result.adAccounts.length})</h3>
+                <div className="space-y-2">
+                  {result.adAccounts.map((acc: any, i: number) => (
+                    <div key={i} className="bg-[#1E1B3A]/50 rounded-lg p-3">
+                      <p className="font-medium text-sm">{acc.name}</p>
+                      <p className="text-xs text-[#A1A1C2]">ID: {acc.id}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -542,6 +993,8 @@ interface AiProviderConfig {
 }
 
 const AI_PROVIDER_META: Record<string, { icon: string; color: string; desc: string }> = {
+  zen: { icon: '🧘', color: 'from-indigo-500 to-purple-600', desc: 'OpenCode Zen — GPT-5.4, GPT-5-mini' },
+  puter: { icon: '📦', color: 'from-orange-400 to-red-500', desc: 'Puter.js — GPT-4o, Claude 3.5 (بدون مفتاح)' },
   openai: { icon: '⚡', color: 'from-emerald-500 to-teal-600', desc: 'GPT-4o, GPT-4o-mini' },
   anthropic: { icon: '🌿', color: 'from-amber-500 to-orange-600', desc: 'Claude 3.5 Sonnet, Haiku' },
   gemini: { icon: '🔮', color: 'from-blue-400 to-indigo-600', desc: 'Gemini 1.5 Flash, Pro' },
@@ -751,10 +1204,25 @@ function ProfileTab() {
   const [phone, setPhone] = useState('');
   const [company, setCompany] = useState('');
   const [email, setEmail] = useState('');
+  const [currency, setCurrency] = useState('SAR');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  const currencies = [
+    { value: 'SAR', label: 'ريال سعودي (SAR)', flag: '🇸🇦' },
+    { value: 'AED', label: 'درهم إماراتي (AED)', flag: '🇦🇪' },
+    { value: 'EGP', label: 'جنيه مصري (EGP)', flag: '🇪🇬' },
+    { value: 'USD', label: 'دولار أمريكي (USD)', flag: '🇺🇸' },
+    { value: 'EUR', label: 'يورو (EUR)', flag: '🇪🇺' },
+    { value: 'GBP', label: 'جنيه إسترليني (GBP)', flag: '🇬🇧' },
+    { value: 'QAR', label: 'ريال قطري (QAR)', flag: '🇶🇦' },
+    { value: 'KWD', label: 'دينار كويتي (KWD)', flag: '🇰🇼' },
+    { value: 'BHD', label: 'دينار بحريني (BHD)', flag: '🇧🇭' },
+    { value: 'OMR', label: 'ريال عماني (OMR)', flag: '🇴🇲' },
+    { value: 'TRY', label: 'ليرة تركية (TRY)', flag: '🇹🇷' },
+  ];
 
   useEffect(() => {
     (async () => {
@@ -766,6 +1234,7 @@ function ProfileTab() {
         setPhone(u.phone || '');
         setCompany(u.company || '');
         setEmail(u.email || '');
+        setCurrency(u.currency || 'SAR');
       } catch { /* ignore */ }
       finally { setLoading(false); }
     })();
@@ -776,7 +1245,7 @@ function ProfileTab() {
     setError(null);
     try {
       const api = (await import('@/services/api')).default;
-      const res = await api.put('/auth/me', { name, phone, company });
+      const res = await api.put('/auth/me', { name, phone, company, currency });
       if (res.data?.success || res.status === 200) {
         setSuccess('تم حفظ التغييرات بنجاح');
         setTimeout(() => setSuccess(null), 4000);
@@ -823,6 +1292,18 @@ function ProfileTab() {
             <Label>اسم الشركة</Label>
             <Input placeholder="اسم شركتك" value={company} onChange={e => setCompany(e.target.value)} />
           </div>
+          <div>
+            <Label>العملة</Label>
+            <select
+              value={currency}
+              onChange={e => setCurrency(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl border border-[#7C3AED]/20 bg-[#0B0A1A] text-[#F5F3FF] focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/30"
+            >
+              {currencies.map(c => (
+                <option key={c.value} value={c.value}>{c.flag} {c.label}</option>
+              ))}
+            </select>
+          </div>
         </div>
         <Button className="gradient-brand text-white border-0" onClick={handleSave} disabled={saving}>
           {saving ? <Loader2 className="w-4 h-4 ml-1 animate-spin" /> : <Save className="w-4 h-4 ml-1" />}
@@ -835,6 +1316,7 @@ function ProfileTab() {
 
 // ── AI Keys (BYOK) Component ──────────────────────────────
 const BYOK_PROVIDER_META: Record<string, { icon: string; color: string; desc: string }> = {
+  zen: { icon: '🧘', color: 'from-indigo-500 to-purple-600', desc: 'OpenCode Zen — GPT-5.5, GPT-5.4 (الرئيسي)' },
   openai: { icon: '⚡', color: 'from-emerald-500 to-teal-600', desc: 'GPT-4o, DALL-E 3' },
   anthropic: { icon: '🌿', color: 'from-amber-500 to-orange-600', desc: 'Claude 3.5 Sonnet' },
   openrouter: { icon: '🌐', color: 'from-blue-500 to-indigo-600', desc: 'بوابة موحدة لعشرات الموديلات' },
@@ -921,7 +1403,7 @@ function AiKeysTab() {
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {/* Pollinations - always active, no delete */}
+          {/* Pollinations - always active, no delete */}
         <Card className="overflow-hidden ring-2 ring-[#06B6D4]/50">
           <div className="h-1.5 bg-gradient-to-r from-pink-400 to-rose-500" />
           <CardContent className="p-4">
@@ -936,6 +1418,24 @@ function AiKeysTab() {
               <Badge variant="success" className="text-xs">مفعّل دائماً</Badge>
             </div>
             <div className="text-[10px] text-[#A1A1C2] mt-2 border-t pt-2">المحرك الافتراضي المجاني — لا يحتاج مفتاح</div>
+          </CardContent>
+        </Card>
+
+        {/* Puter.js - always available, no API key needed */}
+        <Card className="overflow-hidden ring-2 ring-[#F59E0B]/40">
+          <div className="h-1.5 bg-gradient-to-r from-orange-400 to-red-500" />
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center text-xl">📦</div>
+                <div>
+                  <h3 className="font-bold text-sm">Puter.js</h3>
+                  <p className="text-xs text-[#A1A1C2]">GPT-4o, Claude 3.5 Sonnet, Gemini 1.5 Pro (بدون مفتاح)</p>
+                </div>
+              </div>
+              <Badge variant="success" className="text-xs">مفعّل دائماً</Badge>
+            </div>
+            <div className="text-[10px] text-[#A1A1C2] mt-2 border-t pt-2">ذكاء اصطناعي مجاني عن طريق المتصفح — ابدأ بالاستخدام فوراً</div>
           </CardContent>
         </Card>
 

@@ -45,8 +45,6 @@
 @layer base {
   * {
     @apply border-border;
-    scrollbar-width: thin;
-    scrollbar-color: #2D2466 #0B0A1A;
   }
   body {
     @apply bg-[#0B0A1A] text-[#F5F3FF] antialiased;
@@ -160,7 +158,43 @@
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: #0B0A1A; }
 ::-webkit-scrollbar-thumb { background: #2D2466; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #4C1D95; }
+::-webkit-scrollbar-thumb:hover { background: #7C3AED; }
+* { scrollbar-width: thin; scrollbar-color: #2D2466 #0B0A1A; }
+
+/* Noise texture overlay */
+.noise-overlay::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.015;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+/* Glass morphism utility */
+.glass-panel {
+  background: rgba(20, 16, 43, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(124, 58, 237, 0.1);
+  box-shadow: 0 8px 32px rgba(124, 58, 237, 0.08);
+}
+
+/* Selection style */
+::selection {
+  background: rgba(124, 58, 237, 0.3);
+  color: #F5F3FF;
+}
+
+/* Focus ring */
+*:focus-visible {
+  outline: 2px solid #7C3AED;
+  outline-offset: 2px;
+  border-radius: 8px;
+}
 
 /* NProgress */
 #nprogress .bar {

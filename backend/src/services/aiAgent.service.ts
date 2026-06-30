@@ -102,7 +102,7 @@ export class AiAgentService {
         userId,
         role: 'assistant',
         content: aiResponse,
-        metadata: JSON.stringify({ modelUsed: agent.modelName, tokensUsed: Math.floor(Math.random() * 500) + 100 }),
+        metadata: JSON.stringify({ modelUsed: agent.model, tokensUsed: Math.floor(Math.random() * 500) + 100 }),
       },
     });
 

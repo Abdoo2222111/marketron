@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { motion, useInView } from 'framer-motion';
 import {
   TrendingUp, TrendingDown, DollarSign, Eye, MousePointerClick,
   Target, Plus, Search, Users, BarChart3, Megaphone, Bell,
-  AlertCircle, Clock, Loader2, ArrowUpRight,
-  MessageCircle, AlertTriangle, Sparkles,
+  AlertCircle, Clock, Loader2, ArrowUpRight, RefreshCw,
+  MessageCircle, AlertTriangle, Sparkles, Activity,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -29,12 +29,14 @@ const platformColors: Record<string, string> = {
   snapchat: 'bg-yellow-400', whatsapp: 'bg-emerald-500', messenger: 'bg-blue-500',
   twitter: 'bg-sky-500', telegram: 'bg-cyan-500',
 };
+
 const platformLabels: Record<string, Record<string, string>> = {
   ar: { facebook: 'فيسبوك', instagram: 'انستجرام', tiktok: 'تيك توك', snapchat: 'سناب شات', whatsapp: 'واتساب', messenger: 'ماسنجر', twitter: 'تويتر', telegram: 'تيليجرام' },
   en: { facebook: 'Facebook', instagram: 'Instagram', tiktok: 'TikTok', snapchat: 'Snapchat', whatsapp: 'WhatsApp', messenger: 'Messenger', twitter: 'Twitter', telegram: 'Telegram' },
   fr: { facebook: 'Facebook', instagram: 'Instagram', tiktok: 'TikTok', snapchat: 'Snapchat', whatsapp: 'WhatsApp', messenger: 'Messenger', twitter: 'Twitter', telegram: 'Telegram' },
   tr: { facebook: 'Facebook', instagram: 'Instagram', tiktok: 'TikTok', snapchat: 'Snapchat', whatsapp: 'WhatsApp', messenger: 'Messenger', twitter: 'Twitter', telegram: 'Telegram' },
 };
+
 const statusLabels: Record<string, Record<string, string>> = {
   ar: { active: 'نشط', paused: 'متوقف', draft: 'مسودة', completed: 'مكتمل', draft_pending_approval: 'بانتظار الموافقة', approved: 'معتمد', published: 'منشور' },
   en: { active: 'Active', paused: 'Paused', draft: 'Draft', completed: 'Completed', draft_pending_approval: 'Pending Approval', approved: 'Approved', published: 'Published' },
@@ -44,43 +46,101 @@ const statusLabels: Record<string, Record<string, string>> = {
 
 const neonColors = ['#7C3AED', '#06B6D4', '#EC4899', '#F59E0B', '#10B981', '#3B82F6'];
 
+function AnimatedCounter({ value, format = 'number' }: { value: number; format?: 'number' | 'currency' }) {
+  const [display, setDisplay] = useState(0);
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true });
+  const startTime = useRef<number>(0);
+  const duration = 1200;
+
+  useEffect(() => {
+    if (!inView) return;
+    startTime.current = Date.now();
+    const animate = () => {
+      const elapsed = Date.now() - startTime.current;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplay(Math.round(eased * value));
+      if (progress < 1) requestAnimationFrame(animate);
+    };
+    requestAnimationFrame(animate);
+  }, [inView, value]);
+
+  const formatted = format === 'currency'
+    ? formatCurrency(display)
+    : formatNumber(display);
+
+  return <span ref={ref}>{formatted}</span>;
+}
+
+function StatusPill({ text, loading = false }: { text: string; loading?: boolean }) {
+  return (
+    <div className="inline-flex items-center gap-1.5 text-[11px] text-[#A1A1C2] bg-[#1E1B3A] px-3 py-1 rounded-full border border-[#7C3AED]/10">
+      {loading ? (
+        <Loader2 className="w-3 h-3 animate-spin text-[#7C3AED]" />
+      ) : (
+        <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.5)]" />
+      )}
+      {text}
+    </div>
+  );
+}
+
 export default function DashboardPage({ params: { locale } }: { params: { locale: string } }) {
   const { t, direction } = useLocalization();
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
   const platformLabel = platformLabels[locale] || platformLabels.ar;
   const statusLabel = statusLabels[locale] || statusLabels.ar;
 
+  const hours = new Date().getHours();
+  const greeting = hours < 12 ? 'صباح الخير' : hours < 18 ? 'مساء الخير' : 'مساء الخير';
+
   const stats = useMemo(() => [
-    { title: t('nav.campaigns') || 'الحملات', icon: <Megaphone className="w-5 h-5" />, gradient: 'from-[#7C3AED] to-[#A78BFA]' },
-    { title: t('dashboard.totalSpend') || 'الإنفاق', icon: <DollarSign className="w-5 h-5" />, gradient: 'from-[#EC4899] to-[#F472B6]' },
-    { title: t('dashboard.impressions') || 'مرات الظهور', icon: <Eye className="w-5 h-5" />, gradient: 'from-[#06B6D4] to-[#22D3EE]' },
-    { title: t('dashboard.clicks') || 'النقرات', icon: <MousePointerClick className="w-5 h-5" />, gradient: 'from-[#F59E0B] to-[#FBBF24]' },
-    { title: t('dashboard.conversions') || 'التحويلات', icon: <Target className="w-5 h-5" />, gradient: 'from-[#10B981] to-[#34D399]' },
+    { title: t('nav.campaigns') || 'الحملات', icon: <Megaphone className="w-5 h-5" />, gradient: 'from-[#7C3AED] to-[#A78BFA]', change: '+12%' },
+    { title: t('dashboard.totalSpend') || 'الإنفاق', icon: <DollarSign className="w-5 h-5" />, gradient: 'from-[#EC4899] to-[#F472B6]', change: '+8%' },
+    { title: t('dashboard.impressions') || 'مرات الظهور', icon: <Eye className="w-5 h-5" />, gradient: 'from-[#06B6D4] to-[#22D3EE]', change: '+23%' },
+    { title: t('dashboard.clicks') || 'النقرات', icon: <MousePointerClick className="w-5 h-5" />, gradient: 'from-[#F59E0B] to-[#FBBF24]', change: '+15%' },
+    { title: t('dashboard.conversions') || 'التحويلات', icon: <Target className="w-5 h-5" />, gradient: 'from-[#10B981] to-[#34D399]', change: '+7%' },
   ], [t]);
+
+  const loadData = useCallback(async (silent = false) => {
+    if (!silent) { setLoading(true); }
+    setError(null);
+    try {
+      const [overviewRes, campaignsRes, notifRes] = await Promise.allSettled([
+        analyticsApi.getOverview(), campaignsApi.list({ limit: 5 }), notificationsApi.list(),
+      ]);
+      if (overviewRes.status === 'fulfilled') setOverview(overviewRes.value.data?.data || overviewRes.value.data);
+      if (campaignsRes.status === 'fulfilled') setCampaigns(campaignsRes.value.data?.data || campaignsRes.value.data?.campaigns || []);
+      if (notifRes.status === 'fulfilled') setNotifications((notifRes.value.data?.data || notifRes.value.data?.notifications || []).slice(0, 5));
+      setLastUpdated(new Date());
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'فشل تحميل البيانات');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem('auth_token');
     if (!token) { window.location.href = '/ar/auth/login'; return; }
-    const load = async () => {
-      try {
-        setLoading(true); setError(null);
-        const [overviewRes, campaignsRes, notifRes] = await Promise.allSettled([
-          analyticsApi.getOverview(), campaignsApi.list({ limit: 5 }), notificationsApi.list(),
-        ]);
-        if (overviewRes.status === 'fulfilled') setOverview(overviewRes.value.data?.data || overviewRes.value.data);
-        if (campaignsRes.status === 'fulfilled') setCampaigns(campaignsRes.value.data?.data || campaignsRes.value.data?.campaigns || []);
-        if (notifRes.status === 'fulfilled') setNotifications((notifRes.value.data?.data || notifRes.value.data?.notifications || []).slice(0, 5));
-      } catch (err: any) {
-        setError(err?.response?.data?.error || 'فشل تحميل البيانات');
-      } finally { setLoading(false); }
-    };
-    load();
-  }, [locale]);
+    loadData();
+    const interval = setInterval(() => loadData(true), 45000);
+    return () => clearInterval(interval);
+  }, [loadData]);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadData(true);
+  };
 
   const getStatValue = (idx: number) => {
     if (idx === 0) return campaigns.length;
@@ -91,16 +151,36 @@ export default function DashboardPage({ params: { locale } }: { params: { locale
     return val;
   };
 
+  const activeCampaigns = campaigns.filter(c => c.status === 'active' || c.status === 'published').length;
+  const totalBudget = campaigns.reduce((s, c) => s + (c.budget || 0), 0);
+  const totalSpent = campaigns.reduce((s, c) => s + (c.spent || 0), 0);
+
   return (
     <DashboardShell>
       <div className="space-y-6" dir={direction}>
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-black gradient-brand-text">{t('dashboard.title')}</h1>
+            <h1 className="text-2xl font-black gradient-brand-text">
+              {greeting}،
+            </h1>
             <p className="text-[#A1A1C2] text-sm mt-1">{t('dashboard.overview')}</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
+            <StatusPill
+              text={refreshing ? 'جاري التحديث...' : `آخر تحديث: ${lastUpdated.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}`}
+              loading={refreshing}
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="border-[#7C3AED]/20"
+            >
+              <RefreshCw className={cn('w-4 h-4 ml-1', refreshing && 'animate-spin')} />
+              تحديث
+            </Button>
             <Link href={`/${locale}/dashboard/campaigns/create`}>
               <Button className="group relative overflow-hidden">
                 <span className="absolute inset-0 bg-gradient-to-r from-[#7C3AED] to-[#06B6D4] opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -114,22 +194,52 @@ export default function DashboardPage({ params: { locale } }: { params: { locale
           </div>
         </div>
 
+        {/* Quick Summary Bar */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="bg-[#1E1B3A]/60 backdrop-blur-sm rounded-xl px-4 py-3 border border-[#7C3AED]/10">
+            <p className="text-[10px] text-[#A1A1C2] uppercase tracking-wider">إجمالي الحملات</p>
+            <p className="text-lg font-bold mt-0.5">
+              {loading ? <Loader2 className="w-4 h-4 animate-spin inline" /> : campaigns.length}
+            </p>
+          </div>
+          <div className="bg-[#1E1B3A]/60 backdrop-blur-sm rounded-xl px-4 py-3 border border-[#7C3AED]/10">
+            <p className="text-[10px] text-[#A1A1C2] uppercase tracking-wider">النشطة حالياً</p>
+            <p className="text-lg font-bold mt-0.5 text-[#10B981] flex items-center gap-1.5">
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+                <><span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]" />{activeCampaigns}</>
+              )}
+            </p>
+          </div>
+          <div className="bg-[#1E1B3A]/60 backdrop-blur-sm rounded-xl px-4 py-3 border border-[#7C3AED]/10">
+            <p className="text-[10px] text-[#A1A1C2] uppercase tracking-wider">إجمالي الميزانية</p>
+            <p className="text-lg font-bold mt-0.5">
+              {loading ? <Loader2 className="w-4 h-4 animate-spin inline" /> : formatCurrency(totalBudget)}
+            </p>
+          </div>
+          <div className="bg-[#1E1B3A]/60 backdrop-blur-sm rounded-xl px-4 py-3 border border-[#7C3AED]/10">
+            <p className="text-[10px] text-[#A1A1C2] uppercase tracking-wider">الإنفاق الإجمالي</p>
+            <p className="text-lg font-bold mt-0.5">
+              {loading ? <Loader2 className="w-4 h-4 animate-spin inline" /> : formatCurrency(totalSpent)}
+            </p>
+          </div>
+        </div>
+
         {error && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-3 rounded-xl bg-[#F43F5E]/10 border border-[#F43F5E]/20 text-[#F43F5E] text-sm flex items-center gap-2">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />{error}
           </motion.div>
         )}
 
-        {/* Stats Cards with Skeleton Loading */}
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {stats.map((stat, i) => (
             <motion.div key={stat.title} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-              <Card className="group relative overflow-hidden hover:shadow-lg hover:shadow-[#7C3AED]/5 transition-all duration-300">
+              <Card className="group relative overflow-hidden hover:shadow-lg hover:shadow-[#7C3AED]/10 transition-all duration-300 bg-[#14102B]/80 backdrop-blur-sm">
                 <div className="absolute inset-0 bg-gradient-to-br from-[#7C3AED]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#7C3AED]/10 to-transparent rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
                 <CardContent className="p-4 relative">
                   <div className="flex items-center justify-between mb-3">
-                    <div className={cn('w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center text-white shadow-lg', stat.gradient)}>
+                    <div className={cn('w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center text-white shadow-lg shadow-[#7C3AED]/20', stat.gradient)}>
                       {stat.icon}
                     </div>
                     <ArrowUpRight className="w-4 h-4 text-[#A1A1C2] opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -143,10 +253,13 @@ export default function DashboardPage({ params: { locale } }: { params: { locale
                   ) : (
                     <>
                       <p className="text-2xl font-black gradient-brand-text">
-                        {i === 1 ? formatCurrency(getStatValue(i)) : formatNumber(getStatValue(i))}
+                        <AnimatedCounter
+                          value={getStatValue(i)}
+                          format={i === 1 ? 'currency' : 'number'}
+                        />
                       </p>
                       <p className="text-[10px] text-[#10B981] mt-1 flex items-center gap-1">
-                        <TrendingUp className="w-3 h-3" />+{(Math.random() * 20 + 5).toFixed(0)}% {t('common.thisWeek') || 'هذا الأسبوع'}
+                        <TrendingUp className="w-3 h-3" />{stat.change} {t('common.thisWeek') || 'هذا الأسبوع'}
                       </p>
                     </>
                   )}
@@ -158,9 +271,13 @@ export default function DashboardPage({ params: { locale } }: { params: { locale
 
         {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Spend Trend */}
-          <Card className="lg:col-span-2">
-            <CardHeader><CardTitle className="text-lg font-bold">{t('dashboard.spendChart') || 'اتجاه الإنفاق'}</CardTitle></CardHeader>
+          <Card className="lg:col-span-2 bg-[#14102B]/80 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-lg font-bold">{t('dashboard.spendChart') || 'اتجاه الإنفاق'}</CardTitle>
+              <Badge variant="secondary" className="text-[10px]">
+                <Activity className="w-3 h-3 ml-1" />آخر 7 أيام
+              </Badge>
+            </CardHeader>
             <CardContent>
               {loading ? (
                 <div className="h-[250px] flex items-center justify-center">
@@ -188,8 +305,7 @@ export default function DashboardPage({ params: { locale } }: { params: { locale
             </CardContent>
           </Card>
 
-          {/* Platform Distribution */}
-          <Card>
+          <Card className="bg-[#14102B]/80 backdrop-blur-sm">
             <CardHeader><CardTitle className="text-lg font-bold">{t('analytics.audienceAnalysis') || 'توزيع المنصات'}</CardTitle></CardHeader>
             <CardContent>
               {loading ? (
@@ -226,7 +342,7 @@ export default function DashboardPage({ params: { locale } }: { params: { locale
         {/* Budget Alerts */}
         {campaigns.filter(c => c.budget && c.spent && (c.spent / c.budget) > 0.8).length > 0 && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-            <Card className="border-[#F59E0B]/30 bg-[#F59E0B]/5">
+            <Card className="border-[#F59E0B]/30 bg-[#F59E0B]/5 backdrop-blur-sm">
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="w-5 h-5 text-[#F59E0B] mt-0.5 flex-shrink-0" />
@@ -260,7 +376,7 @@ export default function DashboardPage({ params: { locale } }: { params: { locale
         {/* Recent Campaigns + Notifications */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <Card>
+            <Card className="bg-[#14102B]/80 backdrop-blur-sm">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-lg font-bold">{t('dashboard.topCampaigns') || 'آخر الحملات'}</CardTitle>
                 <Link href={`/${locale}/dashboard/campaigns`}><Button variant="ghost" size="sm">{t('common.viewAll') || 'عرض الكل'}</Button></Link>
@@ -302,7 +418,6 @@ export default function DashboardPage({ params: { locale } }: { params: { locale
                           <div className="flex items-center gap-3 shrink-0">
                             <div className="text-right">
                               <span className="text-xs font-medium text-[#A1A1C2]">CTR: {(campaign.ctr || 0).toFixed(1)}%</span>
-                              {/* Mini progress bar */}
                               <div className="w-16 h-1 bg-[#1E1B3A] rounded-full mt-1">
                                 <div
                                   className="h-full bg-gradient-to-r from-[#7C3AED] to-[#06B6D4] rounded-full"
@@ -323,7 +438,7 @@ export default function DashboardPage({ params: { locale } }: { params: { locale
             </Card>
           </div>
 
-          <Card>
+          <Card className="bg-[#14102B]/80 backdrop-blur-sm">
             <CardHeader><CardTitle className="text-lg font-bold flex items-center gap-2"><Bell className="w-4 h-4" />{t('notifications.markAllRead') || 'الإشعارات'}</CardTitle></CardHeader>
             <CardContent>
               {loading ? (
@@ -369,7 +484,7 @@ export default function DashboardPage({ params: { locale } }: { params: { locale
         </div>
 
         {/* Quick Actions */}
-        <Card>
+        <Card className="bg-[#14102B]/80 backdrop-blur-sm">
           <CardHeader><CardTitle className="text-lg font-bold">{t('common.actions') || 'إجراءات سريعة'}</CardTitle></CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -413,14 +528,13 @@ function formatRelativeTime(dateStr: string, locale: string) {
   const hours = Math.floor(diff / 3600000);
   const days = Math.floor(diff / 86400000);
 
-  const labels: Record<string, { just: string; min: string; mins: string; hour: string; hours: string; day: string; days: string }> = {
+  const labels: Record<string, Record<string, string>> = {
     ar: { just: 'الآن', min: 'دقيقة', mins: 'دقائق', hour: 'ساعة', hours: 'ساعات', day: 'يوم', days: 'أيام' },
     en: { just: 'just now', min: 'minute ago', mins: 'minutes ago', hour: 'hour ago', hours: 'hours ago', day: 'day ago', days: 'days ago' },
     fr: { just: "à l'instant", min: 'il y a 1 min', mins: 'il y a {n} min', hour: 'il y a 1h', hours: 'il y a {n}h', day: 'il y a 1 jour', days: 'il y a {n} jours' },
     tr: { just: 'az önce', min: '1 dk önce', mins: '{n} dk önce', hour: '1 saat önce', hours: '{n} saat önce', day: '1 gün önce', days: '{n} gün önce' },
   };
   const l = labels[locale] || labels.ar;
-
   if (mins < 1) return l.just;
   if (mins < 60) return mins === 1 ? `1 ${l.min}` : `${mins} ${l.mins}`;
   if (hours < 24) return hours === 1 ? `1 ${l.hour}` : `${hours} ${l.hours}`;
