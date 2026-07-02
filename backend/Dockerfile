@@ -19,7 +19,7 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY backend/package*.json ./
 COPY backend/prisma ./prisma
-COPY backend/.env.example ./.env
+RUN mkdir -p ./logs
 
 EXPOSE 4000
 CMD npx prisma generate && npx prisma db push --accept-data-loss && node dist/index.js
