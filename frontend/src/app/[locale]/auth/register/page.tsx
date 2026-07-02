@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { googleAuthApi } from '@/services/api-modules';
 import { Logo } from '@/components/ui/Logo';
+import { ParticlesBackground } from '@/components/ui/ParticlesBackground';
 
 const plans = [
   { id: 'free', labelKey: 'landing.pricingFree', priceKey: 'landing.pricingFreePrice', descKey: 'landing.pricingFreeDesc' },
@@ -75,19 +76,24 @@ export default function RegisterPage({ params: { locale } }: { params: { locale:
   };
 
   return (
-    <div className="min-h-screen bg-[#0B0A1A] flex">
-      <div className="cube-container">
-        <div className="cube" /><div className="cube" /><div className="cube" />
-        <div className="cube" /><div className="cube" />
+    <div className="min-h-screen bg-[#0B0A1A] flex relative overflow-hidden">
+      <ParticlesBackground count={60} interactive />
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="bg-grid absolute inset-0 opacity-[0.03]" />
       </div>
 
       <div className="hidden lg:flex lg:w-[55%] xl:w-[60%] bg-[#14102B] relative overflow-hidden items-center justify-center order-1">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-[#7C3AED]/10 blur-[120px]" />
-        <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] rounded-full bg-[#06B6D4]/5 blur-[80px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-[#7C3AED]/10 blur-[120px]" />
+        <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-[#06B6D4]/5 blur-[80px]" />
+        <div className="absolute top-1/4 left-1/4 w-[300px] h-[300px] rounded-full bg-[#EC4899]/5 blur-[80px]" />
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8 }} className="text-center relative z-10 px-12">
-          <div className="w-20 h-20 rounded-3xl gradient-primary flex items-center justify-center mx-auto mb-6 shadow-[0_0_40px_rgba(124,58,237,0.5)]">
-            <Sparkles className="w-10 h-10 text-white" />
-          </div>
+          <motion.div
+            className="w-24 h-24 rounded-3xl gradient-primary flex items-center justify-center mx-auto mb-8 glow-purple-lg"
+            animate={{ y: [0, -10, 0] }}
+            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+          >
+            <Sparkles className="w-12 h-12 text-white" />
+          </motion.div>
           <p className="text-5xl sm:text-6xl font-black gradient-brand-text leading-tight mb-4">
             {t('auth.getStartedForFree')}
           </p>
@@ -96,20 +102,22 @@ export default function RegisterPage({ params: { locale } }: { params: { locale:
       </div>
 
       <div className="w-full lg:w-[45%] xl:w-[40%] flex items-center justify-center p-6 relative z-10 order-2">
-        <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} className="w-full max-w-sm">
-          <Link href={`/${locale}`} className="inline-flex items-center gap-2 mb-8 text-[#A1A1C2] hover:text-[#F5F3FF] transition-colors text-sm">
-            <ChevronLeft className="w-4 h-4" /> {t('common.back')}
+        <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }} className="w-full max-w-sm">
+          <Link href={`/${locale}`} className="inline-flex items-center gap-2 mb-8 text-[#A1A1C2] hover:text-[#F5F3FF] transition-colors text-sm group">
+            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> {t('common.back')}
           </Link>
 
           <div className="mb-8">
-            <Logo height={64} className="mb-6 drop-shadow-[0_0_25px_rgba(124,58,237,0.3)]" />
+            <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.5, delay: 0.1 }}>
+              <Logo height={80} className="mb-6 drop-shadow-[0_0_30px_rgba(124,58,237,0.4)]" />
+            </motion.div>
             <h1 className="text-2xl font-bold mb-1">{t('auth.createAccount')}</h1>
             <p className="text-[#A1A1C2] text-sm">{t('auth.register')}</p>
           </div>
 
-          <Card className="p-6 space-y-5">
+          <Card className="p-6 space-y-5 glass-strong">
             {apiError && (
-              <div className="p-3 rounded-xl bg-[#F43F5E]/10 border border-[#F43F5E]/20 text-[#F43F5E] text-sm">{apiError}</div>
+              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-3 rounded-xl bg-[#F43F5E]/10 border border-[#F43F5E]/20 text-[#F43F5E] text-sm">{apiError}</motion.div>
             )}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
@@ -118,7 +126,7 @@ export default function RegisterPage({ params: { locale } }: { params: { locale:
                   <div className="relative">
                     <User className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A1A1C2]" />
                     <Input placeholder={t('common.name')} value={formData.name}
-                      onChange={e => updateField('name', e.target.value)} className="pr-10" />
+                      onChange={e => updateField('name', e.target.value)} className="pr-10 input-neon" />
                   </div>
                   {errors.name && <p className="text-[#F43F5E] text-xs mt-1">{errors.name}</p>}
                 </div>
@@ -127,7 +135,7 @@ export default function RegisterPage({ params: { locale } }: { params: { locale:
                   <div className="relative">
                     <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A1A1C2]" />
                     <Input type="tel" placeholder="+966 5X XXX XXXX"
-                      value={formData.phone} onChange={e => updateField('phone', e.target.value)} className="pr-10" />
+                      value={formData.phone} onChange={e => updateField('phone', e.target.value)} className="pr-10 input-neon" />
                   </div>
                 </div>
               </div>
@@ -136,7 +144,7 @@ export default function RegisterPage({ params: { locale } }: { params: { locale:
                 <div className="relative">
                   <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A1A1C2]" />
                   <Input type="email" placeholder="name@example.com" value={formData.email}
-                    onChange={e => updateField('email', e.target.value)} className="pr-10" />
+                    onChange={e => updateField('email', e.target.value)} className="pr-10 input-neon" />
                 </div>
                 {errors.email && <p className="text-[#F43F5E] text-xs mt-1">{errors.email}</p>}
               </div>
@@ -145,7 +153,7 @@ export default function RegisterPage({ params: { locale } }: { params: { locale:
                   <label className="block text-sm text-[#A1A1C2] mb-1.5">{t('common.password')}</label>
                   <div className="relative">
                     <Input type={showPassword ? 'text' : 'password'} placeholder="••••••••"
-                      value={formData.password} onChange={e => updateField('password', e.target.value)} className="pl-9" />
+                      value={formData.password} onChange={e => updateField('password', e.target.value)} className="pl-9 input-neon" />
                     <button type="button" onClick={() => setShowPassword(!showPassword)}
                       className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A1C2] hover:text-[#F5F3FF]">
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -156,7 +164,7 @@ export default function RegisterPage({ params: { locale } }: { params: { locale:
                 <div>
                   <label className="block text-sm text-[#A1A1C2] mb-1.5">{t('auth.confirmPassword')}</label>
                   <Input type="password" placeholder="••••••••"
-                    value={formData.confirmPassword} onChange={e => updateField('confirmPassword', e.target.value)} />
+                    value={formData.confirmPassword} onChange={e => updateField('confirmPassword', e.target.value)} className="input-neon" />
                   {errors.confirmPassword && <p className="text-[#F43F5E] text-xs mt-1">{errors.confirmPassword}</p>}
                 </div>
               </div>
@@ -169,7 +177,7 @@ export default function RegisterPage({ params: { locale } }: { params: { locale:
                       onClick={() => updateField('plan', plan.id)}
                       className={`p-3 rounded-xl border-2 text-center transition-all ${
                         formData.plan === plan.id
-                          ? 'border-[#7C3AED] bg-[#7C3AED]/10'
+                          ? 'border-[#7C3AED] bg-[#7C3AED]/10 glow-purple'
                           : 'border-[#7C3AED]/20 hover:border-[#7C3AED]/50'
                       }`}>
                       <p className="font-semibold text-sm">{t(plan.labelKey)}</p>
@@ -189,7 +197,7 @@ export default function RegisterPage({ params: { locale } }: { params: { locale:
               </div>
               {errors.agreeToTerms && <p className="text-[#F43F5E] text-xs">{errors.agreeToTerms}</p>}
 
-              <Button type="submit" className="w-full rounded-full" size="lg" loading={loading}>
+              <Button type="submit" className="w-full rounded-xl btn-gradient text-white font-bold" size="lg" loading={loading}>
                 {loading ? '' : t('auth.createAccount')}
               </Button>
             </form>
@@ -199,7 +207,7 @@ export default function RegisterPage({ params: { locale } }: { params: { locale:
               <div className="relative flex justify-center"><span className="px-3 text-xs text-[#A1A1C2] bg-[#14102B]">{t('common.or')}</span></div>
             </div>
 
-            <Button variant="outline" className="w-full rounded-full" size="lg" onClick={async () => {
+            <Button variant="outline" className="w-full rounded-xl border-[#7C3AED]/20 hover:bg-[#7C3AED]/10" size="lg" onClick={async () => {
               try { const res = await googleAuthApi.getAuthUrl(); if (res.data?.data?.url) window.location.href = res.data.data.url; }
               catch { setApiError(t('auth.googleInitFailed')); }
             }}>

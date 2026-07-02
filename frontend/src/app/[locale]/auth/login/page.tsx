@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { googleAuthApi } from '@/services/api-modules';
 import { Logo } from '@/components/ui/Logo';
+import { ParticlesBackground } from '@/components/ui/ParticlesBackground';
 
 export default function LoginPage({ params: { locale } }: { params: { locale: string } }) {
   const { t } = useTranslation();
@@ -64,27 +65,31 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
   };
 
   return (
-    <div className="min-h-screen bg-[#0B0A1A] flex">
-      <div className="cube-container">
-        <div className="cube" /><div className="cube" /><div className="cube" />
-        <div className="cube" /><div className="cube" />
+    <div className="min-h-screen bg-[#0B0A1A] flex relative overflow-hidden">
+      <ParticlesBackground count={60} interactive />
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="bg-grid absolute inset-0 opacity-[0.03]" />
       </div>
 
       <div className="w-full lg:w-[45%] xl:w-[40%] flex items-center justify-center p-6 relative z-10">
-        <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} className="w-full max-w-sm">
-          <Link href={`/${locale}`} className="inline-flex items-center gap-2 mb-8 text-[#A1A1C2] hover:text-[#F5F3FF] transition-colors text-sm">
-            <ChevronLeft className="w-4 h-4" /> {t('common.back')}
+        <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }} className="w-full max-w-sm">
+          <Link href={`/${locale}`} className="inline-flex items-center gap-2 mb-8 text-[#A1A1C2] hover:text-[#F5F3FF] transition-colors text-sm group">
+            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> {t('common.back')}
           </Link>
 
           <div className="mb-8">
-            <Logo height={64} className="mb-6 drop-shadow-[0_0_25px_rgba(124,58,237,0.3)]" />
+            <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.5, delay: 0.1 }}>
+              <Logo height={80} className="mb-6 drop-shadow-[0_0_30px_rgba(124,58,237,0.4)]" />
+            </motion.div>
             <h1 className="text-2xl font-bold mb-1">{t('auth.login')}</h1>
             <p className="text-[#A1A1C2] text-sm">{t('auth.welcomeBack')}</p>
           </div>
 
-          <Card className="p-6 space-y-5">
+          <Card className="p-6 space-y-5 glass-strong">
             {error && (
-              <div className="p-3 rounded-xl bg-[#F43F5E]/10 border border-[#F43F5E]/20 text-[#F43F5E] text-sm">{error}</div>
+              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-3 rounded-xl bg-[#F43F5E]/10 border border-[#F43F5E]/20 text-[#F43F5E] text-sm">
+                {error}
+              </motion.div>
             )}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -92,7 +97,7 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
                 <div className="relative">
                   <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A1A1C2]" />
                   <Input type="email" placeholder="name@example.com" value={email}
-                    onChange={e => setEmail(e.target.value)} className="pr-10" required />
+                    onChange={e => setEmail(e.target.value)} className="pr-10 input-neon" required />
                 </div>
               </div>
               <div>
@@ -103,14 +108,14 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
                 <div className="relative">
                   <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A1A1C2]" />
                   <Input type={showPassword ? 'text' : 'password'} placeholder="••••••••"
-                    value={password} onChange={e => setPassword(e.target.value)} className="pr-10" required />
+                    value={password} onChange={e => setPassword(e.target.value)} className="pr-10 input-neon" required />
                   <button type="button" onClick={() => setShowPassword(!showPassword)}
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A1C2] hover:text-[#F5F3FF]">
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
               </div>
-              <Button type="submit" className="w-full rounded-full" size="lg" loading={loading}>
+              <Button type="submit" className="w-full rounded-xl btn-gradient text-white font-bold" size="lg" loading={loading}>
                 {loading ? '' : t('auth.login')}
               </Button>
             </form>
@@ -120,7 +125,7 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
               <div className="relative flex justify-center"><span className="px-3 text-xs text-[#A1A1C2] bg-[#14102B]">{t('common.or')}</span></div>
             </div>
 
-            <Button variant="outline" className="w-full rounded-full" size="lg" onClick={handleGoogleLogin} disabled={googleLoading}>
+            <Button variant="outline" className="w-full rounded-xl border-[#7C3AED]/20 hover:bg-[#7C3AED]/10" size="lg" onClick={handleGoogleLogin} disabled={googleLoading}>
               {googleLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
                 <svg className="w-5 h-5 ml-2" viewBox="0 0 24 24">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
@@ -143,12 +148,17 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
       </div>
 
       <div className="hidden lg:flex lg:w-[55%] xl:w-[60%] bg-[#14102B] relative overflow-hidden items-center justify-center">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-[#7C3AED]/10 blur-[120px]" />
-        <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] rounded-full bg-[#06B6D4]/5 blur-[80px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-[#7C3AED]/10 blur-[120px]" />
+        <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-[#06B6D4]/5 blur-[80px]" />
+        <div className="absolute top-1/4 left-1/4 w-[300px] h-[300px] rounded-full bg-[#EC4899]/5 blur-[80px]" />
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8 }} className="text-center relative z-10 px-12">
-          <div className="w-20 h-20 rounded-3xl gradient-primary flex items-center justify-center mx-auto mb-6 shadow-[0_0_40px_rgba(124,58,237,0.5)]">
-            <BarChart3 className="w-10 h-10 text-white" />
-          </div>
+          <motion.div
+            className="w-24 h-24 rounded-3xl gradient-primary flex items-center justify-center mx-auto mb-8 glow-purple-lg"
+            animate={{ y: [0, -10, 0] }}
+            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+          >
+            <BarChart3 className="w-12 h-12 text-white" />
+          </motion.div>
           <p className="text-5xl sm:text-6xl font-black gradient-brand-text leading-tight mb-4">
             {t('auth.statTitle')}
           </p>

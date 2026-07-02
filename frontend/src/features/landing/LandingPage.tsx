@@ -78,7 +78,7 @@ export const LandingPage: React.FC = () => {
       <header className="fixed top-0 left-0 right-0 z-50 glass">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
           <a href="/ar/services" className="flex items-center gap-3">
-            <img src={LOGO_URL} alt="MARKETRON" className="h-12 sm:h-14 w-auto drop-shadow-[0_0_12px_rgba(124,58,237,0.3)]" />
+            <img src={LOGO_URL} alt="MARKETRON" className="h-16 sm:h-20 w-auto drop-shadow-[0_0_20px_rgba(124,58,237,0.4)]" />
           </a>
           <nav className="hidden md:flex items-center gap-8">
             <a href="/ar/services" className="text-sm text-[#A1A1C2] hover:text-white transition-colors">خدماتنا</a>
@@ -337,7 +337,7 @@ export const LandingPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
             <div className="md:col-span-2">
               <div className="flex items-center gap-3 mb-4">
-                <img src={LOGO_URL} alt="MARKETRON" className="h-12 w-auto drop-shadow-[0_0_12px_rgba(124,58,237,0.3)]" />
+                <img src={LOGO_URL} alt="MARKETRON" className="h-14 w-auto drop-shadow-[0_0_15px_rgba(124,58,237,0.3)]" />
                 <span className="text-white font-black text-xl bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">MARKETRON</span>
               </div>
               <p className="text-gray-500 text-sm leading-relaxed max-w-sm">
