@@ -6,7 +6,6 @@
   },
   "deploy": {
     "numReplicas": 1,
-    "startCommand": "npx prisma generate && echo '=== PRISMA DONE ===' && node dist/index.js && echo '=== APP EXITED ===' || echo '=== APP FAILED ==='",
     "healthcheckPath": "/api/v1/health",
     "restartPolicyType": "ON_FAILURE"
   }
