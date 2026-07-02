@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { Bot, Sparkles, Loader2, Send, RefreshCw, Check } from 'lucide-react';
-import { cn } from '@/utils/helpers';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { generateAiSuggestions } from '@/lib/ai-replies';
 import { socialApi } from '@/services/socialApi';
@@ -44,21 +44,18 @@ export function AiReplyPanel({ lastInbound, onSend, collapsed }: AiReplyPanelPro
     try {
       const { data } = await socialApi.generateAiReply(text);
       const aiText: string = data?.data?.suggestion || '';
+      const aiSuggestions = await generateAiSuggestions(text).catch(() => []);
       if (aiText) {
         setSuggestions([
-          {
-            id: `ai-${Date.now()}`,
-            text: aiText,
-            intent: 'general',
-            confidence: 0.96,
-          },
-          ...generateAiSuggestions(text).slice(0, 2),
+          { id: `ai-${Date.now()}`, text: aiText, intent: 'general', confidence: 0.96 },
+          ...aiSuggestions.slice(0, 2).map((s, i) => ({ id: `gen-${i}`, text: s, intent: 'general' as const, confidence: 0.8 })),
         ]);
       } else {
-        setSuggestions(generateAiSuggestions(text));
+        setSuggestions(aiSuggestions.map((s, i) => ({ id: `gen-${i}`, text: s, intent: 'general' as const, confidence: 0.8 })));
       }
     } catch {
-      setSuggestions(generateAiSuggestions(text));
+      const fallback = await generateAiSuggestions(text).catch(() => ['شكراً لتواصلك!']);
+      setSuggestions(fallback.map((s, i) => ({ id: `gen-${i}`, text: s, intent: 'general' as const, confidence: 0.8 })));
     } finally {
       setLoading(false);
     }

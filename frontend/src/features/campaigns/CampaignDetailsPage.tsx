@@ -1,20 +1,13 @@
-import React from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import React, { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/tabs';
-import { formatCurrency, formatNumber, formatDate } from '@/utils/helpers';
-import { ArrowLeft, Facebook, Instagram, Music, Ghost, Edit3, Pause, Play, Trash2, DollarSign, Eye, MousePointerClick, Target, TrendingUp, CalendarDays, Users } from 'lucide-react';
+import { formatCurrency, formatNumber, formatDate, cn } from '@/lib/utils';
+import { ArrowLeft, Facebook, Instagram, Music, Ghost, Edit3, Pause, Play, Trash2, DollarSign, Eye, MousePointerClick, Target, TrendingUp, CalendarDays, Users, Loader2, AlertCircle } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-
-const chartData = [
-  { name: 'الأسبوع 1', الإنفاق: 1200, الظهور: 35000, النقرات: 2100 },
-  { name: 'الأسبوع 2', الإنفاق: 1500, الظهور: 42000, النقرات: 2800 },
-  { name: 'الأسبوع 3', الإنفاق: 900, الظهور: 28000, النقرات: 1900 },
-  { name: 'الأسبوع 4', الإنفاق: 1800, الظهور: 52000, النقرات: 3500 },
-];
+import { campaignsApi } from '@/services/api-modules';
 
 const platformIcons: Record<string, React.ReactNode> = {
   facebook: <Facebook className="w-5 h-5" style={{ color: '#1877F2' }} />,
@@ -24,117 +17,137 @@ const platformIcons: Record<string, React.ReactNode> = {
 };
 
 export const CampaignDetailsPage: React.FC = () => {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
+  const router = useRouter();
   const { id } = useParams();
+  const [campaign, setCampaign] = useState<any>(null);
+  const [insights, setInsights] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!id) return;
+    const load = async () => {
+      try {
+        setLoading(true);
+        const [campRes, insightRes] = await Promise.allSettled([
+          campaignsApi.get(id as string),
+          campaignsApi.getInsights(id as string),
+        ]);
+        if (campRes.status === 'fulfilled') setCampaign(campRes.value.data?.data || campRes.value.data);
+        if (insightRes.status === 'fulfilled') setInsights(insightRes.value.data?.data);
+      } catch {
+        setError('فشل تحميل بيانات الحملة');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [id]);
+
+  const handleToggle = async (action: 'pause' | 'activate') => {
+    if (!id) return;
+    try {
+      await (action === 'pause' ? campaignsApi.pause(id as string) : campaignsApi.activate(id as string));
+      setCampaign((prev: any) => ({ ...prev, status: action === 'pause' ? 'paused' : 'active' }));
+    } catch {
+      setError('فشل تغيير حالة الحملة');
+    }
+  };
+
+  if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-[#7C3AED]" /></div>;
+  if (error) return <div className="flex items-center justify-center py-20"><AlertCircle className="w-8 h-8 text-red-400 ml-2" /><span className="text-red-400">{error}</span></div>;
+  if (!campaign) return <div className="flex items-center justify-center py-20"><p className="text-[#A1A1C2]">الحملة غير موجودة</p></div>;
+
+  const budget = campaign.budget || 0;
+  const spent = insights?.spent || campaign.spent || 0;
+  const impressions = insights?.impressions || campaign.impressions || 0;
+  const clicks = insights?.clicks || campaign.clicks || 0;
+  const conversions = insights?.conversions || campaign.conversions || 0;
+  const ctr = insights?.ctr || campaign.ctr || 0;
+  const cpc = insights?.cpc || campaign.cpc || 0;
 
   return (
     <div className="space-y-6 animate-in">
       <div className="flex items-start justify-between">
         <div>
-          <button onClick={() => navigate('/campaigns')} className="flex items-center gap-2 text-sm text-gray-500 hover:text-primary-600 mb-2">
+          <button onClick={() => router.push('/dashboard/campaigns')} className="flex items-center gap-2 text-sm text-[#A1A1C2] hover:text-[#7C3AED] mb-2">
             <ArrowLeft className="w-4 h-4" /> رجوع للحملات
           </button>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-dark-text">حملة عيد الأضحى</h1>
-            <Badge variant="success">نشط</Badge>
+            <h1 className="text-2xl font-bold text-white">{campaign.name || 'حملة'}</h1>
+            <Badge variant={campaign.status === 'active' ? 'success' : campaign.status === 'paused' ? 'warning' : 'secondary'}>
+              {campaign.status === 'active' ? 'نشط' : campaign.status === 'paused' ? 'متوقف' : campaign.status}
+            </Badge>
           </div>
-          <p className="text-gray-500 text-sm mt-1 flex items-center gap-2">{platformIcons['facebook']} فيسبوك • {t('campaigns.awareness')}</p>
+          <p className="text-[#A1A1C2] text-sm mt-1 flex items-center gap-2">
+            {platformIcons[campaign.platform] || null} {campaign.platform || '—'}
+            {campaign.objective ? ` • ${campaign.objective}` : ''}
+          </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" icon={<Pause className="w-4 h-4" />}>إيقاف</Button>
-          <Button variant="outline" size="sm" icon={<Edit3 className="w-4 h-4" />}>{t('common.edit')}</Button>
-          <Button variant="danger" size="sm" icon={<Trash2 className="w-4 h-4" />}>{t('common.delete')}</Button>
+          {campaign.status === 'active' ? (
+            <Button variant="outline" size="sm" onClick={() => handleToggle('pause')}><Pause className="w-4 h-4 ml-1" />إيقاف</Button>
+          ) : (
+            <Button variant="outline" size="sm" onClick={() => handleToggle('activate')}><Play className="w-4 h-4 ml-1" />تفعيل</Button>
+          )}
         </div>
       </div>
 
-      {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
         {[
-          { label: t('campaigns.budget'), value: formatCurrency(10000), icon: DollarSign, color: 'text-primary-600' },
-          { label: t('campaigns.spent'), value: formatCurrency(4500), icon: DollarSign, color: 'text-amber-600' },
-          { label: t('campaigns.impressions'), value: formatNumber(125000), icon: Eye, color: 'text-secondary-600' },
-          { label: t('campaigns.clicks'), value: formatNumber(8900), icon: MousePointerClick, color: 'text-accent-600' },
-          { label: t('campaigns.conversionsObjective'), value: formatNumber(345), icon: Target, color: 'text-purple-600' },
-          { label: t('campaigns.roas'), value: '3.2x', icon: TrendingUp, color: 'text-green-600' },
+          { label: 'الميزانية', value: formatCurrency(budget), icon: DollarSign, color: 'text-[#7C3AED]' },
+          { label: 'الإنفاق', value: formatCurrency(spent), icon: DollarSign, color: 'text-amber-600' },
+          { label: 'مرات الظهور', value: formatNumber(impressions), icon: Eye, color: 'text-[#7C3AED]' },
+          { label: 'النقرات', value: formatNumber(clicks), icon: MousePointerClick, color: 'text-[#7C3AED]' },
+          { label: 'التحويلات', value: formatNumber(conversions), icon: Target, color: 'text-[#7C3AED]' },
+          { label: 'ROAS', value: insights?.roas ? `${insights.roas}x` : ctr > 0 ? `${(ctr / 100).toFixed(1)}x` : '—', icon: TrendingUp, color: 'text-green-600' },
         ].map((kpi) => {
           const Icon = kpi.icon;
           return (
             <Card key={kpi.label} className="p-4 text-center">
-              <Icon className={cn('w-5 h-5 mx-auto mb-2', kpi.color)} />
-              <p className="text-lg font-bold text-gray-900 dark:text-dark-text">{kpi.value}</p>
-              <p className="text-xs text-gray-500">{kpi.label}</p>
+              <Icon className={`w-5 h-5 mx-auto mb-2 ${kpi.color}`} />
+              <p className="text-lg font-bold text-white">{kpi.value}</p>
+              <p className="text-xs text-[#A1A1C2]">{kpi.label}</p>
             </Card>
           );
         })}
       </div>
 
-      {/* Budget Progress */}
-      <Card className="p-5">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="font-semibold text-gray-900 dark:text-dark-text">استهلاك الميزانية</h3>
-          <span className="text-sm text-gray-500">4,500 / 10,000 {formatCurrency(0).split(/\d/)[0]}</span>
-        </div>
-        <Progress value={45} color={'bg-primary-600'} />
-        <div className="flex justify-between text-xs text-gray-400 mt-1">
-          <span>0</span>
-          <span>5,000</span>
-          <span>10,000</span>
-        </div>
-      </Card>
+      {budget > 0 && (
+        <Card className="p-5">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-semibold text-white">استهلاك الميزانية</h3>
+            <span className="text-sm text-[#A1A1C2]">{formatCurrency(spent)} / {formatCurrency(budget)}</span>
+          </div>
+          <Progress value={Math.min((spent / budget) * 100, 100)} />
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Performance Chart */}
         <Card className="lg:col-span-2 p-5">
-          <h3 className="font-semibold text-gray-900 dark:text-dark-text mb-4">أداء الحملة</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="name" tick={{ fontSize: 12 }} stroke="#9ca3af" />
-              <YAxis tick={{ fontSize: 12 }} stroke="#9ca3af" />
-              <Tooltip />
-              <Line type="monotone" dataKey="الإنفاق" stroke="#6366f1" strokeWidth={2} />
-              <Line type="monotone" dataKey="الظهور" stroke="#10b981" strokeWidth={2} />
-              <Line type="monotone" dataKey="النقرات" stroke="#f59e0b" strokeWidth={2} />
-            </LineChart>
-          </ResponsiveContainer>
+          <h3 className="font-semibold text-white mb-4">أداء الحملة</h3>
+          <div className="flex items-center justify-center h-[300px] text-[#6B6899]">
+            <p>بيانات الأداء متاحة من Facebook Insights</p>
+          </div>
         </Card>
 
-        {/* Campaign Info */}
         <Card className="p-5">
-          <h3 className="font-semibold text-gray-900 dark:text-dark-text mb-4">معلومات الحملة</h3>
+          <h3 className="font-semibold text-white mb-4">معلومات الحملة</h3>
           <div className="space-y-3">
             {[
-              { label: 'المنصة', value: 'فيسبوك', icon: platformIcons['facebook'] },
-              { label: 'الهدف', value: 'الوعي', icon: Target },
-              { label: 'تاريخ البدء', value: formatDate('2026-06-01'), icon: CalendarDays },
-              { label: 'تاريخ الانتهاء', value: formatDate('2026-06-30'), icon: CalendarDays },
-              { label: 'الجمهور', value: 'السعودية • 18-65', icon: Users },
+              { label: 'المنصة', value: campaign.platform || '—' },
+              { label: 'الهدف', value: campaign.objective || '—' },
+              { label: 'تاريخ البدء', value: campaign.startDate ? formatDate(campaign.startDate) : '—' },
+              { label: 'الحالة', value: campaign.status || '—' },
             ].map((item) => (
               <div key={item.label} className="flex items-center gap-3 text-sm">
-                <span className="text-gray-400">{typeof item.icon === 'function' ? React.createElement(item.icon as React.ComponentType<{size?: number}>, { size: 16 }) : item.icon}</span>
-                <span className="text-gray-500 min-w-[80px]">{item.label}:</span>
-                <span className="text-gray-900 dark:text-dark-text font-medium">{item.value}</span>
+                <span className="text-[#A1A1C2] min-w-[80px]">{item.label}:</span>
+                <span className="text-white font-medium">{item.value}</span>
               </div>
             ))}
-          </div>
-
-          <h3 className="font-semibold text-gray-900 dark:text-dark-text mt-6 mb-3">محتوى الإعلان</h3>
-          <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4">
-            <div className="aspect-video bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900/30 dark:to-primary-800/30 rounded-lg mb-3 flex items-center justify-center">
-              <Eye className="w-8 h-8 text-primary-400" />
-            </div>
-            <p className="text-sm font-medium text-gray-900 dark:text-dark-text">تخفيضات عيد الأضحى!</p>
-            <p className="text-xs text-gray-500 mt-1">احصل على خصم 30% على جميع المنتجات بمناسبة عيد الأضحى المبارك</p>
-            <Button variant="primary" size="sm" className="mt-2 w-full">تسوق الآن</Button>
           </div>
         </Card>
       </div>
     </div>
   );
 };
-
-function cn(...inputs: any[]) { return inputs.filter(Boolean).join(' '); }
-
-
-

@@ -117,6 +117,46 @@ export const config = {
   ai: {
     defaultProvider: process.env.AI_DEFAULT_PROVIDER || 'pollinations',
     providers: {
+      openai: {
+        apiKey: process.env.OPENAI_API_KEY || '',
+        baseUrl: process.env.OPENAI_BASE_URL || 'https://api.openai.com',
+        defaultModel: process.env.OPENAI_MODEL || 'gpt-4o',
+      },
+      anthropic: {
+        apiKey: process.env.ANTHROPIC_API_KEY || '',
+        baseUrl: process.env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com',
+        defaultModel: process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet-20241022',
+      },
+      gemini: {
+        apiKey: process.env.GEMINI_API_KEY || '',
+        baseUrl: process.env.GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com',
+        defaultModel: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
+      },
+      groq: {
+        apiKey: process.env.GROQ_API_KEY || '',
+        baseUrl: process.env.GROQ_BASE_URL || 'https://api.groq.com/openai',
+        defaultModel: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+      },
+      mistral: {
+        apiKey: process.env.MISTRAL_API_KEY || '',
+        baseUrl: process.env.MISTRAL_BASE_URL || 'https://api.mistral.ai',
+        defaultModel: process.env.MISTRAL_MODEL || 'mistral-large-latest',
+      },
+      cohere: {
+        apiKey: process.env.COHERE_API_KEY || '',
+        baseUrl: process.env.COHERE_BASE_URL || 'https://api.cohere.ai',
+        defaultModel: process.env.COHERE_MODEL || 'command-r-plus',
+      },
+      deepseek: {
+        apiKey: process.env.DEEPSEEK_API_KEY || '',
+        baseUrl: process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com',
+        defaultModel: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
+      },
+      perplexity: {
+        apiKey: process.env.PERPLEXITY_API_KEY || '',
+        baseUrl: process.env.PERPLEXITY_BASE_URL || 'https://api.perplexity.ai',
+        defaultModel: process.env.PERPLEXITY_MODEL || 'llama-3.1-sonar-large-128k-online',
+      },
       pollinations: {
         apiKey: process.env.POLLINATIONS_API_KEY || '',
         baseUrl: process.env.POLLINATIONS_BASE_URL || 'https://gen.pollinations.ai',

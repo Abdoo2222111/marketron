@@ -1,4 +1,3 @@
-// @ts-nocheck
 import prisma from '../config/database';
 import { ApiError } from '../utils/apiError';
 import logger from '../utils/logger';
@@ -19,10 +18,10 @@ export class OrganizationService {
       },
     });
     await prisma.businessProfile.create({
-      data: { organizationId: org.id, productsServices: '[]', faqs: '[]', targetAudience: '{}' },
+      data: { orgId: org.id, productsServices: '[]', faqs: '[]', targetAudience: '{}' },
     });
     await prisma.personaConfig.create({
-      data: { organizationId: org.id },
+      data: { orgId: org.id },
     });
     return org;
   }
@@ -44,15 +43,15 @@ export class OrganizationService {
     });
     if (businessProfile) {
       await prisma.businessProfile.upsert({
-        where: { organizationId: id },
-        create: { organizationId: id, ...businessProfile },
+        where: { orgId: id },
+        create: { orgId: id, ...businessProfile },
         update: businessProfile,
       });
     }
     if (personaConfig) {
       await prisma.personaConfig.upsert({
-        where: { organizationId: id },
-        create: { organizationId: id, ...personaConfig },
+        where: { orgId: id },
+        create: { orgId: id, ...personaConfig },
         update: personaConfig,
       });
     }
@@ -68,29 +67,29 @@ export class OrganizationService {
   }
 
   async getBusinessProfile(orgId: string) {
-    const bp = await prisma.businessProfile.findUnique({ where: { organizationId: orgId } });
+    const bp = await prisma.businessProfile.findUnique({ where: { orgId: orgId } });
     if (!bp) throw ApiError.notFound('ملف النشاط غير موجود');
     return bp;
   }
 
   async updateBusinessProfile(orgId: string, data: any) {
     return prisma.businessProfile.upsert({
-      where: { organizationId: orgId },
-      create: { organizationId: orgId, ...data },
+      where: { orgId: orgId },
+      create: { orgId: orgId, ...data },
       update: data,
     });
   }
 
   async getPersonaConfig(orgId: string) {
-    const pc = await prisma.personaConfig.findUnique({ where: { organizationId: orgId } });
+    const pc = await prisma.personaConfig.findUnique({ where: { orgId: orgId } });
     if (!pc) throw ApiError.notFound('إعدادات الشخصية غير موجودة');
     return pc;
   }
 
   async updatePersonaConfig(orgId: string, data: any) {
     return prisma.personaConfig.upsert({
-      where: { organizationId: orgId },
-      create: { organizationId: orgId, ...data },
+      where: { orgId: orgId },
+      create: { orgId: orgId, ...data },
       update: data,
     });
   }

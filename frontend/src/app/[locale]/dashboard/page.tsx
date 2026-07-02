@@ -12,7 +12,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { DashboardShell } from '@/components/layout/DashboardShell';
+
 import { formatCurrency, formatNumber, cn } from '@/lib/utils';
 import {
   campaignsApi, analyticsApi, notificationsApi,
@@ -100,7 +100,13 @@ export default function DashboardPage({ params: { locale } }: { params: { locale
   const statusLabel = statusLabels[locale] || statusLabels.ar;
 
   const hours = new Date().getHours();
-  const greeting = hours < 12 ? 'صباح الخير' : hours < 18 ? 'مساء الخير' : 'مساء الخير';
+  const greetings: Record<string, string> = {
+    ar: hours < 12 ? 'صباح الخير' : 'مساء الخير',
+    en: hours < 12 ? 'Good morning' : hours < 18 ? 'Good afternoon' : 'Good evening',
+    fr: hours < 12 ? 'Bonjour' : hours < 18 ? 'Bon après-midi' : 'Bonsoir',
+    tr: hours < 12 ? 'Günaydın' : hours < 18 ? 'Tünaydın' : 'İyi akşamlar',
+  };
+  const greeting = greetings[locale] || greetings.ar;
 
   const stats = useMemo(() => [
     { title: t('nav.campaigns') || 'الحملات', icon: <Megaphone className="w-5 h-5" />, gradient: 'from-[#7C3AED] to-[#A78BFA]', change: '+12%' },
@@ -130,8 +136,6 @@ export default function DashboardPage({ params: { locale } }: { params: { locale
   }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
-    if (!token) { window.location.href = '/ar/auth/login'; return; }
     loadData();
     const interval = setInterval(() => loadData(true), 45000);
     return () => clearInterval(interval);
@@ -156,17 +160,16 @@ export default function DashboardPage({ params: { locale } }: { params: { locale
   const totalSpent = campaigns.reduce((s, c) => s + (c.spent || 0), 0);
 
   return (
-    <DashboardShell>
       <div className="space-y-6" dir={direction}>
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-black gradient-brand-text">
+            <h1 className="text-xl sm:text-2xl font-black gradient-brand-text">
               {greeting}،
             </h1>
-            <p className="text-[#A1A1C2] text-sm mt-1">{t('dashboard.overview')}</p>
+            <p className="text-[#A1A1C2] text-xs sm:text-sm mt-0.5">{t('dashboard.overview')}</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
             <StatusPill
               text={refreshing ? 'جاري التحديث...' : `آخر تحديث: ${lastUpdated.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}`}
               loading={refreshing}
@@ -176,20 +179,20 @@ export default function DashboardPage({ params: { locale } }: { params: { locale
               variant="outline"
               onClick={handleRefresh}
               disabled={refreshing}
-              className="border-[#7C3AED]/20"
+              className="border-[#7C3AED]/20 text-xs h-8 px-2"
             >
-              <RefreshCw className={cn('w-4 h-4 ml-1', refreshing && 'animate-spin')} />
-              تحديث
+              <RefreshCw className={cn('w-3 h-3 ml-1', refreshing && 'animate-spin')} />
+              <span className="hidden sm:inline">تحديث</span>
             </Button>
             <Link href={`/${locale}/dashboard/campaigns/create`}>
-              <Button className="group relative overflow-hidden">
+              <Button className="group relative overflow-hidden text-xs h-8 px-3">
                 <span className="absolute inset-0 bg-gradient-to-r from-[#7C3AED] to-[#06B6D4] opacity-0 group-hover:opacity-100 transition-opacity" />
-                <Plus size={16} className="ml-1 relative z-10" />
-                <span className="relative z-10">{t('campaigns.createCampaign')}</span>
+                <Plus size={14} className="ml-1 relative z-10" />
+                <span className="relative z-10 hidden sm:inline">{t('campaigns.createCampaign')}</span>
               </Button>
             </Link>
-            <Link href={`/${locale}/dashboard/analytics`}>
-              <Button variant="outline"><BarChart3 size={16} className="ml-1" />{t('analytics.title')}</Button>
+            <Link href={`/${locale}/dashboard/analytics`} className="hidden sm:inline">
+              <Button variant="outline" className="text-xs h-8"><BarChart3 size={14} className="ml-1" />{t('analytics.title')}</Button>
             </Link>
           </div>
         </div>
@@ -231,7 +234,7 @@ export default function DashboardPage({ params: { locale } }: { params: { locale
         )}
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
           {stats.map((stat, i) => (
             <motion.div key={stat.title} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
               <Card className="group relative overflow-hidden hover:shadow-lg hover:shadow-[#7C3AED]/10 transition-all duration-300 bg-[#14102B]/80 backdrop-blur-sm">
@@ -516,7 +519,6 @@ export default function DashboardPage({ params: { locale } }: { params: { locale
           </CardContent>
         </Card>
       </div>
-    </DashboardShell>
   );
 }
 
@@ -528,15 +530,16 @@ function formatRelativeTime(dateStr: string, locale: string) {
   const hours = Math.floor(diff / 3600000);
   const days = Math.floor(diff / 86400000);
 
-  const labels: Record<string, Record<string, string>> = {
-    ar: { just: 'الآن', min: 'دقيقة', mins: 'دقائق', hour: 'ساعة', hours: 'ساعات', day: 'يوم', days: 'أيام' },
-    en: { just: 'just now', min: 'minute ago', mins: 'minutes ago', hour: 'hour ago', hours: 'hours ago', day: 'day ago', days: 'days ago' },
-    fr: { just: "à l'instant", min: 'il y a 1 min', mins: 'il y a {n} min', hour: 'il y a 1h', hours: 'il y a {n}h', day: 'il y a 1 jour', days: 'il y a {n} jours' },
-    tr: { just: 'az önce', min: '1 dk önce', mins: '{n} dk önce', hour: '1 saat önce', hours: '{n} saat önce', day: '1 gün önce', days: '{n} gün önce' },
+  type Fmt = { just: string; min: string; mins: (n: number) => string; hour: string; hours: (n: number) => string; day: string; days: (n: number) => string };
+  const labels: Record<string, Fmt> = {
+    ar: { just: 'الآن', min: 'دقيقة', mins: (n) => `${n} دقائق`, hour: 'ساعة', hours: (n) => `${n} ساعات`, day: 'يوم', days: (n) => `${n} أيام` },
+    en: { just: 'just now', min: 'minute ago', mins: (n) => `${n} minutes ago`, hour: 'hour ago', hours: (n) => `${n} hours ago`, day: 'day ago', days: (n) => `${n} days ago` },
+    fr: { just: "à l'instant", min: 'il y a 1 min', mins: (n) => `il y a ${n} min`, hour: 'il y a 1h', hours: (n) => `il y a ${n}h`, day: 'il y a 1 jour', days: (n) => `il y a ${n} jours` },
+    tr: { just: 'az önce', min: '1 dk önce', mins: (n) => `${n} dk önce`, hour: '1 saat önce', hours: (n) => `${n} saat önce`, day: '1 gün önce', days: (n) => `${n} gün önce` },
   };
   const l = labels[locale] || labels.ar;
   if (mins < 1) return l.just;
-  if (mins < 60) return mins === 1 ? `1 ${l.min}` : `${mins} ${l.mins}`;
-  if (hours < 24) return hours === 1 ? `1 ${l.hour}` : `${hours} ${l.hours}`;
-  return days === 1 ? `1 ${l.day}` : `${days} ${l.days}`;
+  if (mins < 60) return mins === 1 ? `1 ${l.min}` : l.mins(mins);
+  if (hours < 24) return hours === 1 ? `1 ${l.hour}` : l.hours(hours);
+  return days === 1 ? `1 ${l.day}` : l.days(days);
 }

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import prisma from '../config/database';
 import { ApiError } from '../utils/apiError';
 
@@ -68,7 +67,7 @@ export class SettingsService {
         name: data.name,
         phone: data.phone,
         company: data.company,
-        avatar: data.avatar,
+        avatarUrl: data.avatar,
       },
     });
 

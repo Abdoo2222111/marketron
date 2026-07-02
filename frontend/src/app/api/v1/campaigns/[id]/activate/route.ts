@@ -1,13 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { updateCampaign } from '@/lib/data-store';
+import { requireAuth, facebookUrl } from '@/lib/auth-utils';
 
-export async function POST(
-  _req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const updated = updateCampaign(params.id, { status: 'active' });
-  if (!updated) {
-    return NextResponse.json({ error: 'الحملة غير موجودة' }, { status: 404 });
+export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+  const { error } = await requireAuth(req);
+  if (error) return error;
+  const fbId = params.id.replace('fb_', '');
+
+  try {
+    const url = facebookUrl(fbId);
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'ACTIVE' }),
+      signal: AbortSignal.timeout(10000),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    return NextResponse.json({ data: { id: params.id, status: 'active' } });
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message || 'فشل تفعيل الحملة' }, { status: 500 });
   }
-  return NextResponse.json({ data: updated });
 }

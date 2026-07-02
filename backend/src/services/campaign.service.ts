@@ -1,4 +1,3 @@
-// @ts-nocheck
 import prisma from '../config/database';
 import { ApiError } from '../utils/apiError';
 import { Prisma } from '@prisma/client';
@@ -294,8 +293,8 @@ export class CampaignService {
         name: true,
         status: true,
         platform: true,
-        budget: true,
-        spent: true,
+        budgetAmount: true,
+        spend: true,
         impressions: true,
         clicks: true,
         conversions: true,
@@ -310,7 +309,7 @@ export class CampaignService {
     const totalImpressions = campaigns.reduce((sum, c) => sum + Number(c.impressions), 0);
     const totalClicks = campaigns.reduce((sum, c) => sum + Number(c.clicks), 0);
     const totalConversions = campaigns.reduce((sum, c) => sum + Number(c.conversions), 0);
-    const totalSpend = campaigns.reduce((sum, c) => sum + (c.spent ?? 0), 0);
+    const totalSpend = campaigns.reduce((sum, c) => sum + (c.spend ?? 0), 0);
 
     const platformBreakdown = this.groupByPlatform(campaigns);
     const statusBreakdown = this.groupByStatus(campaigns);
@@ -348,7 +347,7 @@ export class CampaignService {
         };
       }
       groups[platform].count++;
-      groups[platform].spend += (c.spent ?? 0);
+      groups[platform].spend += (c.spend ?? 0);
       groups[platform].impressions += Number(c.impressions);
       groups[platform].clicks += Number(c.clicks);
       groups[platform].conversions += Number(c.conversions);
@@ -364,7 +363,7 @@ export class CampaignService {
         groups[status] = { status, count: 0, spend: 0 };
       }
       groups[status].count++;
-      groups[status].spend += (c.spent ?? 0);
+      groups[status].spend += (c.spend ?? 0);
     }
     return Object.values(groups);
   }

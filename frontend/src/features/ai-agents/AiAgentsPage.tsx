@@ -7,7 +7,7 @@ import { Tabs } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Bot, MessageCircle, FileText, BarChart3, Search, Megaphone, Headphones, Phone, Globe, Plus, Send, Trash2, Sparkles, Settings, ToggleLeft, ChevronLeft, Loader2, AlertCircle } from 'lucide-react';
-import { cn } from '@/utils/helpers';
+import { cn } from '@/lib/utils';
 import { aiAgentsApi, type AiAgent } from '@/services/api-modules';
 import { EmptyState } from '@/components/ui/empty-state';
 import ModelSelector from '@/components/ai/ModelSelector';
@@ -22,13 +22,6 @@ const AGENT_TYPES = [
   { id: 'whatsapp_agent', name: 'وكيل واتساب', icon: Phone, description: 'متخصص في إرسال واستقبال رسائل واتساب', color: 'emerald', bgColor: 'bg-emerald-100 dark:bg-emerald-900/30', textColor: 'text-emerald-600' },
   { id: 'support_agent', name: 'وكيل الدعم', icon: Headphones, description: 'للرد على استفسارات العملاء والدعم الفني', color: 'indigo', bgColor: 'bg-indigo-100 dark:bg-indigo-900/30', textColor: 'text-indigo-600' },
   { id: 'general_agent', name: 'وكيل عام', icon: Bot, description: 'مساعد ذكي للإجابة على أي استفسار', color: 'slate', bgColor: 'bg-gray-100 dark:bg-gray-800', textColor: 'text-gray-600' },
-];
-
-const MOCK_REPLY_RULES = [
-  { id: '1', name: 'تحية تلقائية', platform: 'whatsapp', triggerType: 'keyword', triggerValue: 'السلام,مرحبا,مساء الخير', useAi: true, isActive: true, priority: 1 },
-  { id: '2', name: 'استفسار سعر', platform: 'all', triggerType: 'keyword', triggerValue: 'السعر,كم سعر,كم ثمن', useAi: true, isActive: true, priority: 2 },
-  { id: '3', name: 'شكوى', platform: 'all', triggerType: 'keyword', triggerValue: 'شكوى,مشكلة,سيء', useAi: true, isActive: true, priority: 3 },
-  { id: '4', name: 'رد تلقائي عام', platform: 'messenger', triggerType: 'all', triggerValue: '', useAi: false, isActive: false, priority: 0, responseTemplate: 'شكراً لتواصلك معنا! سنرد عليك في أقرب وقت.' },
 ];
 
 export const AiAgentsPage: React.FC = () => {
@@ -265,7 +258,7 @@ export const AiAgentsPage: React.FC = () => {
         <Button><Plus className="w-4 h-4 ml-2" />{t('aiAgents.createRule')}</Button>
       </div>
       <div className="space-y-3">
-        {MOCK_REPLY_RULES.map((rule) => (
+        {rules.map((rule: any) => (
           <Card key={rule.id} className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -276,8 +269,7 @@ export const AiAgentsPage: React.FC = () => {
                   <p className="font-semibold text-gray-900 dark:text-dark-text">{rule.name}</p>
                   <div className="flex items-center gap-2 mt-1">
                     <Badge variant={rule.platform === 'all' ? 'info' : 'success'}>{rule.platform === 'all' ? 'جميع المنصات' : rule.platform === 'whatsapp' ? 'واتساب' : rule.platform === 'messenger' ? 'ماسنجر' : 'إنستجرام'}</Badge>
-                    {rule.useAi && <Badge variant="info">AI</Badge>}
-                    <span className="text-xs text-gray-500">{rule.triggerType === 'keyword' ? `كلمات: ${rule.triggerValue}` : rule.triggerType === 'all' ? 'جميع الرسائل' : ''}</span>
+                    <span className="text-xs text-gray-500">{rule.description || (rule.keywords ? `كلمات: ${Array.isArray(rule.keywords) ? rule.keywords.join(', ') : rule.keywords}` : '')}</span>
                   </div>
                 </div>
               </div>

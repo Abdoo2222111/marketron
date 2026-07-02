@@ -16,6 +16,9 @@ import type {
   Alert,
 } from '@/types';
 import { METRICS } from '@/types';
+
+// PerformanceData plus computed metrics
+type DataRecord = PerformanceData & Record<string, number>;
 import { addDays, format, subDays, startOfWeek } from 'date-fns';
 
 // --- أنواع البيانات المحولة للرسوم البيانية ---
@@ -74,13 +77,14 @@ function groupByDay(
   groupBy: 'day' | 'week' | 'month'
 ): Record<string, Record<string, number>> {
   const result: Record<string, Record<string, number>> = {};
+  const items = data as DataRecord[];
 
-  for (const item of data) {
+  for (const item of items) {
     const key = groupKey(item.date, groupBy);
     if (!result[key]) result[key] = {};
 
     for (const metric of metrics) {
-      const value = item[metric] as number || 0;
+      const value = (item as DataRecord)[metric] || 0;
       result[key][metric] = (result[key][metric] || 0) + value;
     }
   }
@@ -107,9 +111,10 @@ export function toBarChartByPlatform(
   metric: MetricKey
 ): { platform: string; value: number; color: string }[] {
   const grouped: Record<string, number> = {};
+  const items = data as DataRecord[];
 
-  for (const item of data) {
-    const value = (item[metric] as number) || 0;
+  for (const item of items) {
+    const value = (item as DataRecord)[metric] || 0;
     grouped[item.platform] = (grouped[item.platform] || 0) + value;
   }
 
@@ -149,10 +154,11 @@ export function toBarChartByCampaign(
 ): { campaign: string; value: number; color: string }[] {
   const grouped: Record<string, number> = {};
   const campaignMap = new Map(campaigns.map(c => [c.id, c.nameAr]));
+  const items = data as DataRecord[];
 
-  for (const item of data) {
+  for (const item of items) {
     if (!item.campaignId) continue;
-    const value = (item[metric] as number) || 0;
+    const value = (item as DataRecord)[metric] || 0;
     grouped[item.campaignId] = (grouped[item.campaignId] || 0) + value;
   }
 
@@ -172,10 +178,11 @@ export function toBarChartByCampaign(
 
 export function toPieChartByPlatform(data: PerformanceData[], metric: MetricKey = 'spend'): PieChartData[] {
   const grouped: Record<string, number> = {};
-  const total = data.reduce((sum, item) => sum + ((item[metric] as number) || 0), 0);
+  const items = data as DataRecord[];
+  const total = items.reduce((sum, item) => sum + ((item as DataRecord)[metric] || 0), 0);
 
-  for (const item of data) {
-    const value = (item[metric] as number) || 0;
+  for (const item of items) {
+    const value = (item as DataRecord)[metric] || 0;
     grouped[item.platform] = (grouped[item.platform] || 0) + value;
   }
 

@@ -1,9 +1,9 @@
-// @ts-nocheck
 import { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth';
 import prisma from '../config/database';
 import { organizationService } from '../services/organization.service';
 import { aiBrainService } from '../services/aiBrain.service';
+import type { JwtPayload } from '../utils/jwt';
 
 const router = Router();
 
@@ -11,8 +11,9 @@ router.use(authenticate);
 
 router.post('/start', async (req: Request, res: Response) => {
   try {
+    const uid = (req.user as JwtPayload).userId;
     const { name, domainSlug, industry, productsServices, sourceUrl } = req.body;
-    const user = await prisma.user.findUnique({ where: { id: req.user!.userId } });
+    const user = await prisma.user.findUnique({ where: { id: uid } });
     if (!user) return void res.status(404).json({ success: false, error: 'المستخدم غير موجود' });
 
     if (user.organizationId) {
@@ -42,7 +43,7 @@ router.post('/start', async (req: Request, res: Response) => {
 
 router.post('/step-2', async (req: Request, res: Response) => {
   try {
-    const user = await prisma.user.findUnique({ where: { id: req.user!.userId } });
+    const user = await prisma.user.findUnique({ where: { id: (req.user as JwtPayload).userId } });
     if (!user?.organizationId) return void res.status(400).json({ success: false, error: 'الرجاء إكمال الخطوة الأولى أولاً' });
 
     const { productsServices, priceRange, targetAudience, toneOfVoice, faqs } = req.body;
@@ -62,7 +63,7 @@ router.post('/step-2', async (req: Request, res: Response) => {
 
 router.post('/step-3', async (req: Request, res: Response) => {
   try {
-    const user = await prisma.user.findUnique({ where: { id: req.user!.userId } });
+    const user = await prisma.user.findUnique({ where: { id: (req.user as JwtPayload).userId } });
     if (!user?.organizationId) return void res.status(400).json({ success: false, error: 'الرجاء إكمال الخطوات السابقة' });
 
     const { sourceUrl } = req.body;
@@ -81,7 +82,7 @@ router.post('/step-3', async (req: Request, res: Response) => {
 
 router.post('/step-4', async (req: Request, res: Response) => {
   try {
-    const user = await prisma.user.findUnique({ where: { id: req.user!.userId } });
+    const user = await prisma.user.findUnique({ where: { id: (req.user as JwtPayload).userId } });
     if (!user?.organizationId) return void res.status(400).json({ success: false, error: 'الرجاء إكمال الخطوات السابقة' });
 
     const { agentName, greetingMessage, activeMode } = req.body;
@@ -98,7 +99,7 @@ router.post('/step-4', async (req: Request, res: Response) => {
 router.get('/status', async (req: Request, res: Response) => {
   try {
     const user = await prisma.user.findUnique({
-      where: { id: req.user!.userId },
+      where: { id: (req.user as JwtPayload).userId },
       include: { organization: { include: { businessProfile: true, personaConfig: true } } },
     });
     if (!user) return void res.status(404).json({ success: false, error: 'المستخدم غير موجود' });

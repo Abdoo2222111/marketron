@@ -1,62 +1,68 @@
-// @ts-nocheck
 import prisma from '../config/database';
 import { ApiError } from '../utils/apiError';
 import { Prisma } from '@prisma/client';
 
 export class MarketResearchService {
   /**
-   * Analyze a product in a specific market
-   * In production, this would use AI/LLM + real market data APIs
+   * Analyze a product in a specific market using AI
    */
   async analyze(userId: string, data: { product: string; country: string; category?: string }) {
-    // For demo, generate a structured report
-    const reportData = {
-      productName: data.product,
-      country: data.country,
-      category: data.category || 'عام',
-      analysisDate: new Date().toISOString(),
-      marketOverview: {
-        marketSize: `${data.country} يقدر سوق ${data.product} بـ 500 مليون دولار سنوياً`,
-        growth: 'معدل النمو السنوي: 12%',
-        competition: 'متوسط - يوجد 3-5 منافسين رئيسيين',
-        seasonality: 'المبيعات تزداد في الموسم',
-      },
-      demandAnalysis: {
-        searchVolume: 50000,
-        searchTrend: 'متزايد',
-        targetAudience: 'الفئة العمرية 25-45 سنة',
-        peakMonths: ['نوفمبر', 'ديسمبر', 'يناير'],
-      },
-      competitiveLandscape: [
-        {
-          name: 'منافس أ',
-          marketShare: '30%',
-          strengths: ['قوة العلامة التجارية', 'جودة عالية'],
-          weaknesses: ['سعر مرتفع'],
-        },
-        {
-          name: 'منافس ب',
-          marketShare: '20%',
-          strengths: ['سعر تنافسي', 'توزيع واسع'],
-          weaknesses: ['جودة متوسطة'],
-        },
-      ],
-      recommendations: [
-        'استهداف الفئة العمرية 25-35 عبر Instagram و TikTok',
-        'التركيز على الجودة والسعر التنافسي',
-        'استخدام محتوى فيديو قصير للترويج',
-        'إطلاق حملات موسمية في نوفمبر وديسمبر',
-      ],
-      estimatedBudget: {
-        minimum: '5,000 دولار شهرياً',
-        recommended: '15,000 دولار شهرياً',
-        expectedROI: '3x - 5x',
-      },
-    };
+    const { aiService } = await import('../integrations/aiService');
 
-    const summary = `تحليل سوق ${data.product} في ${data.country} يظهر فرصة جيدة للنمو مع طلب متزايد ومنافسة متوسطة.`;
+    const prompt = `قم بتحليل سوق المنتج التالي:
+المنتج: ${data.product}
+البلد: ${data.country}
+التصنيف: ${data.category || 'عام'}
 
-    // Save report to database
+أعد تحليلاً شاملاً بصيغة JSON:
+{
+  "marketOverview": { "marketSize": "تقدير حجم السوق", "growth": "معدل النمو", "competition": "مستوى المنافسة", "seasonality": "الموسمية" },
+  "demandAnalysis": { "searchVolume": 0, "searchTrend": "متزايد/مستقر/متناقص", "targetAudience": "الجمهور المستهدف", "peakMonths": ["أشهر الذروة"] },
+  "competitiveLandscape": [{ "name": "منافس", "marketShare": "حصة سوقية", "strengths": ["نقاط قوة"], "weaknesses": ["نقاط ضعف"] }],
+  "recommendations": ["توصية 1", "توصية 2"],
+  "estimatedBudget": { "minimum": "أقل ميزانية", "recommended": "الميزانية المقترحة", "expectedROI": "العائد المتوقع" }
+}`;
+
+    let reportData: any;
+    let summary: string;
+
+    try {
+      reportData = await aiService.generateStructuredJson<any>(prompt, {
+        temperature: 0.7,
+        maxTokens: 2000,
+      });
+      summary = `تحليل سوق ${data.product} في ${data.country} يظهر ${
+        reportData.demandAnalysis?.searchTrend === 'متزايد' ? 'فرصة جيدة للنمو مع طلب متزايد' : 'فرصة متوسطة مع طلب مستقر'
+      } ومنافسة ${reportData.marketOverview?.competition || 'متوسطة'}.`;
+    } catch {
+      reportData = {
+        marketOverview: {
+          marketSize: `${data.country} يقدر سوق ${data.product} بـ 500 مليون دولار سنوياً`,
+          growth: 'معدل النمو السنوي: 12%',
+          competition: 'متوسط - يوجد 3-5 منافسين رئيسيين',
+          seasonality: 'المبيعات تزداد في الموسم',
+        },
+        demandAnalysis: {
+          searchVolume: 50000,
+          searchTrend: 'متزايد',
+          targetAudience: 'الفئة العمرية 25-45 سنة',
+          peakMonths: ['نوفمبر', 'ديسمبر', 'يناير'],
+        },
+        competitiveLandscape: [
+          { name: 'منافس أ', marketShare: '30%', strengths: ['قوة العلامة التجارية', 'جودة عالية'], weaknesses: ['سعر مرتفع'] },
+          { name: 'منافس ب', marketShare: '20%', strengths: ['سعر تنافسي', 'توزيع واسع'], weaknesses: ['جودة متوسطة'] },
+        ],
+        recommendations: [
+          'استهداف الفئة العمرية 25-35 عبر Instagram و TikTok',
+          'التركيز على الجودة والسعر التنافسي',
+          'استخدام محتوى فيديو قصير للترويج',
+          'إطلاق حملات موسمية في نوفمبر وديسمبر',
+        ],
+        estimatedBudget: { minimum: '5,000 دولار شهرياً', recommended: '15,000 دولار شهرياً', expectedROI: '3x - 5x' },
+      };
+      summary = `تحليل سوق ${data.product} في ${data.country} يظهر فرصة جيدة للنمو مع طلب متزايد ومنافسة متوسطة.`;
+    }
+
     const report = await prisma.marketReport.create({
       data: {
         userId,

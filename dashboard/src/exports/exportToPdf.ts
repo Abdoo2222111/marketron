@@ -140,7 +140,7 @@ export async function exportToPdf(
 export async function downloadPdf(
   element: HTMLElement,
   filename: string,
-  options: Omit<ExportOptions, 'format'> & { format?: ExportOptions['format'] } = { title: 'تقرير', rtl: true }
+  options: Omit<ExportOptions, 'format'> & { format?: ExportOptions['format'] } = { title: 'تقرير', rtl: true, includeCharts: true }
 ): Promise<void> {
   const blob = await exportToPdf(element, { ...options, format: 'pdf' });
   const url = URL.createObjectURL(blob);

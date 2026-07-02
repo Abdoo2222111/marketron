@@ -1,7 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getFacebookPages } from '@/lib/social/facebook';
+import { requireAuth } from '@/lib/auth-utils';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const { error } = await requireAuth(req);
+  if (error) return error;
   try {
     const pages = await getFacebookPages();
     const inboxes = pages.map(p => ({
@@ -12,11 +15,9 @@ export async function GET() {
       platformAccountId: p.id,
       isActive: true,
       webhookToken: null,
-      _count: { messages: 0 },
-      whatsAppSessions: [],
     }));
     return NextResponse.json({ data: inboxes });
   } catch {
-    return NextResponse.json({ data: [] });
+    return NextResponse.json({ error: 'فشل جلب البريد الوارد' }, { status: 500 });
   }
 }

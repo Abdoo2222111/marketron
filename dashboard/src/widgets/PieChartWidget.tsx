@@ -175,7 +175,7 @@ export default function PieChartWidget({
             dataKey="value"
             nameKey="name"
             activeIndex={activeIndex}
-            activeShape={renderActiveShape(innerRadius, outerRadius) as any}
+            activeShape={renderActiveShape as any}
             onMouseEnter={(_, index) => setActiveIndex(index)}
             onMouseLeave={() => setActiveIndex(-1)}
             animationBegin={0}

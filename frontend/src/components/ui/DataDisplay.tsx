@@ -1,5 +1,5 @@
 import React from 'react';
-import { cn } from '@/utils/helpers';
+import { cn } from '@/lib/utils';
 import { Search, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 

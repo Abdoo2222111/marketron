@@ -5,7 +5,7 @@ import { Tag, Phone, Mail, MessageSquare, Clock, Sparkles, Save, X } from 'lucid
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { cn } from '@/utils/helpers';
+import { cn } from '@/lib/utils';
 import { CUSTOMER_STATUS_META, type Customer, type CustomerStatus } from '@/types/social';
 
 interface CustomerPanelProps {

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import prisma from '../config/database';
 import logger from '../utils/logger';
 
@@ -52,9 +51,9 @@ export class DemoDataService {
             status: ct.status, budgetType: 'daily', budgetAmount: ct.budget,
             budgetCurrency: 'SAR', startDate: daysAgo(randomInt(10, 60)),
             endDate: daysLater(randomInt(10, 30)),
-            impressions: BigInt(randomInt(10000, 200000)),
-            clicks: BigInt(randomInt(500, 10000)),
-            conversions: BigInt(randomInt(10, 500)),
+            impressions: randomInt(10000, 200000),
+            clicks: randomInt(500, 10000),
+            conversions: randomInt(10, 500),
             spend: randomFloat(500, 5000),
             ctr: randomFloat(1, 5), cpc: randomFloat(0.5, 3),
             cpm: randomFloat(5, 20), cpa: randomFloat(10, 100),
@@ -73,9 +72,9 @@ export class DemoDataService {
               campaignId: c.id, platform: ct.platform, name: ad.name,
               status: ct.status === 'active' ? 'active' : 'paused',
               creativeHeadline: ad.headline, creativeText: ad.text, creativeCta: ad.cta,
-              impressions: BigInt(randomInt(1000, 50000)),
-              clicks: BigInt(randomInt(50, 3000)),
-              conversions: BigInt(randomInt(1, 50)),
+              impressions: randomInt(1000, 50000),
+              clicks: randomInt(50, 3000),
+              conversions: randomInt(1, 50),
               spend: randomFloat(50, 1000),
               ctr: randomFloat(1, 8), cpc: randomFloat(0.3, 3),
               cpm: randomFloat(3, 15), cpa: randomFloat(5, 80),
@@ -92,8 +91,8 @@ export class DemoDataService {
           await tx.adSnapshot.create({
             data: {
               campaignId: c.id, platform: ct.platform, date: daysAgo(day),
-              impressions: BigInt(imp), clicks: BigInt(clk),
-              conversions: BigInt(conv), spend: spd, revenue: rev,
+              impressions: imp, clicks: clk,
+              conversions: conv, spend: spd, revenue: rev,
               ctr: imp > 0 ? clk / imp : 0,
               cpc: clk > 0 ? spd / clk : 0,
               cpm: imp > 0 ? (spd / imp) * 1000 : 0,
@@ -143,7 +142,7 @@ export class DemoDataService {
         await tx.notification.create({ data: { userId, ...n } });
       }
 
-      const inbox = await tx.socialInbox.create({ data: { userId, name: 'الوارد الموحد', platform: 'facebook', isActive: true } });
+      const inbox = await tx.socialInbox.create({ data: { userId, name: 'الوارد الموحد', platform: 'facebook', platformAccountId: 'demo' } });
       for (let i = 0; i < 5; i++) {
         await tx.socialMessage.create({
           data: {

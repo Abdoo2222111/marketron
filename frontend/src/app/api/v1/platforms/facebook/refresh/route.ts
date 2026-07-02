@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getFacebookPages } from '@/lib/social/facebook';
+import { requireAuth } from '@/lib/auth-utils';
 
-export async function POST(_req: NextRequest) {
+export async function POST(req: NextRequest) {
+  const { error } = await requireAuth(req);
+  if (error) return error;
   try {
     const appId = process.env.FACEBOOK_APP_ID;
     const appSecret = process.env.FACEBOOK_APP_SECRET;
@@ -31,12 +34,10 @@ export async function POST(_req: NextRequest) {
       }, { status: 400 });
     }
 
-    const newToken = data.access_token;
-    const pages = await getFacebookPages(newToken);
+    const pages = await getFacebookPages(data.access_token);
 
     return NextResponse.json({
       data: {
-        accessToken: newToken,
         expiresIn: data.expires_in,
         pages: pages.map(p => ({ id: p.id, name: p.name })),
         message: 'تم تحديث رمز فيسبوك بنجاح',

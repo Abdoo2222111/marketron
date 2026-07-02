@@ -45,14 +45,10 @@ async function seed() {
   await prisma.analyticsReport.deleteMany();
   await prisma.invoice.deleteMany();
   await prisma.notification.deleteMany();
-  await prisma.apiKey.deleteMany();
   await prisma.creditTransaction.deleteMany();
   await prisma.payment.deleteMany();
   await prisma.subscription.deleteMany();
   await prisma.userCredits.deleteMany();
-  await prisma.workspaceBilling.deleteMany();
-  await prisma.workspaceClient.deleteMany();
-  await prisma.clientWorkspace.deleteMany();
   await prisma.teamMember.deleteMany();
   await prisma.team.deleteMany();
   await prisma.platformConnection.deleteMany();
@@ -211,9 +207,9 @@ async function seed() {
         budgetCurrency: 'USD',
         startDate: c.startDate,
         endDate: c.endDate,
-        impressions: BigInt(randomInt(10000, 200000)),
-        clicks: BigInt(randomInt(500, 10000)),
-        conversions: BigInt(randomInt(10, 500)),
+        impressions: randomInt(10000, 200000),
+        clicks: randomInt(500, 10000),
+        conversions: randomInt(10, 500),
         spend: randomFloat(500, 5000),
         ctr: randomFloat(1, 5),
         cpc: randomFloat(0.5, 3),
@@ -246,9 +242,9 @@ async function seed() {
           creativeText: tmpl.text,
           creativeHeadline: tmpl.headline,
           creativeCta: tmpl.cta,
-          impressions: BigInt(randomInt(1000, 50000)),
-          clicks: BigInt(randomInt(50, 3000)),
-          conversions: BigInt(randomInt(1, 50)),
+          impressions: randomInt(1000, 50000),
+          clicks: randomInt(50, 3000),
+          conversions: randomInt(1, 50),
           spend: randomFloat(50, 1000),
           ctr: randomFloat(1, 8),
           cpc: randomFloat(0.3, 3),
@@ -274,9 +270,9 @@ async function seed() {
           campaignId: campaign.id,
           platform: campaign.platform,
           date: daysAgo(day),
-          impressions: BigInt(impressions),
-          clicks: BigInt(clicks),
-          conversions: BigInt(conversions),
+          impressions: impressions,
+          clicks: clicks,
+          conversions: conversions,
           spend: spend,
           ctr: impressions > 0 ? clicks / impressions : 0,
           cpc: clicks > 0 ? spend / clicks : 0,
@@ -388,7 +384,7 @@ async function seed() {
         name: agent.name,
         type: agent.type,
         systemPrompt: agent.prompt,
-        modelName: 'gpt-4o-mini',
+        model: 'gpt-4o-mini',
         temperature: 0.7,
         maxTokens: 2000,
         isActive: true,
@@ -404,7 +400,6 @@ async function seed() {
       name: 'الوارد الموحد',
       platform: 'facebook',
       platformAccountId: 'fb_page_123',
-      isActive: true,
     },
   });
 
@@ -451,42 +446,15 @@ async function seed() {
   }
   console.log('  ✅ Notifications created');
 
-  // ── Create workspace ──
-  const workspace = await prisma.clientWorkspace.create({
+  // ── Create workspace (using Organization model) ──
+  const workspace = await prisma.organization.create({
     data: {
-      ownerId: agency.id,
-      companyName: 'وكالة الإبداع للتسويق',
+      name: 'وكالة الإبداع للتسويق',
       companySize: '10-50',
       industry: 'وكالة إعلان',
-      country: 'SA',
-      city: 'جدة',
-      status: 'active',
-      subscriptionTier: 'professional',
-      maxUsers: 10,
-      maxCampaigns: 50,
     },
   });
-
-  await prisma.workspaceClient.create({
-    data: {
-      workspaceId: workspace.id,
-      userId: client.id,
-      role: 'member',
-    },
-  });
-
-  await prisma.workspaceBilling.create({
-    data: {
-      workspaceId: workspace.id,
-      planType: 'professional',
-      amount: 299,
-      currency: 'USD',
-      billingCycle: 'monthly',
-      status: 'active',
-      nextBillingDate: daysLater(25),
-    },
-  });
-  console.log('  ✅ Workspace created');
+  console.log('  ✅ Workspace (Organization) created');
 
   // ── Create credit transactions ──
   await prisma.creditTransaction.create({

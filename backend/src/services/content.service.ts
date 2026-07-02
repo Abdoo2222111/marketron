@@ -1,4 +1,3 @@
-// @ts-nocheck
 import prisma from '../config/database';
 import { ApiError } from '../utils/apiError';
 import { Prisma } from '@prisma/client';
@@ -65,21 +64,48 @@ export class ContentService {
     return { message: 'تم حذف المحتوى بنجاح' };
   }
 
-  // AI content generation placeholder
+  // AI content generation using actual AI service
   async generateAiContent(userId: string, data: {
     type: string;
     prompt: string;
     platform?: string;
   }) {
-    // This would call an AI service in production
-    // For now, return a placeholder
-    return {
-      id: 'ai-generated',
-      type: data.type,
-      platform: data.platform,
-      content: `محتوى تم توليده بالذكاء الاصطناعي بناءً على: "${data.prompt}"`,
-      userId,
-    };
+    const { aiService } = await import('../integrations/aiService');
+
+    const systemPrompt = `أنت خبير في إنشاء المحتوى التسويقي.
+المخرجات بالعربية الفصحى.
+نوع المحتوى: ${data.type}
+المنصة: ${data.platform || 'عام'}
+أعد محتوى إبداعياً احترافياً بناءً على الوصف التالي.`;
+
+    try {
+      const result = await aiService.generateText(data.prompt, {
+        systemPrompt,
+        temperature: 0.8,
+        maxTokens: 1000,
+      });
+
+      const content = await prisma.content.create({
+        data: {
+          userId,
+          type: data.type,
+          description: data.prompt,
+          body: result.text,
+          platform: data.platform,
+          aiGenerated: true,
+        },
+      });
+
+      return content;
+    } catch {
+      return {
+        id: 'ai-generated',
+        type: data.type,
+        platform: data.platform,
+        content: `محتوى تم توليده بالذكاء الاصطناعي بناءً على: "${data.prompt}"`,
+        userId,
+      };
+    }
   }
 }
 

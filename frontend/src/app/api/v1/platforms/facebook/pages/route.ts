@@ -1,34 +1,28 @@
-import { NextResponse } from 'next/server';
-import { getFacebookPages, getFacebookPageByToken } from '@/lib/social/facebook';
+import { NextRequest, NextResponse } from 'next/server';
+import { requireAuth, facebookUrl } from '@/lib/auth-utils';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const { error } = await requireAuth(req);
+  if (error) return error;
+
   try {
-    let pages = await getFacebookPages();
+    const url = facebookUrl('me/accounts', { fields: 'id,name,username,access_token,picture' });
+    const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+    const data = await res.json();
 
-    if (pages.length === 0) {
-      const page = await getFacebookPageByToken();
-      if (page) pages = [page];
+    if (data.error) {
+      return NextResponse.json({ error: data.error.message }, { status: 400 });
     }
 
-    return NextResponse.json({
-      data: pages.map(p => ({
-        id: p.id,
-        name: p.name,
-        accessToken: p.access_token,
-        category: p.category,
-        picture: p.picture,
-        followersCount: p.followers_count,
-      })),
-    });
+    const pages = (data.data || []).map((p: any) => ({
+      id: p.id,
+      name: p.name,
+      username: p.username || null,
+      picture: p.picture?.data?.url || null,
+    }));
+
+    return NextResponse.json({ data: pages });
   } catch (e: any) {
-    const msg = e.message || '';
-    if (msg.includes('expired') || msg.includes('Session has expired')) {
-      return NextResponse.json({
-        data: [],
-        error: 'رمز فيسبوك منتهي الصلاحية. الرجاء الحصول على رمز جديد من Facebook Graph API Explorer أو ربط الحساب مجدداً.',
-        expired: true,
-      });
-    }
-    return NextResponse.json({ data: [], error: msg });
+    return NextResponse.json({ error: e.message }, { status: 500 });
   }
 }

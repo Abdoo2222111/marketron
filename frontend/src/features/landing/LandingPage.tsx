@@ -3,45 +3,60 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import {
-  Bot, BarChart3, PenTool, TrendingUp, MessageCircle, Shield,
-  ChevronLeft, Star, Check, Menu, X, Sparkles,
+  Bot, BarChart3, Sparkles, TrendingUp, MessageSquare, Shield,
+  ChevronLeft, Star, Check, Menu, X, ArrowLeft, Play,
+  Building2, Share2, CheckCircle, ChevronDown,
 } from 'lucide-react';
+import { ParticlesBackground } from '@/components/ui/ParticlesBackground';
 
-const FEATURES_CONFIG = [
-  { icon: Bot, titleKey: 'landing.smartAgent', descKey: 'landing.smartAgentDesc' },
-  { icon: BarChart3, titleKey: 'landing.manageCampaigns', descKey: 'landing.manageCampaignsDesc' },
-  { icon: PenTool, titleKey: 'landing.aiContent', descKey: 'landing.aiContentDesc' },
-  { icon: TrendingUp, titleKey: 'landing.smartAnalytics', descKey: 'landing.smartAnalyticsDesc' },
-  { icon: MessageCircle, titleKey: 'nav.social', descKey: 'social.title' },
-  { icon: Shield, titleKey: 'landing.reviewRequired', descKey: 'landing.reviewRequiredDesc' },
+const LOGO_URL = '/logo.png';
+
+function FloatingCube({ x, y, size, delay }: { x: number; y: number; size: string; delay: number }) {
+  return (
+    <div
+      className="cube-3d"
+      style={{
+        left: `${x}%`, top: `${y}%`,
+        width: size, height: size,
+        animationDelay: `${delay}s`,
+      }}
+    />
+  );
+}
+
+const CUBES = [
+  { x: 3,  y: 8,  size: '110px', delay: 0 },
+  { x: 88, y: 12, size: '70px',  delay: 1.2 },
+  { x: 12, y: 72, size: '55px',  delay: 2.5 },
+  { x: 82, y: 68, size: '90px',  delay: 0.8 },
+  { x: 50, y: 4,  size: '65px',  delay: 1.8 },
+  { x: 92, y: 42, size: '45px',  delay: 3.2 },
+  { x: 25, y: 42, size: '40px',  delay: 0.5 },
+  { x: 70, y: 55, size: '50px',  delay: 2.0 },
+  { x: 45, y: 85, size: '35px',  delay: 1.5 },
 ];
 
-const STEPS_CONFIG = [
-  { step: '1', titleKey: 'landing.step1', descKey: 'landing.step1Desc' },
-  { step: '2', titleKey: 'landing.step2', descKey: 'landing.step2Desc' },
-  { step: '3', titleKey: 'landing.step3', descKey: 'landing.step3Desc' },
+const features = [
+  { icon: Bot,        title: 'وكيل مبيعات ذكي 24/7',      desc: 'يرد على عملائك بشكل طبيعي، يفهم نشاطك، ويحول الاستفسارات لمبيعات',             color: '#7C3AED' },
+  { icon: BarChart3,  title: 'لوحة تحكم موحدة',            desc: 'كل حملاتك على Meta وGoogle وTikTok في مكان واحد مع تقارير لحظية',               color: '#06B6D4' },
+  { icon: Sparkles,   title: 'توليد محتوى بالذكاء الاصطناعي', desc: 'نصوص إعلانية وصور بأسلوبك بالعربية — جاهزة للنشر في ثوانٍ',                    color: '#EC4899' },
+  { icon: TrendingUp, title: 'تحليل وتحسين الحملات',       desc: 'تقارير ذكية تحدد نقاط القوة والضعف وتقترح تحسينات فورية',                         color: '#7C3AED' },
+  { icon: MessageSquare, title: 'صندوق وارد موحد',         desc: 'كل محادثات واتساب وعملائك في مكان واحد مع ردود AI ذكية',                         color: '#06B6D4' },
+  { icon: Shield,     title: 'موافقتك أولاً',              desc: 'لا ينشر أي حملة بدون موافقتك — تحكم كامل بدون قلق',                                color: '#10D9A0' },
 ];
 
-const TESTIMONIALS_CONFIG = [
-  { nameKey: 'landing.testimonial1Name', roleKey: 'landing.testimonial1Role', textKey: 'landing.testimonial1Text' },
-  { nameKey: 'landing.testimonial2Name', roleKey: 'landing.testimonial2Role', textKey: 'landing.testimonial2Text' },
+const steps = [
+  { num: '01', title: 'سجّل وعرّف نشاطك',      desc: 'أخبرنا عن نشاطك التجاري ومنتجاتك وجمهورك في 5 دقائق',              icon: Building2 },
+  { num: '02', title: 'اربط حساباتك الإعلانية',  desc: 'اربط Meta وGoogle وTikTok بنقرة — نجلب كل حملاتك تلقائياً',         icon: Share2 },
+  { num: '03', title: 'الذكاء الاصطناعي يبدأ العمل', desc: 'يحلل أداء حملاتك، يرد على عملائك، ويولّد محتوى مخصص',         icon: Bot },
+  { num: '04', title: 'أنت تتحكم، هو ينفّذ',     desc: 'تراجع كل شيء وتوافق قبل النشر — تحكم كامل مع توفير 80% من وقتك',    icon: CheckCircle },
 ];
 
-const PRICING_CONFIG = [
-  { nameKey: 'landing.pricingFree', priceKey: 'landing.pricingFreePrice', features: ['landing.featCampaign1', 'landing.featAgent', 'landing.featAnalytics', 'landing.featCommunity'], ctaKey: 'landing.ctaFree', popular: false },
-  { nameKey: 'landing.pricingBasic', priceKey: 'landing.pricingBasicPrice', features: ['landing.featCampaigns5', 'landing.featAgentAdvanced', 'landing.featAnalyticsFull', 'landing.featWhatsapp', 'landing.featSupport'], ctaKey: 'landing.ctaBasic', popular: true },
-  { nameKey: 'landing.pricingPro', priceKey: 'landing.pricingProPrice', features: ['landing.featCampaignsUnlimited', 'landing.featAgentCustom', 'landing.featApi', 'landing.featMultiPlatform', 'landing.featPriority'], ctaKey: 'landing.ctaPro', popular: false },
-];
-
-const PLATFORMS = [
-  { name: 'Meta Ads', color: '#1877F2' },
-  { name: 'Google Ads', color: '#4285F4' },
-  { name: 'TikTok Ads', color: '#000' },
-  { name: 'WhatsApp', color: '#25D366' },
+const plans = [
+  { name: 'تجريبي', price: 'مجاني', period: '', desc: 'للتجربة والاستكشاف', features: ['وكيل ذكي (50 رسالة/شهر)', 'لوحة تحكم أساسية', 'منصة واحدة'], cta: 'ابدأ مجاناً', highlight: false },
+  { name: 'احترافي', price: '299', period: 'ريال / شهر', desc: 'للأعمال النشطة', features: ['وكيل ذكي غير محدود', '3 منصات إعلانية', 'توليد محتوى AI', 'تحليل متقدم', 'دعم واتساب'], cta: 'ابدأ الآن', highlight: true, badge: 'الأكثر طلباً' },
+  { name: 'مؤسسي', price: '799', period: 'ريال / شهر', desc: 'للشركات الكبيرة', features: ['كل مميزات الاحترافي', 'مستخدمين غير محدودين', 'API مخصص', 'مدير حساب مخصص', 'SLA مضمون'], cta: 'تواصل معنا', highlight: false },
 ];
 
 export const LandingPage: React.FC = () => {
@@ -50,238 +65,306 @@ export const LandingPage: React.FC = () => {
   const locale = i18n.language || 'ar';
 
   return (
-    <div className="min-h-screen bg-[#0B0A1A]">
-      <div className="cube-container">
-        <div className="cube" /><div className="cube" /><div className="cube" />
-        <div className="cube" /><div className="cube" /><div className="cube" />
+    <div dir="rtl" className="min-h-screen bg-[#0B0A1A] text-white overflow-x-hidden">
+      <ParticlesBackground />
+      {/* ===== Floating Cubes Background ===== */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] rounded-full bg-gradient-radial from-purple-600/15 via-purple-900/5 to-transparent blur-3xl" />
+        <div className="bg-grid absolute inset-0 opacity-[0.03]" />
+        {CUBES.map((c, i) => <FloatingCube key={i} {...c} />)}
       </div>
 
-      {/* HEADER */}
+      {/* ===== HEADER ===== */}
       <header className="fixed top-0 left-0 right-0 z-50 glass">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <img src="/logo.svg" alt="MARKETRON" className="h-8 sm:h-9 w-auto object-contain" />
-            <span className="font-black text-lg gradient-brand-text hidden sm:inline">MARKETRON</span>
-          </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
+          <a href="/ar/services" className="flex items-center gap-3">
+            <img src={LOGO_URL} alt="MARKETRON" className="h-12 sm:h-14 w-auto drop-shadow-[0_0_12px_rgba(124,58,237,0.3)]" />
+          </a>
           <nav className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-[#A1A1C2] hover:text-[#F5F3FF] transition-colors text-sm font-medium">{t('landing.features')}</a>
-            <a href="#pricing" className="text-[#A1A1C2] hover:text-[#F5F3FF] transition-colors text-sm font-medium">{t('landing.pricing')}</a>
-            <a href="#contact" className="text-[#A1A1C2] hover:text-[#F5F3FF] transition-colors text-sm font-medium">{t('landing.contactUs')}</a>
+            <a href="/ar/services" className="text-sm text-[#A1A1C2] hover:text-white transition-colors">خدماتنا</a>
+            <a href="#features" className="text-sm text-[#A1A1C2] hover:text-white transition-colors">المميزات</a>
+            <a href="#pricing" className="text-sm text-[#A1A1C2] hover:text-white transition-colors">الأسعار</a>
+            <a href="https://wa.me/201011273472" target="_blank" rel="noopener noreferrer" className="text-sm px-4 py-2 rounded-lg bg-emerald-500/20 text-emerald-400 font-semibold hover:bg-emerald-500/30 transition-all flex items-center gap-1">
+              01011273472
+            </a>
           </nav>
           <div className="flex items-center gap-3">
-            <a href={`/${locale}/auth/login`} className="text-sm text-[#A1A1C2] hover:text-[#F5F3FF] hidden sm:inline">{t('auth.login')}</a>
-            <Button size="sm" className="rounded-full" onClick={() => window.location.href = `/${locale}/auth/register`}>{t('landing.heroCta')}</Button>
-            <button className="md:hidden p-2" onClick={() => setMobileMenu(!mobileMenu)}>
-              {mobileMenu ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            <a href={`/${locale}/auth/login`} className="text-sm text-[#A1A1C2] hover:text-white hidden sm:inline transition-colors">تسجيل الدخول</a>
+            <a href={`/${locale}/auth/register`} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-500 text-white font-bold text-sm hover:shadow-[0_0_30px_rgba(124,58,237,0.5)] transition-all">ابدأ مجاناً</a>
+            <button className="md:hidden p-2 text-[#A1A1C2]" onClick={() => setMobileMenu(!mobileMenu)}>
+              {mobileMenu ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
         </div>
       </header>
 
-      {/* MOBILE MENU */}
       {mobileMenu && (
-        <div className="fixed inset-0 z-40 bg-[#0B0A1A]/95 backdrop-blur-lg pt-20">
+        <div className="fixed inset-0 z-40 bg-[#0B0A1A]/95 backdrop-blur-2xl pt-24">
           <div className="flex flex-col items-center gap-6 p-8">
-            <a href="#features" onClick={() => setMobileMenu(false)} className="text-xl text-[#F5F3FF]">{t('landing.features')}</a>
-            <a href="#pricing" onClick={() => setMobileMenu(false)} className="text-xl text-[#F5F3FF]">{t('landing.pricing')}</a>
-            <a href="#contact" onClick={() => setMobileMenu(false)} className="text-xl text-[#F5F3FF]">{t('landing.contactUs')}</a>
-            <a href={`/${locale}/auth/login`} className="text-lg text-[#A1A1C2]">{t('auth.login')}</a>
-            <Button className="mt-4" onClick={() => window.location.href = `/${locale}/auth/register`}>{t('landing.getStarted')}</Button>
+            <a href="/ar/services" onClick={() => setMobileMenu(false)} className="text-xl text-white font-bold">خدماتنا</a>
+            <a href="#features" onClick={() => setMobileMenu(false)} className="text-lg text-[#A1A1C2]">المميزات</a>
+            <a href="#pricing" onClick={() => setMobileMenu(false)} className="text-lg text-[#A1A1C2]">الأسعار</a>
+            <a href="https://wa.me/201011273472" target="_blank" rel="noopener noreferrer" className="text-lg text-emerald-400">واتساب: 01011273472</a>
+            <a href={`/${locale}/auth/login`} className="text-lg text-[#A1A1C2]">تسجيل الدخول</a>
+            <a href={`/${locale}/auth/register`} className="mt-4 px-8 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-500 text-white font-bold">ابدأ مجاناً</a>
           </div>
         </div>
       )}
 
-      {/* HERO */}
-      <section className="relative pt-32 pb-20 sm:pt-44 sm:pb-32 overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-[#7C3AED]/10 blur-[100px]" />
-        <div className="absolute top-1/3 right-1/4 w-[300px] h-[300px] rounded-full bg-[#06B6D4]/5 blur-[80px]" />
-        <div className="relative max-w-5xl mx-auto px-4 text-center">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-            <Badge variant="info" className="mb-6 px-4 py-1.5 text-sm rounded-full">
-              <Sparkles className="w-3.5 h-3.5 ml-1 inline" /> {t('app.tagline')}
-            </Badge>
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black leading-tight mb-6">
-              {t('landing.heroTitle')}<br />
-              <span className="gradient-brand-text">{t('landing.heroSubtitle')}</span>
+      {/* ===== HERO SECTION ===== */}
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
+        <div className="relative z-10 text-center px-4 max-w-5xl mx-auto">
+          <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
+            <div className="flex justify-center mb-10">
+              <motion.img src={LOGO_URL} alt="MARKETRON" className="h-24 sm:h-32 w-auto opacity-95 drop-shadow-[0_0_20px_rgba(124,58,237,0.4)]" initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.6 }} />
+            </div>
+            <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-purple-900/40 border border-purple-500/40 text-purple-200 text-sm font-bold mb-8 animate-fade-in-down shadow-[0_0_20px_rgba(124,58,237,0.2)]">
+              <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse" />
+              منصة الذكاء الاصطناعي للتسويق الرقمي
+            </div>
+            <h1 className="text-5xl sm:text-7xl lg:text-8xl font-black leading-tight mb-8 animate-fade-in-up [text-shadow:_0_0_30px_rgba(6,182,212,0.3)]">
+              حملاتك الإعلانية
+              <br />
+              <span className="bg-gradient-to-r from-cyan-300 via-purple-300 to-cyan-300 bg-clip-text text-transparent animate-gradient-x">
+                بعقل ذكي يفهمك
+              </span>
             </h1>
-            <p className="text-lg sm:text-xl text-[#A1A1C2] max-w-2xl mx-auto mb-10 leading-relaxed">
-              {t('landing.heroDescription')}
+            <p className="text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-in-up animation-delay-200">
+              أدر حملاتك على Meta وGoogle وTikTok من مكان واحد،
+              <br />مع وكيل ذكاء اصطناعي يرد على عملائك 24/7 ويولّد محتوى تسويقي احترافي
             </p>
-            <div className="flex items-center justify-center gap-4 flex-wrap">
-              <Button size="lg" className="rounded-full px-8 shadow-[0_0_30px_rgba(124,58,237,0.4)]"
-                onClick={() => window.location.href = `/${locale}/auth/register`}>
-                {t('landing.getStarted')} <ChevronLeft className="w-5 h-5" />
-              </Button>
-              <Button variant="outline" size="lg" className="rounded-full px-8">
-                <Sparkles className="w-5 h-5 ml-2" /> {t('landing.heroSecondary')}
-              </Button>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up animation-delay-400">
+              <a href={`/${locale}/auth/register`}
+                className="group px-8 py-4 rounded-2xl font-bold text-white text-lg bg-gradient-to-r from-purple-600 to-cyan-500 shadow-[0_0_30px_rgba(124,58,237,0.5)] hover:shadow-[0_0_50px_rgba(124,58,237,0.8)] hover:scale-105 transition-all duration-300 flex items-center gap-3">
+                ابدأ مجاناً الآن <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+              </a>
+              <a href="#features"
+                className="px-8 py-4 rounded-2xl font-semibold text-purple-300 text-lg border border-purple-500/40 bg-purple-900/20 hover:bg-purple-900/40 hover:border-purple-400 transition-all duration-300 flex items-center gap-3">
+                <Play className="w-5 h-5 text-cyan-400" /> شاهد كيف يعمل
+              </a>
+            </div>
+            <div className="mt-16 grid grid-cols-3 gap-8 max-w-lg mx-auto animate-fade-in-up animation-delay-600">
+              {[
+                { num: '٥٠٠+', label: 'حملة مُدارة' },
+                { num: '٩٨٪',   label: 'رضا العملاء' },
+                { num: '24/7',  label: 'وكيل ذكي نشط' },
+              ].map(({ num, label }) => (
+                <div key={label} className="text-center">
+                  <div className="text-3xl sm:text-4xl font-black bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">{num}</div>
+                  <div className="text-gray-500 text-sm mt-1">{label}</div>
+                </div>
+              ))}
             </div>
           </motion.div>
         </div>
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce text-gray-600">
+          <ChevronDown size={28} />
+        </div>
       </section>
 
-      {/* TRUST BAR */}
-      <section className="py-12 border-y border-[#7C3AED]/10">
+      {/* ===== TRUST BAR ===== */}
+      <section className="py-12 border-y border-purple-900/20 bg-gradient-to-r from-transparent via-purple-900/5 to-transparent">
         <div className="max-w-5xl mx-auto px-4 text-center">
-          <p className="text-sm text-[#A1A1C2] mb-6">{t('landing.trustedBy')}</p>
-          <div className="flex items-center justify-center gap-8 sm:gap-16 flex-wrap">
-            {PLATFORMS.map(p => (
-              <div key={p.name} className="flex items-center gap-2 text-[#A1A1C2]">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
-                <span className="text-sm font-medium">{p.name}</span>
+          <p className="text-gray-500 text-sm mb-6">يتكامل مع المنصات الإعلانية الكبرى</p>
+          <div className="flex items-center justify-center gap-6 sm:gap-8 flex-wrap">
+            {[
+              { name: 'Meta Ads',   emoji: '📘' },
+              { name: 'Google Ads', emoji: '🎯' },
+              { name: 'TikTok Ads', emoji: '🎵' },
+              { name: 'WhatsApp',   emoji: '💬' },
+              { name: 'Snapchat',   emoji: '👻' },
+              { name: 'Instagram',  emoji: '📸' },
+            ].map(({ name, emoji }) => (
+              <div key={name} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#14102B] border border-purple-900/20 hover:border-purple-500/30 transition-all group">
+                <span className="text-lg">{emoji}</span>
+                <span className="text-gray-400 text-sm font-medium group-hover:text-white transition-colors">{name}</span>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* FEATURES GRID */}
-      <section id="features" className="py-20 sm:py-32">
-        <div className="max-w-6xl mx-auto px-4">
+      {/* ===== FEATURES ===== */}
+      <section id="features" className="py-24 px-4">
+        <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-black mb-4">{t('landing.features')}</h2>
-            <p className="text-[#A1A1C2] text-lg">{t('landing.featuresSubtitle')}</p>
+            <span className="text-purple-400 text-sm font-bold tracking-widest mb-4 block">المميزات</span>
+            <h2 className="text-4xl sm:text-5xl font-black mb-4">
+              كل ما تحتاجه في
+              <span className="bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent"> مكان واحد</span>
+            </h2>
+            <p className="text-gray-400 text-lg max-w-2xl mx-auto">منصة متكاملة تجمع بين الذكاء الاصطناعي وأدوات التسويق الرقمي</p>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {FEATURES_CONFIG.map((f, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} viewport={{ once: true }}>
-                <Card className="p-6 h-full">
-                  <div className="w-12 h-12 rounded-xl gradient-primary/20 flex items-center justify-center mb-4">
-                    <f.icon className="w-6 h-6 text-[#06B6D4]" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {features.map((f, i) => {
+              const Icon = f.icon;
+              return (
+                <motion.div key={i}
+                  initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+                  transition={{ delay: i * 0.08 }}
+                  className="group relative p-8 rounded-3xl bg-gradient-to-br from-[#14102B] to-[#1A1238] border border-purple-900/20 hover:border-purple-500/40 hover:-translate-y-3 transition-all duration-500 cursor-pointer hover:shadow-[0_0_50px_rgba(124,58,237,0.25)] before:absolute before:inset-0 before:rounded-3xl before:opacity-0 before:transition-opacity before:duration-500 hover:before:opacity-100 before:bg-gradient-to-br before:from-purple-600/10 before:to-transparent">
+                  <div className="relative z-10">
+                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-5 shadow-[0_0_25px_rgba(124,58,237,0.3)] group-hover:scale-110 transition-transform duration-300`}
+                      style={{ background: `linear-gradient(135deg, ${f.color}50, ${f.color}20)` }}>
+                      <Icon size={26} style={{ color: f.color }} />
+                    </div>
+                    <h3 className="text-white font-bold text-xl mb-3 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-cyan-300 group-hover:to-purple-300 transition-all duration-300">{f.title}</h3>
+                    <p className="text-gray-400 text-sm leading-relaxed group-hover:text-gray-300 transition-colors duration-300">{f.desc}</p>
                   </div>
-                  <h3 className="text-lg font-bold mb-2">{t(f.titleKey)}</h3>
-                  <p className="text-[#A1A1C2] text-sm leading-relaxed">{t(f.descKey)}</p>
-                </Card>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== HOW IT WORKS ===== */}
+      <section className="py-32 px-4 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-900/5 to-transparent pointer-events-none" />
+        <div className="absolute top-1/3 left-1/4 w-72 h-72 bg-purple-600/5 rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute bottom-1/3 right-1/4 w-72 h-72 bg-cyan-600/5 rounded-full blur-[100px] pointer-events-none" />
+        <div className="max-w-5xl mx-auto relative">
+          <div className="text-center mb-16">
+            <span className="text-purple-400 text-sm font-bold tracking-widest mb-4 block">كيف يعمل</span>
+            <h2 className="text-4xl sm:text-5xl font-black mb-4">
+              ابدأ رحلة <span className="bg-gradient-to-r from-cyan-300 to-purple-300 bg-clip-text text-transparent">النجاح</span> في
+              <br />
+              <span className="text-white">أربع خطوات بسيطة</span>
+            </h2>
+            <p className="text-gray-400 text-lg">من التسجيل إلى الانطلاق — كل شيء جاهز في دقائق</p>
+          </div>
+          <div className="relative">
+            <div className="hidden lg:block absolute top-8 left-[12%] right-[12%] h-px bg-gradient-to-r from-purple-600/0 via-purple-400/60 to-purple-600/0 shadow-[0_0_8px_rgba(124,58,237,0.3)]" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+              {steps.map((s, i) => {
+                const Icon = s.icon;
+                return (
+                  <motion.div key={i} initial={{ opacity: 0, y: 30, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.15, duration: 0.5 }} className="flex flex-col items-center text-center group">
+                    <div className="relative mb-7">
+                      <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-cyan-500/10 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-500" />
+                      <div className="relative w-20 h-20 rounded-2xl flex items-center justify-center bg-gradient-to-br from-purple-600/40 to-cyan-500/20 border border-purple-500/40 group-hover:border-purple-400/60 shadow-[0_0_30px_rgba(124,58,237,0.3)] group-hover:shadow-[0_0_50px_rgba(124,58,237,0.5)] group-hover:scale-110 transition-all duration-500">
+                        <Icon size={30} className="text-purple-300 group-hover:text-white transition-colors duration-300" />
+                      </div>
+                      <span className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-purple-500 text-white text-sm font-bold flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.5)] group-hover:scale-110 transition-transform duration-300">{i + 1}</span>
+                    </div>
+                    <h3 className="text-white font-bold text-xl mb-3 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-cyan-300 group-hover:to-purple-300 transition-all duration-300">{s.title}</h3>
+                    <p className="text-gray-400 text-sm leading-relaxed max-w-[220px] group-hover:text-gray-300 transition-colors duration-300">{s.desc}</p>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== PRICING ===== */}
+      <section id="pricing" className="py-24 px-4">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <span className="text-purple-400 text-sm font-bold tracking-widest mb-4 block">الأسعار</span>
+            <h2 className="text-4xl sm:text-5xl font-black mb-4">خطط بسيطة وشفافة</h2>
+            <p className="text-gray-400 text-lg">بدون رسوم خفية، بدون التزامات طويلة</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+            {plans.map((p, i) => (
+              <motion.div key={i} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+                className={`relative rounded-3xl p-8 transition-all duration-300 ${
+                  p.highlight
+                    ? 'bg-gradient-to-br from-purple-900/60 to-cyan-900/30 border-2 border-purple-500/60 scale-105 shadow-[0_0_50px_rgba(124,58,237,0.3)]'
+                    : 'bg-[#14102B] border border-purple-900/20 hover:border-purple-500/30'
+                }`}>
+                {p.badge && (
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-sm font-bold text-white bg-gradient-to-r from-purple-600 to-cyan-500">{p.badge}</div>
+                )}
+                <h3 className="text-white font-bold text-xl mb-1">{p.name}</h3>
+                <p className="text-gray-400 text-sm mb-6">{p.desc}</p>
+                <div className="mb-8">
+                  <span className={`text-5xl font-black ${p.highlight ? 'text-white' : 'text-gray-200'}`}>{p.price}</span>
+                  {p.period && <span className="text-gray-400 text-sm mr-2">{p.period}</span>}
+                </div>
+                <ul className="space-y-3 mb-8">
+                  {p.features.map((f, j) => (
+                    <li key={j} className="flex items-center gap-3 text-gray-300 text-sm">
+                      <Check size={16} className="text-cyan-400 flex-shrink-0" />{f}
+                    </li>
+                  ))}
+                </ul>
+                <a href={`/${locale}/auth/register`}
+                  className={`block w-full py-3 rounded-xl font-bold text-center transition-all duration-200 ${
+                    p.highlight
+                      ? 'bg-gradient-to-r from-purple-600 to-cyan-500 text-white hover:opacity-90'
+                      : 'border border-purple-500/40 text-purple-300 hover:bg-purple-900/30'
+                  }`}>{p.cta}</a>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* HOW IT WORKS */}
-      <section className="py-20 sm:py-32 bg-[#14102B]/50">
-        <div className="max-w-4xl mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-black mb-4">{t('landing.howItWorks')}</h2>
-            <p className="text-[#A1A1C2] text-lg">{t('landing.howItWorksDesc')}</p>
-          </div>
-          <div className="grid sm:grid-cols-3 gap-8 relative">
-            {STEPS_CONFIG.map((s, i) => (
-              <div key={i} className="text-center relative">
-                <div className="w-14 h-14 rounded-full gradient-primary flex items-center justify-center text-white font-black text-xl mx-auto mb-4 shadow-[0_0_20px_rgba(124,58,237,0.4)]">
-                  {s.step}
-                </div>
-                {i < 2 && <div className="hidden sm:block absolute top-7 left-[60%] w-[80%] h-px bg-gradient-to-r from-[#7C3AED] to-[#06B6D4] opacity-40" />}
-                <h3 className="font-bold text-lg mb-2">{t(s.titleKey)}</h3>
-                <p className="text-[#A1A1C2] text-sm">{t(s.descKey)}</p>
+      {/* ===== CTA ===== */}
+      <section className="py-32 px-4 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-purple-900/30 via-[#0B0A1A] to-cyan-900/20" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-gradient-radial from-purple-600/10 via-cyan-500/5 to-transparent blur-3xl pointer-events-none" />
+        <div className="absolute inset-0 bg-grid opacity-[0.02] pointer-events-none" />
+        <div className="relative max-w-3xl mx-auto text-center">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
+            <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-cyan-900/30 border border-cyan-500/30 text-cyan-300 text-sm font-bold mb-8">
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+              ابدأ رحلتك الآن
+            </div>
+            <h2 className="text-5xl sm:text-6xl font-black mb-6">
+              <span className="bg-gradient-to-r from-cyan-300 via-purple-300 to-cyan-300 bg-clip-text text-transparent">جاهز لتطوير أعمالك</span>
+              <span className="block text-white mt-2">باستخدام MARKETRON؟</span>
+            </h2>
+            <p className="text-lg text-gray-400 mb-10 max-w-xl mx-auto">ابدأ مجاناً اليوم — بدون بطاقة ائتمان، بدون التزامات. وانضم لأكثر من 500 مسوّق يستخدمون المنصة</p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
+              <a href={`/${locale}/auth/register`}
+                className="group px-12 py-5 rounded-2xl font-bold text-white text-lg bg-gradient-to-r from-purple-600 to-cyan-500 shadow-[0_0_50px_rgba(124,58,237,0.5)] hover:shadow-[0_0_80px_rgba(124,58,237,0.8)] hover:scale-105 transition-all duration-300 flex items-center gap-3">
+                ابدأ مجاناً الآن <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+              </a>
+              <a href="https://wa.me/201011273472" target="_blank" rel="noopener noreferrer"
+                className="px-10 py-5 rounded-2xl font-semibold text-emerald-300 text-lg border border-emerald-500/50 bg-emerald-900/20 hover:bg-emerald-900/40 hover:scale-105 transition-all duration-300 flex items-center gap-2">
+                <MessageSquare size={20} /> تواصل واتساب
+              </a>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ===== FOOTER ===== */}
+      <footer className="border-t border-purple-900/20 py-16 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+            <div className="md:col-span-2">
+              <div className="flex items-center gap-3 mb-4">
+                <img src={LOGO_URL} alt="MARKETRON" className="h-12 w-auto drop-shadow-[0_0_12px_rgba(124,58,237,0.3)]" />
+                <span className="text-white font-black text-xl bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">MARKETRON</span>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* PRODUCT SCREENSHOT */}
-      <section className="py-20 sm:py-32">
-        <div className="max-w-5xl mx-auto px-4">
-          <div className="relative rounded-2xl overflow-hidden border border-[#7C3AED]/20 shadow-[0_0_60px_rgba(124,58,237,0.1)]">
-            <div className="aspect-video bg-gradient-to-br from-[#14102B] to-[#0B0A1A] flex items-center justify-center">
-              <div className="text-center">
-                <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-4 shadow-[0_0_30px_rgba(124,58,237,0.5)]">
-                  <BarChart3 className="w-8 h-8 text-white" />
-                </div>
-                <p className="text-[#A1A1C2] text-lg">{t('nav.dashboard')}</p>
-                <p className="text-[#A1A1C2]/60 text-sm">{t('landing.productDesc')}</p>
-              </div>
+              <p className="text-gray-500 text-sm leading-relaxed max-w-sm">
+                منصة متكاملة للذكاء الاصطناعي والتسويق الرقمي — تساعدك على إدارة حملاتك وتنمية أعمالك بكفاءة أعلى
+              </p>
+            </div>
+            <div>
+              <h4 className="text-white font-semibold mb-4">المنصة</h4>
+              <ul className="space-y-2">
+                {['المميزات', 'الأسعار', 'الحملات', 'الوكيل الذكي'].map(l => (
+                  <li key={l}><a href="#" className="text-gray-500 text-sm hover:text-purple-400 transition-colors">{l}</a></li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-white font-semibold mb-4">تواصل معنا</h4>
+              <ul className="space-y-2">
+                <li><a href="https://wa.me/201011273472" target="_blank" rel="noopener noreferrer" className="text-gray-500 text-sm hover:text-emerald-400 transition-colors">واتساب: 01011273472</a></li>
+              </ul>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* TESTIMONIALS */}
-      <section className="py-20 bg-[#14102B]/30">
-        <div className="max-w-4xl mx-auto px-4 text-center">
-          <h2 className="text-3xl sm:text-4xl font-black mb-4">{t('landing.testimonials')}</h2>
-          <div className="grid sm:grid-cols-2 gap-6 mt-12">
-            {TESTIMONIALS_CONFIG.map((test, i) => (
-              <Card key={i} className="p-6 text-right">
-                <div className="flex gap-1 mb-3">
-                  {[1,2,3,4,5].map(s => <Star key={s} className="w-4 h-4 fill-[#FBBF24] text-[#FBBF24]" />)}
-                </div>
-                <p className="text-[#A1A1C2] mb-4 leading-relaxed">{t(test.textKey)}</p>
-                <div>
-                  <p className="font-bold">{t(test.nameKey)}</p>
-                  <p className="text-sm text-[#A1A1C2]/60">{t(test.roleKey)}</p>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* PRICING */}
-      <section id="pricing" className="py-20 sm:py-32">
-        <div className="max-w-5xl mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-black mb-4">{t('landing.pricing')}</h2>
-            <p className="text-[#A1A1C2] text-lg">{t('landing.pricingSubtitle')}</p>
-          </div>
-          <div className="grid sm:grid-cols-3 gap-6">
-            {PRICING_CONFIG.map((p, i) => (
-              <Card key={i} className={`p-8 text-center relative ${p.popular ? 'border-[#06B6D4]/40 shadow-[0_0_40px_rgba(6,182,212,0.15)] scale-105' : ''}`}>
-                {p.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <Badge variant="info" className="px-4 py-1 rounded-full text-xs">{t('landing.mostPopular')}</Badge>
-                  </div>
-                )}
-                <h3 className="text-xl font-bold mb-2">{t(p.nameKey)}</h3>
-                <div className="mb-6">
-                  <span className="text-4xl font-black">${t(p.priceKey)}</span>
-                  <span className="text-[#A1A1C2]">{t('landing.perMonth')}</span>
-                </div>
-                <ul className="space-y-3 mb-8 text-right">
-                  {p.features.map((f, j) => (
-                    <li key={j} className="flex items-center gap-2 text-sm text-[#A1A1C2]">
-                      <Check className="w-4 h-4 text-[#10D9A0]" /> {t(f)}
-                    </li>
-                  ))}
-                </ul>
-                <Button variant={p.popular ? 'primary' : 'outline'} className="w-full rounded-full"
-                  onClick={() => window.location.href = `/${locale}/auth/register`}>
-                  {t(p.ctaKey)}
-                </Button>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section id="contact" className="py-20 sm:py-32 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#7C3AED]/20 to-[#06B6D4]/10" />
-        <div className="relative max-w-3xl mx-auto px-4 text-center">
-          <h2 className="text-3xl sm:text-5xl font-black mb-6">{t('landing.ctaTitle')}</h2>
-          <p className="text-lg text-[#A1A1C2] mb-8">{t('landing.ctaDesc')}</p>
-          <Button size="lg" className="rounded-full px-10 text-lg shadow-[0_0_40px_rgba(124,58,237,0.5)]"
-            onClick={() => window.location.href = `/${locale}/auth/register`}>
-            {t('landing.getStarted')} <ChevronLeft className="w-5 h-5" />
-          </Button>
-        </div>
-      </section>
-
-      {/* FOOTER */}
-      <footer className="py-12 border-t border-[#7C3AED]/10">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <img src="/logo.svg" alt="MARKETRON" className="h-8 w-auto object-contain" />
-              <span className="font-black gradient-brand-text">MARKETRON</span>
+          <div className="border-t border-purple-900/20 pt-8 flex items-center justify-between flex-wrap gap-4">
+            <p className="text-gray-600 text-sm">© 2026 MARKETRON. جميع الحقوق محفوظة</p>
+            <div className="flex items-center gap-6">
+              <a href="#" className="text-gray-600 text-sm hover:text-purple-400 transition-colors">سياسة الخصوصية</a>
+              <a href="#" className="text-gray-600 text-sm hover:text-purple-400 transition-colors">شروط الاستخدام</a>
             </div>
-            <div className="flex items-center gap-6 text-sm text-[#A1A1C2]">
-              <a href="#" className="hover:text-[#F5F3FF]">{t('landing.privacy')}</a>
-              <a href="#" className="hover:text-[#F5F3FF]">{t('landing.terms')}</a>
-              <a href="#" className="hover:text-[#F5F3FF]">{t('landing.help')}</a>
-            </div>
-            <p className="text-xs text-[#A1A1C2]/60">{t('landing.copyright', { year: '2026' })}</p>
           </div>
         </div>
       </footer>

@@ -19,8 +19,11 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  platformTokens PlatformToken[]
-  aiProviders    AiProvider[]
+  platformTokens    PlatformToken[]
+  aiAgents          AiAgent[]
+  replyRules        ReplyRule[]
+  aiProviders       AiProvider[]
+  personaCustoms    PersonaCustomization[]
 
   @@map("users")
 }
@@ -44,6 +47,60 @@ model PlatformToken {
   @@map("platform_tokens")
 }
 
+model PlatformConnection {
+  id                 String   @id @default(uuid())
+  platform           String
+  platformAccountId  String?  @map("platform_account_id")
+  platformAccountName String? @map("platform_account_name")
+  accessToken        String?  @map("access_token")
+  refreshToken       String?  @map("refresh_token")
+  tokenExpiresAt     DateTime? @map("token_expires_at")
+  status             String   @default("active")
+  userId             String   @map("user_id")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@unique([platform, userId])
+  @@index([userId])
+  @@map("platform_connections")
+}
+
+model AiAgent {
+  id           String   @id @default(cuid())
+  name         String
+  type         String   @default("general_agent")
+  description  String?
+  systemPrompt String?
+  isActive     Boolean  @default(true)
+  provider     String   @default("pollinations")
+  model        String   @default("openai")
+  userId       String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("ai_agents")
+}
+
+model ReplyRule {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  platform    String   @default("all")
+  keywords    Json?
+  response    String
+  isActive    Boolean  @default(true)
+  priority    Int      @default(0)
+  userId      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("reply_rules")
+}
+
 model AiProvider {
   id            String   @id @default(cuid())
   provider      String
@@ -60,4 +117,18 @@ model AiProvider {
 
   @@unique([userId, provider])
   @@map("ai_providers")
+}
+
+model PersonaCustomization {
+  id           String   @id @default(cuid())
+  section      String
+  customPrompt String   @default("")
+  userId       String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, section])
+  @@map("persona_customizations")
 }

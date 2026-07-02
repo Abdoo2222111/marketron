@@ -1,13 +1,13 @@
 import { useEffect } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { authService } from '@/services/endpoints';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import type { User } from '@/types';
 
 export function useAuth() {
   const { user, isAuthenticated, isLoading, setUser, setLoading, logout: storeLogout } = useAuthStore();
-  const navigate = useNavigate();
+  const router = useRouter();
 
   const { data: profileData } = useQuery({
     queryKey: ['auth-profile'],
@@ -40,13 +40,13 @@ export function useAuth() {
       localStorage.setItem('auth_token', token);
       localStorage.setItem('refresh_token', refreshToken);
       setUser(userData);
-      navigate('/dashboard');
+      router.push('/dashboard');
     },
   });
 
   const logout = () => {
     storeLogout();
-    navigate('/login');
+    router.push('/login');
   };
 
   return {

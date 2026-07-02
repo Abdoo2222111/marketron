@@ -4,13 +4,13 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
-  ArrowRight, Edit3, Copy, Play, Pause, Trash2, Eye, MousePointerClick, Target, DollarSign,
+  ArrowRight, Edit3, Play, Pause, Trash2, Eye, MousePointerClick, Target, DollarSign,
   TrendingUp, Lightbulb, Users, Loader2, AlertCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DashboardShell } from '@/components/layout/DashboardShell';
+
 import PerformanceChart from '@/components/charts/PerformanceChart';
 import ConversionFunnel from '@/components/charts/ConversionFunnel';
 import { formatCurrency, formatNumber, formatDate, getPlatformColor } from '@/lib/utils';
@@ -27,8 +27,6 @@ export default function CampaignDetailPage({ params }: { params: { locale: strin
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
-    if (!token) { window.location.href = '/ar/auth/login'; return; }
     loadCampaign();
   }, [id]);
 
@@ -53,21 +51,15 @@ export default function CampaignDetailPage({ params }: { params: { locale: strin
   };
 
   if (loading) return (
-    <DashboardShell>
-      <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-electric" /></div>
-    </DashboardShell>
+    <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-electric" /></div>
   );
 
   if (error) return (
-    <DashboardShell>
-      <div className="flex items-center gap-2 text-red-500 p-4"><AlertCircle className="w-5 h-5" />{error}</div>
-    </DashboardShell>
+    <div className="flex items-center gap-2 text-[#F43F5E] bg-[#F43F5E]/10 rounded-xl p-4"><AlertCircle className="w-5 h-5" />{error}</div>
   );
 
   if (!campaign) return (
-    <DashboardShell>
-      <div className="text-center py-20 text-muted-foreground">الحملة غير موجودة</div>
-    </DashboardShell>
+    <div className="text-center py-20 text-[#A1A1C2]">الحملة غير موجودة</div>
   );
 
   const metrics = [
@@ -75,9 +67,8 @@ export default function CampaignDetailPage({ params }: { params: { locale: strin
     { label: 'النقرات', value: campaign.clicks || 0, format: 'number' as const },
     { label: 'CTR', value: campaign.ctr || 0, format: 'percentage' as const, highlight: true },
     { label: 'CPC', value: campaign.cpc || 0, format: 'currency' as const },
-    { label: 'الإنفاق', value: campaign.spend || 0, format: 'currency' as const },
+    { label: 'الإنفاق', value: campaign.spent || campaign.spend || 0, format: 'currency' as const },
     { label: 'التحويلات', value: campaign.conversions || 0, format: 'number' as const },
-    { label: 'ROAS', value: campaign.roas || 0, format: 'percentage' as const, special: true },
   ];
 
   const funnelData = [
@@ -88,18 +79,17 @@ export default function CampaignDetailPage({ params }: { params: { locale: strin
 
   const dailyPerformance = Array.from({ length: 30 }, (_, i) => ({
     date: `${i + 1}/1`,
-    impressions: Math.floor((campaign.impressions || 10000) / 30 * (0.5 + Math.random())),
-    clicks: Math.floor((campaign.clicks || 1000) / 30 * (0.5 + Math.random())),
-    conversions: Math.floor((campaign.conversions || 50) / 30 * (0.5 + Math.random())),
-    spent: (campaign.spend || 1000) / 30 * (0.5 + Math.random()),
+    impressions: 0,
+    clicks: 0,
+    conversions: 0,
+    spent: 0,
   }));
 
   return (
-    <DashboardShell>
-      <div className="space-y-6" dir="rtl">
+    <div className="space-y-6" dir="rtl">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex items-center gap-4">
-            <Link href={`/${locale}/dashboard/campaigns`} className="h-9 w-9 rounded-lg border flex items-center justify-center hover:bg-accent transition-colors">
+            <Link href={`/${locale}/dashboard/campaigns`} className="h-9 w-9 rounded-lg border border-[#2D2B55] flex items-center justify-center hover:bg-[#2D2B55]/50 transition-colors">
               <ArrowRight size={16} />
             </Link>
             <div>
@@ -109,7 +99,7 @@ export default function CampaignDetailPage({ params }: { params: { locale: strin
                   {campaign.status === 'active' ? 'نشط' : campaign.status === 'paused' ? 'متوقف' : campaign.status === 'draft' ? 'مسودة' : 'مكتمل'}
                 </Badge>
               </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+              <div className="flex items-center gap-2 text-sm text-[#A1A1C2] mt-1">
                 <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: getPlatformColor(campaign.platform) }} />
                 <span>{platformLabels[campaign.platform] || campaign.platform}</span>
                 <span>·</span>
@@ -129,13 +119,15 @@ export default function CampaignDetailPage({ params }: { params: { locale: strin
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {metrics.map((m) => (
-            <Card key={m.label} className={`p-4 ${m.special ? 'bg-gradient-to-br from-purple-600/10 to-blue-500/10' : ''}`}>
-              <p className="text-xs text-muted-foreground">{m.label}</p>
-              <p className={`text-lg font-bold ${m.highlight ? 'text-emerald-500' : ''}`}>
-                {m.format === 'currency' ? formatCurrency(m.value) : m.format === 'percentage' ? `${(m.value || 0).toFixed(2)}${m.special ? 'x' : '%'}` : formatNumber(m.value)}
-              </p>
+            <Card key={m.label} className="bg-[#14102B]/80 backdrop-blur-sm border border-[#2D2B55]/50">
+              <CardContent className="p-4">
+                <p className="text-xs text-[#A1A1C2]">{m.label}</p>
+                <p className={`text-lg font-bold ${m.highlight ? 'text-emerald-500' : 'text-white'}`}>
+                  {m.format === 'currency' ? formatCurrency(m.value) : m.format === 'percentage' ? `${(m.value || 0).toFixed(2)}%` : formatNumber(m.value)}
+                </p>
+              </CardContent>
             </Card>
           ))}
         </div>
@@ -148,42 +140,31 @@ export default function CampaignDetailPage({ params }: { params: { locale: strin
           <ConversionFunnel data={funnelData} title="قمع التحويل" height={300} />
         </div>
 
-        {/* Ads */}
-        {campaign._count?.ads > 0 && (
-          <Card>
-            <CardHeader><CardTitle className="text-lg">الإعلانات داخل الحملة ({campaign._count.ads})</CardTitle></CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">تفاصيل الإعلانات متاحة قريباً</p>
-            </CardContent>
-          </Card>
-        )}
-
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
+          <Card className="bg-[#14102B]/80 backdrop-blur-sm border border-[#2D2B55]/50">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2"><Lightbulb className="h-5 w-5 text-yellow-500" />توصيات ذكية</CardTitle>
             </CardHeader>
             <CardContent>
               <ul className="space-y-3">
-                <li className="flex items-start gap-3 p-3 rounded-lg bg-muted/50"><div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0 text-xs font-bold">1</div><p className="text-sm">حلل أداء الحملة وابحث عن فرص التحسين</p></li>
-                <li className="flex items-start gap-3 p-3 rounded-lg bg-muted/50"><div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0 text-xs font-bold">2</div><p className="text-sm">جرب استهداف جماهير مشابهة (Lookalike)</p></li>
-                <li className="flex items-start gap-3 p-3 rounded-lg bg-muted/50"><div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0 text-xs font-bold">3</div><p className="text-sm">حسّن الإعلانات ذات الأداء المنخفض</p></li>
+                <li className="flex items-start gap-3 p-3 rounded-lg bg-[#2D2B55]/30"><div className="h-6 w-6 rounded-full bg-[#7C3AED]/20 flex items-center justify-center text-[#7C3AED] shrink-0 text-xs font-bold">1</div><p className="text-sm text-[#C4B5FD]">حلل أداء الحملة وابحث عن فرص التحسين</p></li>
+                <li className="flex items-start gap-3 p-3 rounded-lg bg-[#2D2B55]/30"><div className="h-6 w-6 rounded-full bg-[#7C3AED]/20 flex items-center justify-center text-[#7C3AED] shrink-0 text-xs font-bold">2</div><p className="text-sm text-[#C4B5FD]">جرب استهداف جماهير مشابهة (Lookalike)</p></li>
+                <li className="flex items-start gap-3 p-3 rounded-lg bg-[#2D2B55]/30"><div className="h-6 w-6 rounded-full bg-[#7C3AED]/20 flex items-center justify-center text-[#7C3AED] shrink-0 text-xs font-bold">3</div><p className="text-sm text-[#C4B5FD]">حسّن الإعلانات ذات الأداء المنخفض</p></li>
               </ul>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="bg-[#14102B]/80 backdrop-blur-sm border border-[#2D2B55]/50">
             <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Users className="h-5 w-5" />الجمهور المستهدف</CardTitle></CardHeader>
             <CardContent>
-              <div className="text-sm text-muted-foreground space-y-2">
+              <div className="text-sm text-[#A1A1C2] space-y-2">
                 {campaign.targetCountry && <p>الدولة: {campaign.targetCountry}</p>}
                 {campaign.targetAgeMin && <p>الفئة العمرية: {campaign.targetAgeMin}-{campaign.targetAgeMax || '+'}</p>}
                 {campaign.targetGender && <p>الجنس: {campaign.targetGender === 'male' ? 'ذكر' : campaign.targetGender === 'female' ? 'أنثى' : campaign.targetGender}</p>}
-                {!campaign.targetCountry && !campaign.targetAgeMin && <p className="text-gray-400">لم يتم تحديد الجمهور المستهدف</p>}
+                {!campaign.targetCountry && !campaign.targetAgeMin && <p className="text-[#6B6899]">لم يتم تحديد الجمهور المستهدف</p>}
               </div>
             </CardContent>
           </Card>
         </div>
-      </div>
-    </DashboardShell>
+    </div>
   );
 }

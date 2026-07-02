@@ -1,11 +1,10 @@
-// @ts-nocheck
 import prisma from '../config/database';
 import { ApiError } from '../utils/apiError';
 import { aiBrainService } from './aiBrain.service';
 
 export class ConversationService {
   async list(orgId: string, status?: string) {
-    const where: any = { organizationId: orgId };
+    const where: any = { orgId };
     if (status) where.status = status;
     return prisma.conversation.findMany({
       where,
@@ -16,7 +15,7 @@ export class ConversationService {
 
   async getById(id: string, orgId: string) {
     const conv = await prisma.conversation.findFirst({
-      where: { id, organizationId: orgId },
+      where: { id, orgId },
       include: { messages: { orderBy: { createdAt: 'asc' } } },
     });
     if (!conv) throw ApiError.notFound('المحادثة غير موجودة');
@@ -36,9 +35,9 @@ export class ConversationService {
     if (!conversationId) {
       const existing = await prisma.conversation.findFirst({
         where: {
-          organizationId: orgId,
-          customerPhone: data.customerPhone,
-          status: 'active',
+          orgId,
+          contactPhone: data.customerPhone,
+          status: 'open',
         },
       });
       if (existing) {
@@ -46,10 +45,12 @@ export class ConversationService {
       } else {
         const conv = await prisma.conversation.create({
           data: {
-            organizationId: orgId,
-            customerIdentifier: data.customerIdentifier,
-            customerName: data.customerName,
-            customerPhone: data.customerPhone,
+            orgId,
+            platform: 'whatsapp',
+            contactId: data.customerIdentifier || data.customerName || 'unknown',
+            contactName: data.customerName || 'Unknown',
+            contactPhone: data.customerPhone,
+            lastMessageAt: new Date(),
           },
         });
         conversationId = conv.id;
@@ -60,9 +61,9 @@ export class ConversationService {
       data: {
         conversationId,
         direction: data.direction || 'inbound',
-        senderType: 'customer',
-        content: data.content,
-      },
+        sender: 'customer',
+        text: data.content,
+      } as any,
     });
 
     await prisma.conversation.update({
@@ -80,18 +81,15 @@ export class ConversationService {
     });
     if (!lastMessage) throw ApiError.badRequest('لا توجد رسالة للرد عليها');
 
-    const result = await aiBrainService.generateSalesReply(conversationId, lastMessage.content, orgId);
+    const result = await aiBrainService.generateSalesReply(conversationId, lastMessage.text, orgId);
 
     const reply = await prisma.message.create({
       data: {
         conversationId,
         direction: 'outbound',
-        senderType: 'ai',
-        content: String(result.reply),
-        aiConfidenceScore: result.confidence,
-        aiModeUsed: result.mode,
-        aiModelUsed: 'deepseek',
-      },
+        sender: 'ai',
+        text: String(result.reply),
+      } as any,
     });
 
     await prisma.conversation.update({
@@ -103,7 +101,7 @@ export class ConversationService {
   }
 
   async resolve(conversationId: string, orgId: string) {
-    const conv = await prisma.conversation.findFirst({ where: { id: conversationId, organizationId: orgId } });
+    const conv = await prisma.conversation.findFirst({ where: { id: conversationId, orgId } });
     if (!conv) throw ApiError.notFound('المحادثة غير موجودة');
     return prisma.conversation.update({ where: { id: conversationId }, data: { status: 'resolved' } });
   }

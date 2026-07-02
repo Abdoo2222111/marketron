@@ -19,7 +19,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
+
 import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
@@ -158,29 +158,14 @@ export default function Header({ breadcrumbs, onMenuToggle }: HeaderProps) {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="relative">
                 <Bell size={18} />
-                <Badge
-                  variant="destructive"
-                  className="absolute -top-1 -end-1 h-4 w-4 p-0 flex items-center justify-center text-[9px]"
-                >
-                  3
-                </Badge>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80">
               <DropdownMenuLabel>الإشعارات</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {[1, 2, 3].map((i) => (
-                <DropdownMenuItem key={i} className="flex flex-col items-start py-3">
-                  <div className="flex items-center gap-2 w-full">
-                    <div className="h-2 w-2 rounded-full bg-primary shrink-0" />
-                    <span className="font-medium text-sm">تحديث الحملة {i}</span>
-                    <span className="text-xs text-muted-foreground mr-auto">منذ {i} ساعة</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    تم تحقيق هدف الحملة اليومي بنجاح
-                  </p>
-                </DropdownMenuItem>
-              ))}
+              <div className="p-4 text-center text-sm text-muted-foreground">
+                لا توجد إشعارات جديدة
+              </div>
             </DropdownMenuContent>
           </DropdownMenu>
 

@@ -1,73 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCampaigns } from '@/lib/data-store';
+import { requireAuth, facebookUrl } from '@/lib/auth-utils';
 
-interface FBInsight {
-  impressions?: string;
-  clicks?: string;
-  spend?: string;
-  ctr?: string;
-  cpc?: string;
-  date_start?: string;
-  date_stop?: string;
-}
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const { error } = await requireAuth(req);
+  if (error) return error;
 
-async function fetchFBInsights(fbId: string): Promise<FBInsight[] | null> {
-  const token = process.env.FACEBOOK_PAGE_ACCESS_TOKEN || process.env.NEXT_PUBLIC_FACEBOOK_TOKEN || '';
-  if (!token) return null;
+  const fbId = params.id.replace('fb_', '');
+
   try {
-    const url = `https://graph.facebook.com/v22.0/${fbId}/insights?fields=impressions,clicks,spend,ctr,cpc&date_preset=last_30d&access_token=${token}`;
+    const url = facebookUrl(`${fbId}/insights`, {
+      fields: 'impressions,clicks,spend,ctr,cpc,reach,frequency',
+      date_preset: 'last_30d',
+    });
     const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
     const data = await res.json();
-    return data.data || null;
+    const i = data.data?.[0] || {};
+
+    const impressions = parseInt(i.impressions || '0');
+    const clicks = parseInt(i.clicks || '0');
+    const spend = parseFloat(i.spend || '0');
+
+    return NextResponse.json({
+      data: {
+        id: params.id,
+        campaignId: params.id,
+        impressions,
+        clicks,
+        spent: spend,
+        ctr: parseFloat(i.ctr || '0'),
+        cpc: parseFloat(i.cpc || '0'),
+        cpm: impressions > 0 ? parseFloat(((spend / impressions) * 1000).toFixed(2)) : 0,
+        reach: parseInt(i.reach || '0'),
+        frequency: parseFloat(i.frequency || '0'),
+        updatedAt: new Date().toISOString(),
+      },
+    });
   } catch {
-    return null;
+    return NextResponse.json({ error: 'Failed to load campaign insights' }, { status: 500 });
   }
-}
-
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const campaign = getCampaigns().find(c => c.id === params.id);
-  if (!campaign) {
-    return NextResponse.json({ error: 'الحملة غير موجودة' }, { status: 404 });
-  }
-
-  let impressions = campaign.impressions || 0;
-  let clicks = campaign.clicks || 0;
-  let conversions = campaign.conversions || 0;
-  let spent = campaign.spent || 0;
-  let ctr = campaign.ctr || 0;
-  let cpc = campaign.cpc || 0;
-
-  if ((campaign as any).fbId) {
-    const fbData = await fetchFBInsights((campaign as any).fbId);
-    if (fbData && fbData.length > 0) {
-      impressions = parseInt(fbData[0].impressions || '0');
-      clicks = parseInt(fbData[0].clicks || '0');
-      spent = parseFloat(fbData[0].spend || '0');
-      ctr = parseFloat(fbData[0].ctr || '0');
-      cpc = parseFloat(fbData[0].cpc || '0');
-    }
-  }
-
-  const insights = {
-    id: params.id,
-    campaignId: params.id,
-    impressions,
-    clicks,
-    conversions,
-    spent,
-    ctr,
-    cpc,
-    cpm: spent > 0 && impressions > 0 ? ((spent / impressions) * 1000).toFixed(2) : 0,
-    frequency: impressions > 0 ? Math.max(1, +(impressions / Math.max(1, impressions / 1.5)).toFixed(1)) : 1.5,
-    reach: Math.floor(impressions / 1.5),
-    costPerConversion: conversions > 0 ? (spent / conversions).toFixed(2) : 0,
-    dailyBreakdown: [],
-    platformBreakdown: [],
-    updatedAt: new Date().toISOString(),
-  };
-
-  return NextResponse.json({ data: insights });
 }

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import prisma from '../config/database';
 import { aiService as aiIntegration } from '../integrations/aiService';
 
@@ -30,16 +29,16 @@ const RECOMMENDATIONS_SYSTEM_PROMPT = `أنت مستشار تسويق إعلان
 }`;
 
 export class AiService {
-  private async saveGeneration(userId: string, type: string, inputData: any, outputData: any, modelUsed: string, tokensUsed: number) {
+  private async saveGeneration(userId: string, type: string, promptData: any, outputData: any, modelName: string, tokens: number) {
     try {
       await prisma.aiGeneration.create({
         data: {
           userId,
           type,
-          inputData: typeof inputData === 'string' ? inputData : JSON.stringify(inputData),
-          outputData: typeof outputData === 'string' ? outputData : JSON.stringify(outputData),
-          modelUsed,
-          tokensUsed,
+          prompt: typeof promptData === 'string' ? promptData : JSON.stringify(promptData),
+          resultText: typeof outputData === 'string' ? outputData : JSON.stringify(outputData),
+          model: modelName,
+          tokensUsed: tokens,
         },
       });
     } catch (e) {

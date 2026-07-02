@@ -24,7 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { DashboardShell } from '@/components/layout/DashboardShell';
+
 import { competitorsApi, type Competitor } from '@/services/api-modules';
 import { EmptyState } from '@/components/ui/empty-state';
 import { formatNumber } from '@/lib/utils';
@@ -61,11 +61,6 @@ export default function CompetitorsPage({ params: { locale } }: { params: { loca
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
-    if (!token) {
-      window.location.href = '/ar/auth/login';
-      return;
-    }
     loadCompetitors();
   }, []);
 
@@ -119,12 +114,11 @@ export default function CompetitorsPage({ params: { locale } }: { params: { loca
   const filtered = competitors.filter(c => c.name.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <DashboardShell>
       <div className="space-y-6" dir="rtl">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-black gradient-brand-text">تحليل المنافسين</h1>
-            <p className="text-muted-foreground text-sm mt-1">تابع منافسيك على MARKETRON واحصل على رؤى ذكية</p>
+            <p className="text-[#A1A1C2] text-sm mt-1">تابع منافسيك على MARKETRON واحصل على رؤى ذكية</p>
           </div>
           <Button onClick={() => setShowDialog(true)} className="gradient-brand text-white border-0">
             <Plus size={16} className="ml-1" />إضافة منافس
@@ -132,14 +126,14 @@ export default function CompetitorsPage({ params: { locale } }: { params: { loca
         </div>
 
         {error && (
-          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3 flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300">
+          <div className="bg-[#F43F5E]/10 border border-[#F43F5E]/20 rounded-xl p-3 flex items-center gap-2 text-sm text-[#F43F5E]">
             <AlertCircle className="w-4 h-4" />
             {error}
           </div>
         )}
 
         {competitors.length > 0 && (
-          <div className="bg-white dark:bg-gray-900 p-3 rounded-2xl border border-gray-200 dark:border-gray-800">
+          <div className="bg-[#14102B]/80 backdrop-blur-sm p-3 rounded-2xl border border-[#2D2B55]/50">
             <Input
               placeholder="ابحث في المنافسين..."
               value={search}
@@ -151,7 +145,7 @@ export default function CompetitorsPage({ params: { locale } }: { params: { loca
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-electric" />
+            <Loader2 className="w-8 h-8 animate-spin text-[#7C3AED]" />
           </div>
         ) : competitors.length === 0 ? (
           <EmptyState
@@ -164,27 +158,27 @@ export default function CompetitorsPage({ params: { locale } }: { params: { loca
         ) : (
           <>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card className="border-0 shadow-md">
+              <Card className="border-0 shadow-lg dark:shadow-black/30">
                 <CardContent className="p-4">
-                  <p className="text-xs text-muted-foreground">إجمالي المنافسين</p>
+                  <p className="text-xs text-[#A1A1C2]">إجمالي المنافسين</p>
                   <p className="text-2xl font-black gradient-brand-text">{competitors.length}</p>
                 </CardContent>
               </Card>
-              <Card className="border-0 shadow-md">
+              <Card className="border-0 shadow-lg dark:shadow-black/30">
                 <CardContent className="p-4">
-                  <p className="text-xs text-muted-foreground">إجمالي المتابعين</p>
+                  <p className="text-xs text-[#A1A1C2]">إجمالي المتابعين</p>
                   <p className="text-2xl font-black gradient-brand-text">{formatNumber(competitors.length * 10000)}</p>
                 </CardContent>
               </Card>
-              <Card className="border-0 shadow-md">
+              <Card className="border-0 shadow-lg dark:shadow-black/30">
                 <CardContent className="p-4">
-                  <p className="text-xs text-muted-foreground">متوسط التفاعل</p>
+                  <p className="text-xs text-[#A1A1C2]">متوسط التفاعل</p>
                   <p className="text-2xl font-black gradient-brand-text">3.8%</p>
                 </CardContent>
               </Card>
-              <Card className="border-0 shadow-md">
+              <Card className="border-0 shadow-lg dark:shadow-black/30">
                 <CardContent className="p-4">
-                  <p className="text-xs text-muted-foreground">إعلانات نشطة</p>
+                  <p className="text-xs text-[#A1A1C2]">إعلانات نشطة</p>
                   <p className="text-2xl font-black gradient-brand-text">
                     {competitors.reduce((s, c) => s + (c.activeAdsCount || 0), 0)}
                   </p>
@@ -194,7 +188,7 @@ export default function CompetitorsPage({ params: { locale } }: { params: { loca
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filtered.map((c) => (
-                <Card key={c.id} className="border-0 shadow-md hover:shadow-lg transition-shadow">
+                <Card key={c.id} className="border-0 shadow-lg dark:shadow-black/30 hover:shadow-xl transition-shadow">
                   <CardContent className="p-5">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-3">
@@ -203,23 +197,23 @@ export default function CompetitorsPage({ params: { locale } }: { params: { loca
                         </div>
                         <div>
                           <h3 className="font-bold text-sm">{c.name}</h3>
-                          <p className="text-xs text-muted-foreground">{platformLabels[c.platform] || c.platform}</p>
+                          <p className="text-xs text-[#A1A1C2]">{platformLabels[c.platform] || c.platform}</p>
                         </div>
                       </div>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(c.id)} className="text-red-500 hover:text-red-600">
+                      <Button variant="ghost" size="sm" onClick={() => handleDelete(c.id)} className="text-[#F43F5E] hover:text-[#E11D48]">
                         <Trash2 size={14} />
                       </Button>
                     </div>
                     {c.platformUsername && (
-                      <p className="text-xs text-muted-foreground mb-3">@{c.platformUsername}</p>
+                      <p className="text-xs text-[#A1A1C2] mb-3">@{c.platformUsername}</p>
                     )}
                     <div className="grid grid-cols-2 gap-3 mb-3 text-xs">
                       <div>
-                        <p className="text-muted-foreground">الإعلانات النشطة</p>
+                        <p className="text-[#A1A1C2]">الإعلانات النشطة</p>
                         <p className="font-semibold">{c.activeAdsCount || 0}</p>
                       </div>
                       <div>
-                        <p className="text-muted-foreground">الإنفاق التقديري</p>
+                        <p className="text-[#A1A1C2]">الإنفاق التقديري</p>
                         <p className="font-semibold">{formatNumber(c.estimatedSpend || 0)}</p>
                       </div>
                     </div>
@@ -250,7 +244,7 @@ export default function CompetitorsPage({ params: { locale } }: { params: { loca
               <div>
                 <Label>المنصة</Label>
                 <select
-                  className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm"
+                  className="w-full p-2.5 rounded-xl border border-[#2D2B55]/50 bg-[#14102B]/80 backdrop-blur-sm text-sm"
                   value={form.platform}
                   onChange={(e) => setForm({ ...form, platform: e.target.value })}
                 >
@@ -272,7 +266,7 @@ export default function CompetitorsPage({ params: { locale } }: { params: { loca
               <div>
                 <Label>ملاحظات</Label>
                 <textarea
-                  className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm h-20"
+                  className="w-full p-2.5 rounded-xl border border-[#2D2B55]/50 bg-[#14102B]/80 backdrop-blur-sm text-sm h-20"
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
                   placeholder="ملاحظات عن المنافس..."
@@ -289,6 +283,5 @@ export default function CompetitorsPage({ params: { locale } }: { params: { loca
           </DialogContent>
         </Dialog>
       </div>
-    </DashboardShell>
   );
 }

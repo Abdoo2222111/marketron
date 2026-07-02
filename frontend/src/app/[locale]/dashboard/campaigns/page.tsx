@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { DashboardShell } from '@/components/layout/DashboardShell';
+
 import { campaignsApi, type Campaign } from '@/services/api-modules';
 import { formatCurrency, formatNumber, cn } from '@/lib/utils';
 
@@ -37,8 +37,6 @@ export default function CampaignsPage({ params: { locale } }: { params: { locale
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
-    if (!token) { window.location.href = '/ar/auth/login'; return; }
     loadCampaigns();
   }, []);
 
@@ -72,7 +70,6 @@ export default function CampaignsPage({ params: { locale } }: { params: { locale
   };
 
   return (
-    <DashboardShell>
       <div className="space-y-6" dir="rtl">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -133,8 +130,10 @@ export default function CampaignsPage({ params: { locale } }: { params: { locale
           </div>
         </div>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-[#7C3AED]" /></div>
+          {loading ? (
+            <div className="space-y-3">
+              {[1,2,3,4,5].map(i => <div key={i} className="flex items-center justify-between p-4 rounded-lg bg-[#2D2B55]/30 animate-pulse"><div className="space-y-2"><div className="h-4 w-32 bg-[#2D2B55] rounded" /><div className="h-3 w-20 bg-[#2D2B55] rounded" /></div><div className="flex gap-4"><div className="h-8 w-16 bg-[#2D2B55] rounded" /><div className="h-8 w-16 bg-[#2D2B55] rounded" /></div></div>)}
+            </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-20">
             <div className="w-20 h-20 rounded-2xl gradient-primary mx-auto mb-4 flex items-center justify-center shadow-[0_0_40px_rgba(124,58,237,0.3)]">
@@ -240,6 +239,5 @@ export default function CampaignsPage({ params: { locale } }: { params: { locale
           </Card>
         )}
       </div>
-    </DashboardShell>
   );
 }

@@ -1,11 +1,11 @@
-// @ts-nocheck
 import { Router, Request, Response } from 'express';
 import { aiController } from '../controllers/ai.controller';
 import { authenticate } from '../middleware/auth';
 import { aiRateLimiter } from '../middleware/rateLimiter';
-import { aiService, PROVIDER_MODELS, type AiProviderName } from '../integrations/aiService';
+import { aiService, type AiProviderName } from '../integrations/aiService';
 import { creditsService } from '../services/credits.service';
 import prisma from '../config/database';
+import type { JwtPayload } from '../utils/jwt';
 
 const router = Router();
 
@@ -33,8 +33,9 @@ router.post('/generate', async (req: Request, res: Response) => {
   }
 
   try {
+    const uid = (req.user as JwtPayload).userId;
     // Deduct credits BEFORE generating
-    await creditsService.spendForAi(req.user!.userId, `AI generation via ${provider || 'default'}`);
+    await creditsService.spendForAi(uid, `AI generation via ${provider || 'default'}`);
 
     const result = await aiService.generateText(prompt, {
       provider: provider as AiProviderName,
@@ -47,11 +48,11 @@ router.post('/generate', async (req: Request, res: Response) => {
     // Store the generation in DB
     await prisma.aiGeneration.create({
       data: {
-        userId: req.user!.userId,
+        userId: uid,
         type: 'text_generation',
-        inputData: JSON.stringify({ prompt, provider: result.provider, model: result.model }),
-        outputData: result.text,
-        modelUsed: result.model,
+        prompt: JSON.stringify({ prompt, provider: result.provider, model: result.model }),
+        resultText: result.text,
+        model: result.model,
         tokensUsed: result.tokensUsed,
       },
     });
@@ -74,7 +75,7 @@ router.post('/generate', async (req: Request, res: Response) => {
 router.get('/history', async (req: Request, res: Response) => {
   try {
     const generations = await prisma.aiGeneration.findMany({
-      where: { userId: req.user!.userId },
+      where: { userId: (req.user as JwtPayload).userId },
       orderBy: { createdAt: 'desc' },
       take: 50,
     });

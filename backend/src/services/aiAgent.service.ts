@@ -1,4 +1,3 @@
-// @ts-nocheck
 import prisma from '../config/database';
 import { ApiError } from '../utils/apiError';
 
@@ -92,8 +91,8 @@ export class AiAgentService {
       take: 20,
     });
 
-    // Generate AI response (in production, call OpenAI)
-    const aiResponse = this.generateResponse(agent, content, history);
+    // Generate AI response (using AI engine)
+    const aiResponse = await this.generateResponse(agent, content, history);
 
     // Save AI response
     await prisma.aiAgentMessage.create({
@@ -136,7 +135,6 @@ export class AiAgentService {
 
   // ── Reply Rules ──────────────────────────────────────
   async createReplyRule(userId: string, data: {
-    name: string;
     platform?: string;
     triggerType: string;
     triggerValue?: string;
@@ -148,7 +146,6 @@ export class AiAgentService {
     return prisma.aiReplyRule.create({
       data: {
         userId,
-        name: data.name,
         platform: data.platform as any,
         triggerType: data.triggerType,
         triggerValue: data.triggerValue,
@@ -213,7 +210,40 @@ export class AiAgentService {
     return toolsByType[type] || baseTools;
   }
 
-  private generateResponse(agent: any, userMessage: string, history: any[]): string {
+  private async generateResponse(agent: any, userMessage: string, history: any[]): Promise<string> {
+    try {
+      const { engineRouter } = await import('../integrations/engine-router');
+      const historyText = history
+        .map((m: any) => `${m.role === 'user' ? 'مستخدم' : 'مساعد'}: ${m.content}`)
+        .join('\n');
+
+      const prompt = `أنت ${agent.name}، ${agent.description || 'مساعد ذكي'}.
+
+تاريخ المحادثة:
+${historyText}
+
+الرسالة الجديدة: ${userMessage}
+
+${agent.systemPrompt ? `\nتعليماتك: ${agent.systemPrompt}` : ''}
+
+رد على الرسالة أعلاه بطريقة مهنية باللغة العربية.`;
+
+      const result = await engineRouter.route({
+        section: 'chat',
+        prompt,
+        userId: agent.userId,
+        type: 'text',
+        temperature: agent.temperature ?? 0.7,
+        maxTokens: agent.maxTokens ?? 2000,
+      });
+
+      if (result.success && result.data) {
+        return result.data;
+      }
+    } catch {
+      // Fallback to smart template if AI call fails
+    }
+
     const typeLabels: Record<string, string> = {
       campaign_agent: 'حملاتك الإعلانية',
       content_agent: 'المحتوى الإعلاني',

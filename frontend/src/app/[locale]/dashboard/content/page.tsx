@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DashboardShell } from '@/components/layout/DashboardShell';
+
 import { contentApi, type ContentItem } from '@/services/api-modules';
 import { EmptyState } from '@/components/ui/empty-state';
 
@@ -52,11 +52,6 @@ export default function ContentPage({ params: { locale } }: { params: { locale: 
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
-    if (!token) {
-      window.location.href = '/ar/auth/login';
-      return;
-    }
     load();
   }, [filter]);
 
@@ -99,12 +94,11 @@ export default function ContentPage({ params: { locale } }: { params: { locale: 
   };
 
   return (
-    <DashboardShell>
       <div className="space-y-6" dir="rtl">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-black gradient-brand-text">إدارة المحتوى</h1>
-            <p className="text-muted-foreground text-sm mt-1">إنشاء وإدارة المحتوى التسويقي</p>
+            <p className="text-[#A1A1C2] text-sm mt-1">إنشاء وإدارة المحتوى التسويقي</p>
           </div>
           <Button onClick={() => setShowCreate(true)} className="gradient-brand text-white border-0">
             <Plus size={16} className="ml-1" />محتوى جديد
@@ -112,7 +106,7 @@ export default function ContentPage({ params: { locale } }: { params: { locale: 
         </div>
 
         {error && (
-          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3 flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300">
+          <div className="bg-[#F43F5E]/10 border border-[#F43F5E]/20 rounded-xl p-3 flex items-center gap-2 text-sm text-[#F43F5E]">
             <AlertCircle className="w-4 h-4" />
             {error}
           </div>
@@ -126,7 +120,7 @@ export default function ContentPage({ params: { locale } }: { params: { locale: 
               className={`text-xs px-3 py-1.5 rounded-full border transition-all ${
                 filter === t
                   ? 'bg-gradient-to-r from-electric to-cyan text-white border-transparent font-medium'
-                  : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-electric'
+                  : 'bg-[#2D2B55]/30 border-[#2D2B55]/50 hover:border-[#7C3AED]/50'
               }`}
             >
               {t === 'all' ? 'الكل' : typeLabels[t] || t}
@@ -136,7 +130,7 @@ export default function ContentPage({ params: { locale } }: { params: { locale: 
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-electric" />
+            <Loader2 className="w-8 h-8 animate-spin text-[#7C3AED]" />
           </div>
         ) : contents.length === 0 ? (
           <EmptyState
@@ -149,7 +143,7 @@ export default function ContentPage({ params: { locale } }: { params: { locale: 
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {contents.map((c) => (
-              <Card key={c.id} className="border-0 shadow-md hover:shadow-lg transition-shadow">
+              <Card key={c.id} className="border-0 shadow-lg dark:shadow-black/30 hover:shadow-xl transition-shadow">
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between mb-3">
                     <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${platformColors[c.platform || ''] || 'from-gray-400 to-gray-600'} flex items-center justify-center text-white`}>
@@ -163,9 +157,9 @@ export default function ContentPage({ params: { locale } }: { params: { locale: 
                   </div>
                   <h3 className="font-bold text-sm mb-1 line-clamp-2">{c.title}</h3>
                   {c.description && (
-                    <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{c.description}</p>
+                    <p className="text-xs text-[#A1A1C2] mb-3 line-clamp-2">{c.description}</p>
                   )}
-                  <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                  <div className="flex items-center justify-between text-[10px] text-[#A1A1C2]">
                     <span>{platformLabels[c.platform || ''] || c.platform}</span>
                     <span className="flex items-center gap-1">
                       <Calendar className="w-3 h-3" />
@@ -176,7 +170,7 @@ export default function ContentPage({ params: { locale } }: { params: { locale: 
                     <Button variant="outline" size="sm" className="flex-1">
                       <Eye size={14} className="ml-1" />عرض
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => handleDelete(c.id)} className="text-red-500">
+                    <Button variant="ghost" size="sm" onClick={() => handleDelete(c.id)} className="text-[#F43F5E]">
                       <Trash2 size={14} />
                     </Button>
                   </div>
@@ -205,7 +199,7 @@ export default function ContentPage({ params: { locale } }: { params: { locale: 
                   <div>
                     <Label>النوع</Label>
                     <select
-                      className="w-full h-10 px-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm"
+                      className="w-full h-10 px-3 rounded-xl border border-[#2D2B55]/50 bg-[#14102B]/80 backdrop-blur-sm text-sm"
                       value={form.type}
                       onChange={(e) => setForm({ ...form, type: e.target.value })}
                     >
@@ -215,7 +209,7 @@ export default function ContentPage({ params: { locale } }: { params: { locale: 
                   <div>
                     <Label>المنصة</Label>
                     <select
-                      className="w-full h-10 px-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm"
+                      className="w-full h-10 px-3 rounded-xl border border-[#2D2B55]/50 bg-[#14102B]/80 backdrop-blur-sm text-sm"
                       value={form.platform}
                       onChange={(e) => setForm({ ...form, platform: e.target.value })}
                     >
@@ -226,7 +220,7 @@ export default function ContentPage({ params: { locale } }: { params: { locale: 
                 <div>
                   <Label>الوصف</Label>
                   <textarea
-                    className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm h-24"
+                    className="w-full p-2.5 rounded-xl border border-[#2D2B55]/50 bg-[#14102B]/80 backdrop-blur-sm text-sm h-24"
                     value={form.description}
                     onChange={(e) => setForm({ ...form, description: e.target.value })}
                     placeholder="وصف المحتوى..."
@@ -244,6 +238,5 @@ export default function ContentPage({ params: { locale } }: { params: { locale: 
           </div>
         )}
       </div>
-    </DashboardShell>
   );
 }

@@ -15,7 +15,7 @@ import {
   Copy, Check, AlertCircle, Wand2, ArrowLeft, ArrowRight,
   BarChart3,
 } from 'lucide-react';
-import { cn } from '@/utils/helpers';
+import { cn } from '@/lib/utils';
 import { aiProvidersApi } from '@/services/api-modules';
 import ModelSelector from '@/components/ai/ModelSelector';
 import { generateClientText, generateClientImage } from '@/lib/client-ai';
@@ -145,7 +145,15 @@ export const ContentStudioPage: React.FC = () => {
           style: imageStyle,
           platform: imagePlatform || undefined,
         });
-        setGeneratedImage(res.data?.data || res.data);
+        const imageData = res.data?.data;
+        const firstImage = Array.isArray(imageData) ? imageData[0] : null;
+        setGeneratedImage({
+          imageUrl: firstImage?.url || '',
+          thumbnailUrl: firstImage?.url || '',
+          altText: imagePrompt,
+          style: imageStyle,
+          variations: [],
+        });
       }
     } catch (err: any) {
       const msg = err?.response?.data?.error || 'فشل توليد الصورة';
@@ -194,6 +202,8 @@ export const ContentStudioPage: React.FC = () => {
       setCopiedIndex(idx);
       setTimeout(() => setCopiedIndex(null), 1500);
       toast.success('تم النسخ');
+    }).catch(() => {
+      toast.error('فشل النسخ');
     });
   };
 

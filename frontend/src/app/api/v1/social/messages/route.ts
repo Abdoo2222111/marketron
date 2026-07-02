@@ -1,51 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getFacebookPages, getFacebookPageByToken, getPageConversations, getConversationMessages } from '@/lib/social/facebook';
+import { requireAuth, facebookUrl } from '@/lib/auth-utils';
 
 export async function GET(req: NextRequest) {
+  const { error } = await requireAuth(req);
+  if (error) return error;
+
   try {
-    let pages = await getFacebookPages();
-    if (pages.length === 0) {
-      const page = await getFacebookPageByToken();
-      if (page) pages = [page];
-    }
-    if (pages.length === 0) {
-      return NextResponse.json({ messages: [] });
-    }
-
-    const allMessages: any[] = [];
-    for (const page of pages) {
-      try {
-        const convs = await getPageConversations(page.id, page.access_token);
-        for (const conv of convs.slice(0, 10)) {
-          try {
-            const msgs = await getConversationMessages(conv.id, page.access_token);
-            for (const msg of msgs) {
-              allMessages.push({
-                id: msg.id,
-                inboxId: page.id,
-                platform: 'messenger',
-                direction: msg.from?.id === page.id ? 'outbound' : 'inbound',
-                status: conv.is_unread && msg.from?.id !== page.id ? 'unread' : 'read',
-                senderName: msg.from?.name || 'عميل',
-                senderId: msg.from?.id || 'unknown',
-                phoneNumber: null,
-                messageText: msg.message || '(رسالة وسائط)',
-                mediaUrl: msg.attachments?.data?.[0]?.image_data?.url || msg.attachments?.data?.[0]?.file_url || null,
-                replyFromAi: false,
-                aiReplyText: null,
-                createdAt: msg.created_time,
-                inbox: { name: page.name, platform: 'messenger' },
-              });
-            }
-          } catch {}
-        }
-      } catch {}
-    }
-
-    return NextResponse.json({
-      messages: allMessages.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    const fbUrl = facebookUrl('me/conversations', {
+      fields: 'id,participants{messaging_actor{id,name,username}},messages.limit(1){message,from,created_time},updated_time',
+      limit: '20',
     });
+    const res = await fetch(fbUrl, { signal: AbortSignal.timeout(10000) });
+    const data = await res.json();
+
+    if (data.error) {
+      return NextResponse.json({ error: data.error.message }, { status: 400 });
+    }
+
+    const messages = (data.data || []).map((conv: any) => {
+      const lastMsg = conv.messages?.data?.[0] || {};
+      const actor = conv.participants?.data?.find((p: any) => p.messaging_actor?.id !== 'me');
+      return {
+        id: conv.id,
+        conversationId: conv.id,
+        senderName: actor?.messaging_actor?.name || actor?.messaging_actor?.username || 'عميل',
+        senderId: actor?.messaging_actor?.id || null,
+        content: lastMsg.message || '',
+        timestamp: lastMsg.created_time || conv.updated_time,
+        platform: 'messenger',
+        unread: false,
+      };
+    });
+
+    return NextResponse.json({ messages, total: data.data?.length || 0 });
   } catch {
-    return NextResponse.json({ messages: [] });
+    return NextResponse.json({ messages: [], total: 0 });
   }
 }

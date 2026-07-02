@@ -1,4 +1,5 @@
 export type SectionType =
+  | 'chat'
   | 'sales_agent'
   | 'content_writer'
   | 'art_director'
@@ -15,6 +16,12 @@ interface PersonaDefinition {
 }
 
 const PERSONA_REGISTRY: Record<SectionType, PersonaDefinition> = {
+  chat: {
+    name: 'مساعد ذكي',
+    emoji: '💬',
+    systemPrompt: 'أنت مساعد ذكي متعدد المهام في منصة MARKETRON. تجيب على أي استفسار يتعلق بالتسويق الإلكتروني وإدارة الحملات باللغة العربية.',
+    defaultTemperature: 0.7,
+  },
   sales_agent: {
     name: 'مندوب مبيعات',
     emoji: '🤝',

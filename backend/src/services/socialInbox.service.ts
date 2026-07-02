@@ -1,4 +1,3 @@
-// @ts-nocheck
 import prisma from '../config/database';
 import { ApiError } from '../utils/apiError';
 import { evolutionApi } from '../integrations/evolutionApi';
@@ -33,7 +32,7 @@ export class SocialInboxService {
         name: data.name,
         platform: data.platform,
         phoneNumber: data.phoneNumber,
-        platformAccountId: data.platformAccountId,
+        platformAccountId: data.platformAccountId ?? '',
         webhookToken: this.generateWebhookToken(),
         settings: JSON.stringify({
           autoReply: true,
@@ -81,8 +80,8 @@ export class SocialInboxService {
 
     if (inbox.platform === 'whatsapp' && evolutionApi.isEnabled()) {
       try {
-        await evolutionApi.logout(inbox.name);
-        await evolutionApi.deleteInstance(inbox.name);
+        await evolutionApi.logout(inbox.name ?? undefined);
+        await evolutionApi.deleteInstance(inbox.name ?? undefined);
       } catch (error: any) {
         logger.warn('Evolution cleanup failed', { error: error.message });
       }
@@ -126,12 +125,12 @@ export class SocialInboxService {
 
   async markAsRead(userId: string, messageId: string) {
     const msg = await prisma.socialMessage.findFirst({
-      where: { id: messageId, userId },
+      where: { id: messageId, userId } as any,
     });
     if (!msg) throw ApiError.notFound('الرسالة غير موجودة');
     return prisma.socialMessage.update({
       where: { id: messageId },
-      data: { status: 'read', readAt: new Date() },
+      data: { status: 'read', readAt: new Date() } as any,
     });
   }
 
@@ -144,14 +143,14 @@ export class SocialInboxService {
     }
     await prisma.socialMessage.updateMany({
       where,
-      data: { status: 'read', readAt: new Date() },
+      data: { status: 'read', readAt: new Date() } as any,
     });
     return { message: 'تم تحديد الكل كمقروء' };
   }
 
   async sendReply(userId: string, messageId: string, text: string) {
     const original = await prisma.socialMessage.findFirst({
-      where: { id: messageId, inbox: { userId } },
+      where: { id: messageId, inbox: { userId } } as any,
       include: { inbox: true },
     });
     if (!original) throw ApiError.notFound('الرسالة غير موجودة');
@@ -168,12 +167,12 @@ export class SocialInboxService {
         senderName: 'أنت',
         messageText: text,
         metadata: JSON.stringify({ replyTo: messageId }),
-      },
+      } as any,
     });
 
     await prisma.socialMessage.update({
       where: { id: messageId },
-      data: { status: 'replied', repliedAt: new Date() },
+      data: { status: 'replied', repliedAt: new Date() } as any,
     });
 
     return reply;
@@ -247,8 +246,8 @@ export class SocialInboxService {
       if (qrCode) {
         await prisma.whatsAppSession.upsert({
           where: { inboxId },
-          update: { qrCode, qrCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000), status: 'pending' },
-          create: { inboxId, userId, qrCode, qrCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000), status: 'pending' },
+          update: { instance: instanceName, qrCode, qrCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000), status: 'pending' } as any,
+          create: { inboxId, userId, instance: instanceName, qrCode, qrCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000), status: 'pending' } as any,
         });
       }
 
@@ -265,8 +264,8 @@ export class SocialInboxService {
           if (qrCode) {
             await prisma.whatsAppSession.upsert({
               where: { inboxId },
-              update: { qrCode, qrCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000), status: 'pending' },
-              create: { inboxId, userId, qrCode, qrCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000), status: 'pending' },
+              update: { instance: instanceName, qrCode, qrCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000), status: 'pending' } as any,
+              create: { inboxId, userId, instance: instanceName, qrCode, qrCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000), status: 'pending' } as any,
             });
           }
         } catch (connectError: any) {
@@ -286,30 +285,30 @@ export class SocialInboxService {
 
     if (evolutionApi.isEnabled()) {
       try {
-        const connect = await evolutionApi.connectInstance(inbox.name);
+        const connect = await evolutionApi.connectInstance(inbox.name ?? undefined);
         const qrCode = connect?.qrcode?.base64 || connect?.qrcode?.code || connect?.base64 || connect?.qrcode || '';
 
         if (qrCode) {
           const session = await prisma.whatsAppSession.upsert({
             where: { inboxId },
-            update: { qrCode, qrCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000), status: 'pending' },
-            create: { inboxId, userId, qrCode, qrCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000), status: 'pending' },
+            update: { instance: inbox.name, qrCode, qrCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000), status: 'pending' } as any,
+            create: { inboxId, userId, instance: inbox.name, qrCode, qrCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000), status: 'pending' } as any,
           });
 
           await evolutionApi.setWebhook(
-            inbox.name,
+            inbox.name ?? '',
             `${process.env.WEBHOOK_BASE_URL || 'https://marketron-backend-production.up.railway.app'}/api/v1/social/webhook/evolution`
           );
 
           return { qrCodeUrl: session.qrCode, expiresIn: 300, instanceName: inbox.name };
         }
 
-        const state = await evolutionApi.getConnectionState(inbox.name);
+        const state = await evolutionApi.getConnectionState(inbox.name ?? undefined);
         if (state?.state === 'CONNECTED') {
           await prisma.whatsAppSession.upsert({
             where: { inboxId },
-            update: { status: 'connected', lastConnectedAt: new Date() },
-            create: { inboxId, userId, status: 'connected', lastConnectedAt: new Date() },
+            update: { instance: inbox.name, status: 'connected', lastConnectedAt: new Date() } as any,
+            create: { inboxId, userId, instance: inbox.name, status: 'connected', lastConnectedAt: new Date() } as any,
           });
           return { status: 'connected', instanceName: inbox.name };
         }
@@ -324,8 +323,8 @@ export class SocialInboxService {
 
     await prisma.whatsAppSession.upsert({
       where: { inboxId },
-      update: { qrCode: qrCodeUrl, qrCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000), status: 'pending' },
-      create: { inboxId, userId, qrCode: qrCodeUrl, qrCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000), status: 'pending' },
+      update: { instance: inbox.name, qrCode: qrCodeUrl, qrCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000), status: 'pending' } as any,
+      create: { inboxId, userId, instance: inbox.name, qrCode: qrCodeUrl, qrCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000), status: 'pending' } as any,
     });
 
     return { qrCodeUrl, expiresIn: 300 };
@@ -333,7 +332,7 @@ export class SocialInboxService {
 
   async getWhatsAppStatus(userId: string, inboxId: string) {
     const session = await prisma.whatsAppSession.findFirst({
-      where: { inboxId, userId },
+      where: { inboxId, userId } as any,
     });
     if (!session) throw ApiError.notFound('جلسة واتساب غير موجودة');
 
@@ -344,7 +343,7 @@ export class SocialInboxService {
 
     if (inbox && evolutionApi.isEnabled()) {
       try {
-        const remoteState = await evolutionApi.getConnectionState(inbox.name);
+        const remoteState = await evolutionApi.getConnectionState(inbox.name ?? undefined);
         const remoteStatus = remoteState?.state || '';
         if (remoteStatus === 'CONNECTED' || remoteStatus === 'open') {
           state = 'connected';
@@ -374,8 +373,9 @@ export class SocialInboxService {
     if (!inbox) return;
 
     await prisma.whatsAppSession.upsert({
-      where: { inboxId: inbox.id },
+      where: { inboxId: inbox.id } as any,
       update: {
+        instance: instanceName,
         qrCode,
         qrCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000),
         status: 'pending',
@@ -383,6 +383,7 @@ export class SocialInboxService {
       create: {
         inboxId: inbox.id,
         userId: inbox.userId,
+        instance: instanceName,
         qrCode,
         qrCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000),
         status: 'pending',
@@ -411,7 +412,7 @@ export class SocialInboxService {
       data: {
         status: newStatus,
         ...(newStatus === 'connected' ? { lastConnectedAt: new Date() } : {}),
-      },
+      } as any,
     });
 
     await prisma.socialInbox.update({
@@ -444,7 +445,7 @@ export class SocialInboxService {
 
     const phoneNumber = data.remoteJid.split('@')[0];
     const existingMessage = data.messageId
-      ? await prisma.socialMessage.findFirst({ where: { platformMessageId: data.messageId } })
+      ? await prisma.socialMessage.findFirst({ where: { platformMessageId: data.messageId } as any })
       : null;
 
     if (existingMessage) return;
@@ -466,7 +467,7 @@ export class SocialInboxService {
           remoteJid: data.remoteJid,
           messageTimestamp: data.messageTimestamp,
         }),
-      },
+      } as any,
     });
 
     await this.checkAutoReply(inbox.userId, message, 'whatsapp');
@@ -507,10 +508,10 @@ export class SocialInboxService {
       if (!lastMessage) continue;
 
       const existing = await prisma.socialMessage.findFirst({
-        where: { platformMessageId: lastMessage.id },
+        where: { platformMessageId: lastMessage.id } as any,
       });
 
-      const data = {
+      const data: any = {
         inboxId: inbox.id,
         userId,
         platform: inbox.platform,
@@ -529,7 +530,7 @@ export class SocialInboxService {
           data: {
             messageText: lastMessage.message || '',
             status: (conversation.unread_count || 0) > 0 ? 'unread' : 'read',
-          },
+          } as any,
         });
       } else {
         await prisma.socialMessage.create({ data });
@@ -552,12 +553,12 @@ export class SocialInboxService {
     const messages = await metaGraph.getInstagramMessages();
     for (const msg of messages) {
       const existing = await prisma.socialMessage.findFirst({
-        where: { platformMessageId: msg.id },
+        where: { platformMessageId: msg.id } as any,
       });
       if (existing) {
         await prisma.socialMessage.update({
           where: { id: existing.id },
-          data: { messageText: msg.message || '' },
+          data: { messageText: msg.message || '' } as any,
         });
       } else {
         await prisma.socialMessage.create({
@@ -572,7 +573,7 @@ export class SocialInboxService {
             messageText: msg.message || '',
             platformMessageId: msg.id,
             metadata: JSON.stringify({}),
-          },
+          } as any,
         });
       }
     }
@@ -604,7 +605,7 @@ export class SocialInboxService {
             for (const msg of messages.slice(0, 5)) {
               const key = msg.key || {};
               const existing = key.id
-                ? await prisma.socialMessage.findFirst({ where: { platformMessageId: key.id } })
+                ? await prisma.socialMessage.findFirst({ where: { platformMessageId: key.id } as any })
                 : null;
               if (existing) continue;
 
@@ -624,7 +625,7 @@ export class SocialInboxService {
                   messageText: messageContent,
                   platformMessageId: key.id,
                   metadata: JSON.stringify({ synced: true }),
-                },
+                } as any,
               });
               count++;
             }
@@ -640,7 +641,7 @@ export class SocialInboxService {
       return { message: `Synced ${count} WhatsApp messages` };
     } catch (error: any) {
       logger.error('WhatsApp sync failed', { error: error.message });
-      const state = await evolutionApi.getConnectionState(inbox.name);
+      const state = await evolutionApi.getConnectionState(inbox.name ?? undefined);
       return { message: `WhatsApp state: ${state?.state || 'unknown'}`, state: state?.state };
     }
   }
@@ -671,7 +672,7 @@ export class SocialInboxService {
         mediaUrl: normalized.mediaUrl,
         platformMessageId: normalized.messageId,
         metadata: JSON.stringify(normalized.metadata || {}),
-      },
+      } as any,
     });
 
     await this.checkAutoReply(inbox.userId, message, inbox.platform);
@@ -723,7 +724,7 @@ export class SocialInboxService {
             aiReplyText: replyText,
             aiAgentId: rule.agentId,
             metadata: JSON.stringify({ ruleId: rule.id, autoReply: true }),
-          },
+          } as any,
         });
 
         await prisma.socialMessage.update({
@@ -733,7 +734,7 @@ export class SocialInboxService {
             repliedAt: new Date(),
             aiReplyText: replyText,
             replyFromAi: true,
-          },
+          } as any,
         });
 
         const inbox = await prisma.socialInbox.findUnique({

@@ -30,13 +30,26 @@ export function isPuterAvailable(): boolean {
   return typeof window.puter !== 'undefined' && !!window.puter?.ai;
 }
 
+export async function waitForPuter(timeout = 8000): Promise<boolean> {
+  if (isPuterAvailable()) return true;
+  return new Promise(resolve => {
+    const check = () => { if (isPuterAvailable()) resolve(true); };
+    const interval = setInterval(check, 100);
+    setTimeout(() => { clearInterval(interval); resolve(false); }, timeout);
+  });
+}
+
+export async function ensurePuterLoaded(): Promise<void> {
+  if (typeof window === 'undefined') throw new Error('Puter.js لا يعمل في الخادم');
+  const loaded = await waitForPuter();
+  if (!loaded) throw new Error('لم يتم تحميل Puter.js. تأكد من الاتصال بالإنترنت وحاول مرة أخرى.');
+}
+
 export async function puterChat(
   messages: ChatMessage[],
   opts?: PuterChatOptions
 ): Promise<string> {
-  if (!isPuterAvailable()) {
-    throw new Error('Puter.js غير محمل. تأكد من تحميل المكتبة.');
-  }
+  await ensurePuterLoaded();
 
   const model = opts?.model || 'gpt-4o';
   const systemMsg = messages.find(m => m.role === 'system');
@@ -73,9 +86,7 @@ export async function puterGenerateImage(
   prompt: string,
   model?: string
 ): Promise<string> {
-  if (!isPuterAvailable()) {
-    throw new Error('Puter.js غير محمل. تأكد من تحميل المكتبة.');
-  }
+  await ensurePuterLoaded();
 
   const imageModel = model || 'flux-schnell';
 

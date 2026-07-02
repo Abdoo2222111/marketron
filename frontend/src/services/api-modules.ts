@@ -12,8 +12,16 @@ export interface Campaign {
   conversions: number;
   ctr: number;
   cpc: number;
+  objective?: string;
+  dailyBudget?: number;
   startDate?: string;
   endDate?: string;
+  targetCountry?: string;
+  targetAgeMin?: number;
+  targetAgeMax?: number;
+  targetGender?: string;
+  interests?: string[];
+  adCreative?: Record<string, any>;
   description?: string;
   createdAt: string;
 }
@@ -421,16 +429,24 @@ export interface PersonaDefinition {
   section: string;
   name: string;
   emoji: string;
+  category: string;
   systemPrompt: string;
+  customPrompt: string;
   defaultTemperature: number;
+  isCustomized: boolean;
+}
+
+export interface PersonaCustomization {
+  section: string;
+  customPrompt: string;
 }
 
 export const personasApi = {
   list: () => api.get<{ success: boolean; data: PersonaDefinition[] }>('/personas'),
   get: (section: string) => api.get<{ success: boolean; data: PersonaDefinition }>(`/personas/${section}`),
   update: (section: string, customPrompt: string) =>
-    api.put(`/personas/${section}`, { customPrompt }),
-  reset: (section: string) => api.delete(`/personas/${section}`),
+    api.put<{ success: boolean; data: PersonaDefinition; message: string }>(`/personas/${section}`, { customPrompt }),
+  reset: (section: string) => api.delete<{ success: boolean; data: PersonaDefinition; message: string }>(`/personas/${section}`),
 };
 
 // ── Engine Router (unified AI generation) ──────────────

@@ -1,5 +1,5 @@
 import React from 'react';
-import { cn } from '@/utils/helpers';
+import { cn } from '@/lib/utils';
 
 interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
   name?: string;

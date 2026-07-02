@@ -1,7 +1,6 @@
-// @ts-nocheck
 import prisma from '../config/database';
 import { hashPassword, comparePassword } from '../utils/password';
-import { generateTokenPair, verifyRefreshToken, JwtPayload } from '../utils/jwt';
+import { generateTokenPair, verifyRefreshToken, type JwtPayload } from '../utils/jwt';
 import { ApiError } from '../utils/apiError';
 import { sendPasswordResetEmail } from './email.service';
 import { demoDataService } from './demoData.service';
@@ -79,7 +78,7 @@ export class AuthService {
     }
 
     // Check password
-    const isValid = await comparePassword(password, user.password);
+    const isValid = await comparePassword(password, user.password ?? '');
     if (!isValid) {
       throw ApiError.unauthorized('البريد الإلكتروني أو كلمة المرور غير صحيحة');
     }
@@ -169,7 +168,7 @@ export class AuthService {
         name: data.name,
         phone: data.phone,
         company: data.company,
-        avatar: data.avatar,
+        avatarUrl: data.avatar,
       },
     });
 
@@ -248,7 +247,7 @@ export class AuthService {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw ApiError.notFound('المستخدم غير موجود');
 
-    const isValid = await comparePassword(oldPassword, user.password);
+    const isValid = await comparePassword(oldPassword, user.password ?? '');
     if (!isValid) throw ApiError.unauthorized('كلمة المرور الحالية غير صحيحة');
 
     const password = await hashPassword(newPassword);
@@ -334,7 +333,7 @@ export class AuthService {
         data: {
           name: googleUser.name,
           email: googleUser.email,
-          avatar: googleUser.picture,
+          avatarUrl: googleUser.picture,
           password: `google_oauth_${googleUser.id}`,
           role: 'client',
         },

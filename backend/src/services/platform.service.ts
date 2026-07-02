@@ -1,4 +1,3 @@
-// @ts-nocheck
 import prisma from '../config/database';
 import { ApiError } from '../utils/apiError';
 import { config } from '../config';
@@ -236,7 +235,7 @@ export class PlatformService {
     // For WhatsApp, logout from Evolution API
     if (platform === 'whatsapp' && evolutionApi.isEnabled()) {
       try {
-        await evolutionApi.logout(conn.platformAccountId);
+        await evolutionApi.logout(conn.platformAccountId ?? undefined);
       } catch (error: any) {
         logger.warn('Evolution logout failed', { error: error.message });
       }
@@ -260,9 +259,9 @@ export class PlatformService {
       throw ApiError.badRequest('Evolution API غير مُهيأ');
     }
 
-    const connectData = await evolutionApi.connectInstance(conn.platformAccountId);
+    const connectData = await evolutionApi.connectInstance(conn.platformAccountId ?? undefined);
     const qrCode = connectData?.qrcode || connectData?.base64 || null;
-    const state = await evolutionApi.getConnectionState(conn.platformAccountId);
+    const state = await evolutionApi.getConnectionState(conn.platformAccountId ?? undefined);
 
     // Update status
     const status = state?.state === 'CONNECTED' ? 'active' : 'pending';
@@ -535,7 +534,7 @@ export class PlatformService {
     if (!evolutionApi.isEnabled()) {
       return { message: 'Evolution API غير مُهيأ' };
     }
-    const state = await evolutionApi.getConnectionState(conn.platformAccountId);
+    const state = await evolutionApi.getConnectionState(conn.platformAccountId ?? undefined);
     return { message: `حالة الاتصال: ${state?.state || 'غير معروف'}` };
   }
 
@@ -572,7 +571,7 @@ export class PlatformService {
         if (!evolutionApi.isEnabled()) {
           throw ApiError.badRequest('Evolution API غير مُهيأ');
         }
-        await evolutionApi.sendText(conn.platformAccountId, recipientId, text);
+        await evolutionApi.sendText(conn.platformAccountId ?? '', recipientId, text);
         return { success: true };
       }
 

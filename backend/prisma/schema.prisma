@@ -7,7 +7,7 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
+  provider  = "sqlite"
   url       = env("DATABASE_URL")
 }
 
@@ -20,6 +20,17 @@ model Organization {
   name      String
   domainSlug String? @unique @map("domain_slug")
   mode      String   @default("client")
+  // Workspace fields added for service compatibility (workspace.service.ts)
+  companySize       String?  @map("company_size")
+  industry          String?
+  country           String?
+  city              String?
+  vatNumber         String?  @map("vat_number")
+  status            String   @default("trial")
+  subscriptionTier  String?  @default("starter") @map("subscription_tier")
+  subscriptionEndsAt DateTime? @map("subscription_ends_at")
+  storageUsed       BigInt?  @default(0) @map("storage_used")
+  storageLimit      BigInt?  @default(0) @map("storage_limit")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -51,9 +62,11 @@ model BusinessProfile {
   faqs        String?
   pricingTier String?  @map("pricing_tier")
   toneOfVoice String?  @map("tone_of_voice")
-  faqData     String?  @map("faq_data")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  faqData       String?  @map("faq_data")
+  enrichedByAi  Boolean  @default(false) @map("enriched_by_ai")
+  sourceUrl     String?  @map("source_url")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
@@ -144,9 +157,7 @@ model Campaign {
   budgetType  String?  @default("daily") @map("budget_type")
   budgetAmount Float?  @map("budget_amount")
   budgetCurrency String? @default("USD") @map("budget_currency")
-  budget      Float    @default(0)
   spend       Float    @default(0)
-  spent       Float    @default(0)
   revenue     Float    @default(0)
   impressions Int      @default(0)
   clicks      Int      @default(0)
@@ -289,10 +300,23 @@ model SocialMessage {
   sentAt          DateTime @default(now()) @map("sent_at")
   createdAt       DateTime @default(now()) @map("created_at")
 
+  // Fields added for service compatibility (socialInbox.service.ts)
+  userId            String   @map("user_id")
+  platform          String
+  platformMessageId String?  @map("platform_message_id")
+  metadata          String?
+  readAt            DateTime? @map("read_at")
+  repliedAt         DateTime? @map("replied_at")
+  replyFromAi       Boolean  @default(false) @map("reply_from_ai")
+  aiReplyText       String?  @map("ai_reply_text")
+  aiAgentId         String?  @map("ai_agent_id")
+
   inbox SocialInbox @relation(fields: [inboxId], references: [id], onDelete: Cascade)
 
   @@index([inboxId])
   @@index([sentAt])
+  @@index([userId])
+  @@index([platformMessageId])
   @@map("social_messages")
 }
 
@@ -303,11 +327,16 @@ model WhatsAppSession {
   status     String   @default("pending")
   qrCode     String?  @map("qr_code")
   phoneNumber String? @map("phone_number")
+  // Fields added for service compatibility (socialInbox.service.ts)
+  userId            String?  @map("user_id")
+  qrCodeExpiresAt   DateTime? @map("qr_code_expires_at")
+  lastConnectedAt   DateTime? @map("last_connected_at")
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
   inbox SocialInbox @relation(fields: [inboxId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("whatsapp_sessions")
 }
 
@@ -558,8 +587,27 @@ model AiAgent {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
+  replyRules   AiReplyRule[]
+  agentMessages AiAgentMessage[]
+
   @@index([userId])
   @@map("ai_agents")
+}
+
+model AiAgentMessage {
+  id        String   @id @default(uuid())
+  agentId   String   @map("agent_id")
+  userId    String   @map("user_id")
+  role      String
+  content   String
+  metadata  String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  agent AiAgent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([agentId])
+  @@index([userId])
+  @@map("ai_agent_messages")
 }
 
 model AiGeneration {
@@ -595,6 +643,8 @@ model AiReplyRule {
   agentId         String?  @map("agent_id")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
+
+  agent AiAgent? @relation(fields: [agentId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@map("ai_reply_rules")
@@ -669,6 +719,11 @@ model Message {
   status      String   @default("sent")
   mediaUrl    String?  @map("media_url")
   metadata    String?
+  // Fields added for service compatibility (conversation.service.ts)
+  senderType        String?  @map("sender_type")
+  aiConfidenceScore Float?   @map("ai_confidence_score")
+  aiModeUsed        String?  @map("ai_mode_used")
+  aiModelUsed       String?  @map("ai_model_used")
   createdAt   DateTime @default(now()) @map("created_at")
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
@@ -775,6 +830,27 @@ model ApiKeyRecord {
 
   @@index([userId])
   @@map("api_key_records")
+}
+
+// ========================
+// 10. AUDIT LOG
+// ========================
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?  @map("user_id")
+  action     String
+  resource   String?
+  resourceId String?  @map("resource_id")
+  details    String?
+  ipAddress  String?  @map("ip_address")
+  userAgent  String?  @map("user_agent")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
 }
 
 // ========================

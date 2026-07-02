@@ -45,4 +45,8 @@ export class ApiError extends Error {
   static internal(message = 'خطأ داخلي في الخادم'): ApiError {
     return new ApiError(500, message);
   }
+
+  static notImplemented(message = 'هذه الميزة قيد التطوير'): ApiError {
+    return new ApiError(501, message);
+  }
 }

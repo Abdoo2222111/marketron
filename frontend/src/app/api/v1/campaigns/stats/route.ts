@@ -1,17 +1,23 @@
-import { NextResponse } from 'next/server';
-import { getCampaigns } from '@/lib/data-store';
+import { NextRequest, NextResponse } from 'next/server';
+import { getAdAccounts, getAdAccountCampaigns } from '@/lib/social/facebook';
+import { requireAuth } from '@/lib/auth-utils';
 
-export async function GET() {
-  const campaigns = getCampaigns();
-  const stats = {
-    total: campaigns.length,
-    active: campaigns.filter(c => c.status === 'active').length,
-    paused: campaigns.filter(c => c.status === 'paused').length,
-    draft: campaigns.filter(c => c.status === 'draft').length,
-    totalSpend: campaigns.reduce((s, c) => s + (c.spent || 0), 0),
-    totalImpressions: campaigns.reduce((s, c) => s + (c.impressions || 0), 0),
-    totalClicks: campaigns.reduce((s, c) => s + (c.clicks || 0), 0),
-    totalConversions: campaigns.reduce((s, c) => s + (c.conversions || 0), 0),
-  };
-  return NextResponse.json({ data: stats });
+export async function GET(req: NextRequest) {
+  const { error } = await requireAuth(req);
+  if (error) return error;
+  try {
+    const adAccounts = await getAdAccounts();
+    let total = 0, active = 0, paused = 0;
+
+    for (const acc of adAccounts) {
+      const campaigns = await getAdAccountCampaigns(acc.account_id).catch(() => [] as any[]);
+      total += campaigns.length;
+      active += campaigns.filter((c: any) => c.status === 'ACTIVE').length;
+      paused += campaigns.filter((c: any) => c.status === 'PAUSED').length;
+    }
+
+    return NextResponse.json({ data: { total, active, paused } });
+  } catch {
+    return NextResponse.json({ error: 'فشل جلب إحصائيات الحملات' }, { status: 500 });
+  }
 }

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import prisma from '../config/database';
 import { aiService as aiIntegration } from '../integrations/aiService';
 import logger from '../utils/logger';

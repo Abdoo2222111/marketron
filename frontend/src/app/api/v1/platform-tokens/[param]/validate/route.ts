@@ -1,21 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { verifyAccessToken } from '@/lib/auth-utils';
+import { requireAuth } from '@/lib/auth-utils';
 
 export async function POST(req: NextRequest, { params }: { params: { param: string } }) {
-  const auth = req.headers.get('authorization');
-  if (!auth?.startsWith('Bearer ')) {
-    return NextResponse.json({ success: false, error: 'مطلوب توثيق' }, { status: 401 });
-  }
-  const payload = verifyAccessToken(auth.slice(7));
-  if (!payload) {
-    return NextResponse.json({ success: false, error: 'توكن غير صالح' }, { status: 401 });
-  }
+  const { error, user } = await requireAuth(req);
+  if (error) return error;
+  const u = user!;
 
   try {
     const platform = params.param;
     const token = await prisma.platformToken.findUnique({
-      where: { userId_platform: { userId: payload.userId, platform } },
+      where: { userId_platform: { userId: u.userId, platform } },
     });
 
     if (!token) {
@@ -23,7 +18,7 @@ export async function POST(req: NextRequest, { params }: { params: { param: stri
     }
 
     if (platform === 'facebook') {
-      const res = await fetch(`https://graph.facebook.com/v18.0/me?access_token=${token.accessToken}&fields=id,name`);
+      const res = await fetch(`https://graph.facebook.com/v22.0/me?access_token=${token.accessToken}&fields=id,name`);
       if (!res.ok) {
         return NextResponse.json({ success: true, data: { valid: false, error: 'التوكن غير صالح أو منتهي' } });
       }

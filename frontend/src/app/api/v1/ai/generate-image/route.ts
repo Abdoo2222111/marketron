@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pollinationsGenerateImage } from '@/lib/ai-engine/pollinations';
+import { requireAuth } from '@/lib/auth-utils';
 
 export async function POST(req: NextRequest) {
+  const { error } = await requireAuth(req);
+  if (error) return error;
   try {
     const body = await req.json();
     const { prompt, model, size, negativePrompt, seed, enhance } = body;

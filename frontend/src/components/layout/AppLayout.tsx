@@ -1,10 +1,10 @@
 import React from 'react';
-import { Outlet } from 'react-router-dom';
+
 import { Sidebar, MobileNav } from './Sidebar';
 import { Navbar } from './Navbar';
 import { useSettingsStore } from '@/store/settingsStore';
 
-export const AppLayout: React.FC = () => {
+export const AppLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const { sidebarOpen, mobileMenuOpen, setMobileMenuOpen } = useSettingsStore();
 
   return (
@@ -19,17 +19,17 @@ export const AppLayout: React.FC = () => {
       >
         <Navbar />
         <main className="p-4 lg:p-6 mt-16 lg:mt-0">
-          <Outlet />
+          {children}
         </main>
       </div>
     </div>
   );
 };
 
-export const LandingLayout: React.FC = () => {
+export const LandingLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   return (
     <div className="min-h-screen bg-white dark:bg-dark-bg">
-      <Outlet />
+      {children}
     </div>
   );
 };

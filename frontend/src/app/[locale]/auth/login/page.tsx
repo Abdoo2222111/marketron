@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { googleAuthApi } from '@/services/api-modules';
+import { Logo } from '@/components/ui/Logo';
 
 export default function LoginPage({ params: { locale } }: { params: { locale: string } }) {
   const { t } = useTranslation();
@@ -76,7 +77,7 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
           </Link>
 
           <div className="mb-8">
-            <img src="/logo.svg" alt="MARKETRON" className="h-12 w-auto object-contain mb-4" />
+            <Logo height={64} className="mb-6 drop-shadow-[0_0_25px_rgba(124,58,237,0.3)]" />
             <h1 className="text-2xl font-bold mb-1">{t('auth.login')}</h1>
             <p className="text-[#A1A1C2] text-sm">{t('auth.welcomeBack')}</p>
           </div>

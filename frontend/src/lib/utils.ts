@@ -86,3 +86,50 @@ export function debounce<T extends (...args: unknown[]) => unknown>(
     timeout = setTimeout(() => func(...args), wait);
   };
 }
+
+export function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+}
+
+export function getStatusTextColor(status: string): string {
+  const map: Record<string, string> = {
+    active: 'text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30',
+    paused: 'text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30',
+    completed: 'text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30',
+    draft: 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800',
+    paid: 'text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30',
+    pending: 'text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30',
+    overdue: 'text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/30',
+  };
+  return map[status] || 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800';
+}
+
+export function getPlatformIcon(platform: string): string {
+  const map: Record<string, string> = {
+    facebook: 'facebook',
+    instagram: 'instagram',
+    tiktok: 'music',
+    snapchat: 'ghost',
+  };
+  return map[platform] || 'globe';
+}
+
+export function getDaysBetween(start: string, end: string): number {
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  return Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+export function getPercentChange(current: number, previous: number): number {
+  if (previous === 0) return current > 0 ? 100 : 0;
+  return ((current - previous) / previous) * 100;
+}
+
+export function classNames(...classes: (string | boolean | undefined | null)[]): string {
+  return classes.filter(Boolean).join(' ');
+}

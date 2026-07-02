@@ -2,15 +2,17 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useLocalization } from '@/contexts/LocalizationContext';
-import { cn } from '@/utils/helpers';
+import { cn } from '@/lib/utils';
 import { useSettingsStore } from '@/store/settingsStore';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   LayoutDashboard, Megaphone, Palette, BarChart3, Users, Search,
-  Building2, Settings, ChevronDown, Menu, X, Globe, Moon, Sun,
+  Building2, Settings, ChevronDown, X, Globe, Moon, Sun,
   LogOut, ChevronLeft, Bell, MessageCircle, Bot, Link2, Sparkles,
-  Rocket, FlaskConical,
+  Rocket, FlaskConical, Loader2,
 } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
+import { Logo } from '@/components/ui/Logo';
 
 const navItems = [
   { path: '/ar/dashboard', label: 'لوحة التحكم', icon: LayoutDashboard },
@@ -37,6 +39,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
   const { t, locale } = useLocalization();
   const pathname = usePathname() || '';
   const { sidebarOpen, toggleSidebar } = useSettingsStore();
+  const { user, isLoading } = useAuth();
   const isRTL = locale === 'ar';
 
   return (
@@ -49,7 +52,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
       >
         <div className="flex items-center h-16 px-4 border-b border-[#7C3AED]/10">
           <Link href="/ar/dashboard" className="flex items-center gap-3 min-w-0" onClick={onNavigate}>
-            <img src="/logo.svg" alt="MARKETRON" className="w-9 h-9 object-contain flex-shrink-0" />
+            <Logo width={44} height={44} className="drop-shadow-[0_0_12px_rgba(124,58,237,0.4)]" />
             {sidebarOpen && (
               <span className="font-black text-lg gradient-brand-text whitespace-nowrap tracking-tight">
                 MARKETRON
@@ -88,30 +91,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
         </nav>
 
         <div className={cn('p-3 border-t border-[#7C3AED]/10', !sidebarOpen && 'text-center')}>
-          <Link href="/settings" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#1E1B3A] transition-colors">
-            <Avatar name="أحمد محمد" size="sm" />
-            {sidebarOpen && (
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-[#F5F3FF] truncate">أحمد محمد</p>
-                <p className="text-xs text-[#A1A1C2] truncate">a@example.com</p>
-              </div>
-            )}
-          </Link>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-3">
+              <Loader2 className="w-5 h-5 animate-spin text-[#A1A1C2]" />
+            </div>
+          ) : user ? (
+            <Link href="/settings" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#1E1B3A] transition-colors">
+              <Avatar name={user.name} size="sm" />
+              {sidebarOpen && (
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-[#F5F3FF] truncate">{user.name}</p>
+                  <p className="text-xs text-[#A1A1C2] truncate">{user.email}</p>
+                </div>
+              )}
+            </Link>
+          ) : null}
         </div>
       </aside>
 
-      <div className="lg:hidden fixed top-0 inset-x-0 h-16 bg-[#0B0A1A] border-b border-[#7C3AED]/10 z-30 flex items-center justify-between px-4">
-        <Link href="/ar/dashboard" className="flex items-center gap-3">
-          <img src="/logo.svg" alt="MARKETRON" className="w-8 h-8 object-contain" />
-          <span className="font-black text-lg gradient-brand-text">MARKETRON</span>
-        </Link>
-        <button
-          onClick={() => useSettingsStore.getState().setMobileMenuOpen(true)}
-          className="p-2 hover:bg-[#1E1B3A] rounded-lg"
-        >
-          <Menu className="w-5 h-5 text-[#A1A1C2]" />
-        </button>
-      </div>
     </>
   );
 };

@@ -6,10 +6,11 @@ import {
   Filter, Users, RefreshCw, Loader2, AlertCircle,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { cn } from '@/utils/helpers';
+import { cn } from '@/lib/utils';
 import { AiReplyPanel } from '@/components/social/AiReplyPanel';
 import { CustomerPanel } from '@/components/social/CustomerPanel';
 import {
@@ -142,6 +143,9 @@ function buildCustomers(messages: BackendMessage[]): Customer[] {
 }
 
 export const SocialInboxPage: React.FC = () => {
+  const params = useParams();
+  const locale = (params?.locale as string) || 'ar';
+
   const [messages, setMessages] = useState<BackendMessage[]>([]);
   const [inboxes, setInboxes] = useState<BackendInbox[]>([]);
   const [loading, setLoading] = useState(true);
@@ -182,7 +186,7 @@ export const SocialInboxPage: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 10000);
+    const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -235,8 +239,8 @@ export const SocialInboxPage: React.FC = () => {
     setCustomers(prev => prev.map(c => c.id === customerId ? { ...c, notes, updatedAt: new Date().toISOString() } : c));
   };
 
-  const togglePin = (threadId: string) => {
-    // local only until backend supports pin
+  const togglePin = (_threadId: string) => {
+    // Not yet implemented — requires backend support
   };
 
   const markAsRead = async (threadId: string) => {
@@ -334,12 +338,15 @@ export const SocialInboxPage: React.FC = () => {
         {/* Threads List */}
         <div className="w-80 flex-shrink-0 border-l border-[#7C3AED]/20 flex flex-col">
           <div className="p-3 border-b border-[#7C3AED]/20">
-            <Input
-              placeholder="بحث في المحادثات..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              icon={<Search className="w-4 h-4 opacity-40" />}
-            />
+            <div className="relative">
+              <Search className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A1A1C2]/40" />
+              <Input
+                placeholder="بحث في المحادثات..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="pr-9"
+              />
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto">
@@ -387,7 +394,7 @@ export const SocialInboxPage: React.FC = () => {
                             {meta.label}
                           </span>
                           {thread.unread > 0 && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gradient-to-r from-[#7C3AED] to-[#06B6D4] text-white font-medium shadow-[0_0_12px_rgba(124,58,237,0.3)] shadow-[0_0_12px_rgba(124,58,237,0.3)]">
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gradient-to-r from-[#7C3AED] to-[#06B6D4] text-white font-medium shadow-[0_0_12px_rgba(124,58,237,0.3)]">
                               {thread.unread}
                             </span>
                           )}
@@ -402,7 +409,7 @@ export const SocialInboxPage: React.FC = () => {
           </div>
 
           <div className="p-3 border-t border-[#7C3AED]/20">
-            <Link href="/ar/dashboard/settings">
+            <Link href={`/${locale}/dashboard/settings`}>
               <Button variant="outline" className="w-full">
                 <Plus className="w-4 h-4 ml-2" />
                 ربط منصة جديدة
@@ -429,9 +436,6 @@ export const SocialInboxPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Button size="sm" variant="ghost" onClick={() => togglePin(selectedThread.id)} title="تثبيت">
-                    <Pin className={cn('w-4 h-4', selectedThread.pinned && 'text-[#7C3AED] fill-electric/20')} />
-                  </Button>
                   <Button size="sm" variant="ghost" title="تحديد كمقروء">
                     <CheckCheck className="w-4 h-4" />
                   </Button>
@@ -445,7 +449,7 @@ export const SocialInboxPage: React.FC = () => {
                     <div className={cn(
                       'max-w-[75%] px-4 py-2.5 rounded-2xl',
                       msg.direction === 'inbound'
-                        ? 'bg-[#1E1B3A] text-[#A1A1C2] rounded-tr-sm shadow-sm'
+                        ? 'bg-[#14102B] text-[#A1A1C2] rounded-tr-sm shadow-sm'
                         : (msg.sender === 'MARKETRON Bot'
                             ? 'bg-gradient-to-br from-[#7C3AED] to-[#7C3AED] text-white rounded-tl-sm'
                             : 'bg-gradient-to-r from-[#7C3AED] to-[#06B6D4] text-white rounded-tl-sm shadow-[0_0_15px_rgba(124,58,237,0.2)]')

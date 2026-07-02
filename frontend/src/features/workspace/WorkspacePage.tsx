@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Users, TrendingUp, DollarSign, HardDrive, Plus, UserPlus, Trash2, Settings, Crown, Building2, CalendarDays, Loader2, AlertCircle } from 'lucide-react';
-import { cn, formatNumber } from '@/utils/helpers';
+import { cn, formatNumber } from '@/lib/utils';
 import { EmptyState } from '@/components/ui/empty-state';
 import { cn as cnLib } from '@/lib/utils';
 import api from '@/services/api';

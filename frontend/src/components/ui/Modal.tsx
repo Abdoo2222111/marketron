@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { cn } from '@/utils/helpers';
+import { cn } from '@/lib/utils';
 import { X } from 'lucide-react';
 
 interface ModalProps {

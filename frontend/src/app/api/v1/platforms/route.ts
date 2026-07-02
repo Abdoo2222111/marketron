@@ -1,13 +1,46 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth-utils';
 
-const platforms = [
-  { id: 'messenger', name: 'Facebook Messenger', type: 'messenger', connected: true, icon: 'MessageCircle' },
-  { id: 'facebook', name: 'Facebook Page', type: 'facebook', connected: true, icon: 'Facebook' },
-  { id: 'whatsapp', name: 'WhatsApp', type: 'whatsapp', connected: false, icon: 'Phone' },
-  { id: 'instagram', name: 'Instagram', type: 'instagram', connected: false, icon: 'Instagram' },
-  { id: 'telegram', name: 'Telegram', type: 'telegram', connected: false, icon: 'Send' },
-];
+export async function GET(req: NextRequest) {
+  const { error, user } = await requireAuth(req);
+  if (error) return error;
 
-export async function GET() {
-  return NextResponse.json({ data: platforms });
+  try {
+    const [conns, tokens] = await Promise.all([
+      prisma.platformConnection.findMany({ where: { userId: user!.userId }, orderBy: { createdAt: 'desc' } }),
+      prisma.platformToken.findMany({ where: { userId: user!.userId }, orderBy: { createdAt: 'desc' } }),
+    ]);
+
+    const fromConns = conns.map(t => ({
+      id: t.id,
+      platform: t.platform,
+      platformAccountId: t.platformAccountId || '',
+      platformAccountName: t.platformAccountName || t.platform,
+      status: t.status,
+      createdAt: t.createdAt.toISOString(),
+      tokenExpiresAt: t.tokenExpiresAt?.toISOString() || null,
+    }));
+
+    const fromTokens = tokens.map(t => ({
+      id: t.id,
+      platform: t.platform,
+      platformAccountId: '',
+      platformAccountName: t.label || t.platform,
+      status: t.status,
+      createdAt: t.createdAt.toISOString(),
+      tokenExpiresAt: t.expiresAt?.toISOString() || null,
+    }));
+
+    const seen = new Set<string>();
+    const merged = [...fromConns, ...fromTokens].filter(item => {
+      if (seen.has(item.platform)) return false;
+      seen.add(item.platform);
+      return true;
+    });
+
+    return NextResponse.json({ data: merged });
+  } catch {
+    return NextResponse.json({ data: [] });
+  }
 }

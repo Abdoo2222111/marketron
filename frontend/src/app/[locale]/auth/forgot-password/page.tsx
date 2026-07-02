@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { AuthShell } from '@/components/layout/DashboardShell';
+import { Logo } from '@/components/ui/Logo';
 
 export default function ForgotPasswordPage({ params: { locale } }: { params: { locale: string } }) {
   const [email, setEmail] = useState('');
@@ -50,7 +51,7 @@ export default function ForgotPasswordPage({ params: { locale } }: { params: { l
           {/* Logo */}
           <div className="text-center mb-8">
             <Link href={`/${locale}`} className="inline-flex items-center gap-3 mb-4">
-              <img src="/logo.svg" alt="MARKETRON" className="h-12 w-12 object-contain" />
+              <Logo width={48} height={48} />
               <span className="text-2xl font-black bg-gradient-to-r from-electric via-cyan to-purple bg-clip-text text-transparent tracking-tight">
                 MARKETRON
               </span>

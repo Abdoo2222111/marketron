@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { NextRequest, NextResponse } from 'next/server';
 
 const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || 'marketron-access-secret-dev';
 const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'marketron-refresh-secret-dev';
@@ -39,4 +40,42 @@ export function verifyRefreshToken(token: string) {
 export function sanitizeUser(user: any) {
   const { password, ...rest } = user;
   return rest;
+}
+
+export function getTokenFromRequest(req: NextRequest): string | null {
+  const cookie = req.cookies.get('accessToken')?.value;
+  if (cookie) return cookie;
+  const auth = req.headers.get('authorization');
+  if (auth?.startsWith('Bearer ')) return auth.slice(7);
+  return null;
+}
+
+export async function requireAuth(req: NextRequest) {
+  const token = getTokenFromRequest(req);
+  if (!token) {
+    return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }), user: null };
+  }
+  const payload = verifyAccessToken(token);
+  if (!payload) {
+    return { error: NextResponse.json({ error: 'Token expired or invalid' }, { status: 401 }), user: null };
+  }
+  return { error: null, user: payload };
+}
+
+const FB_TOKEN = process.env.FACEBOOK_PAGE_ACCESS_TOKEN || '';
+
+export function facebookUrl(path: string, params: Record<string, string> = {}) {
+  const search = new URLSearchParams({ access_token: FB_TOKEN, ...params });
+  return `https://graph.facebook.com/v22.0/${path}?${search}`;
+}
+
+export function formatMoney(amount: number): string {
+  return amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+}
+
+export function formatNumber(n: number): string {
+  if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(1) + 'B';
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+  if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K';
+  return n.toLocaleString();
 }

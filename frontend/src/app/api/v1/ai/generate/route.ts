@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { aiChat } from '@/lib/ai-engine';
+import { requireAuth } from '@/lib/auth-utils';
 
 export async function POST(req: NextRequest) {
+  const { error } = await requireAuth(req);
+  if (error) return error;
   try {
     const body = await req.json();
     const { prompt, systemPrompt, provider, model, temperature, maxTokens } = body;
@@ -19,6 +22,7 @@ export async function POST(req: NextRequest) {
       model: model || undefined,
       temperature: temperature ?? 0.7,
       maxTokens: maxTokens ?? 2000,
+      isServer: true,
     });
 
     const engine = provider || process.env.NEXT_PUBLIC_AI_ENGINE || 'pollinations';

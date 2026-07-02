@@ -14,6 +14,7 @@ interface ChatOptions {
   model?: string;
   temperature?: number;
   maxTokens?: number;
+  isServer?: boolean;
 }
 
 const ENGINE_CONFIG = {
@@ -47,9 +48,17 @@ export async function aiChat(
   const config = ENGINE_CONFIG[engine];
   const model = opts?.model || config.defaultModel;
 
+  if (engine === 'puter') {
+    const isServer = opts?.isServer ?? (typeof window === 'undefined');
+    if (isServer) {
+      console.warn('Puter.js requested server-side, falling back to Zen/Pollinations');
+      return fallbackToZen(messages, opts);
+    }
+  }
+
   try {
     if (engine === 'puter' && !isPuterAvailable()) {
-      throw new Error('Puter.js غير محمل في المتصفح');
+      return fallbackToZen(messages, opts);
     }
     return await config.chat(messages, {
       model,
@@ -70,18 +79,31 @@ export async function aiChat(
       }
     }
     if (engine === 'puter') {
-      console.warn('Puter failed, falling back to Zen:', primaryError.message);
-      try {
-        return await zenChat(messages, {
-          model: opts?.model || DEFAULT_ZEN_MODEL,
-          temperature: opts?.temperature ?? 0.7,
-          maxTokens: opts?.maxTokens ?? 2000,
-        });
-      } catch (zenError: any) {
-        throw new Error(`AI unavailable (Puter: ${primaryError.message}, Zen: ${zenError.message})`);
-      }
+      return fallbackToZen(messages, opts, primaryError);
     }
     throw primaryError;
+  }
+}
+
+async function fallbackToZen(messages: ChatMessage[], opts?: ChatOptions, originalError?: any): Promise<string> {
+  try {
+    console.warn('Puter unavailable, falling back to Zen:', originalError?.message || 'server-side');
+    return await zenChat(messages, {
+      model: opts?.model || DEFAULT_ZEN_MODEL,
+      temperature: opts?.temperature ?? 0.7,
+      maxTokens: opts?.maxTokens ?? 2000,
+    });
+  } catch (zenError: any) {
+    console.warn('Zen failed too, falling back to Pollinations:', zenError.message);
+    try {
+      return await pollinationsChat(messages, {
+        model: DEFAULT_CHAT_MODEL,
+        temperature: opts?.temperature ?? 0.7,
+        maxTokens: opts?.maxTokens ?? 2000,
+      });
+    } catch (pollError: any) {
+      throw new Error(`AI unavailable (Puter: ${originalError?.message || 'unavailable'}, Zen: ${zenError.message}, Pollinations: ${pollError.message})`);
+    }
   }
 }
 
@@ -89,7 +111,7 @@ export function getAvailableEngines() {
   return Object.entries(ENGINE_CONFIG).map(([key, cfg]) => ({
     name: key,
     label: cfg.label,
-    configured: key !== 'puter' ? true : true, // Puter.js is always available client-side via script tag
+    configured: true,
     default: key === DEFAULT_ENGINE,
     models: cfg.models,
   }));

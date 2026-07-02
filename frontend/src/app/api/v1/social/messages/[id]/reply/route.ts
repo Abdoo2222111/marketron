@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendFacebookReply, getFacebookPages, getFacebookPageByToken } from '@/lib/social/facebook';
+import { requireAuth } from '@/lib/auth-utils';
 
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const { error } = await requireAuth(req);
+  if (error) return error;
   try {
     const body = await req.json();
     const { text } = body;

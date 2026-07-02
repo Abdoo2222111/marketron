@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { cn } from '@/utils/helpers';
+import { cn } from '@/lib/utils';
 
 interface TabsContextType {
   value: string;

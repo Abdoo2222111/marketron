@@ -4,7 +4,7 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { DashboardShell } from '@/components/layout/DashboardShell';
+
 import CampaignForm from '@/components/forms/CampaignForm';
 import toast from 'react-hot-toast';
 import { campaignsApi } from '@/services/api-modules';
@@ -44,13 +44,12 @@ export default function CreateCampaignPage({ params: { locale } }: { params: { l
   };
 
   return (
-    <DashboardShell>
-      <div className="max-w-4xl mx-auto space-y-6" dir="rtl">
+    <div className="max-w-4xl mx-auto space-y-6" dir="rtl">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">إنشاء حملة جديدة</h1>
-            <p className="text-muted-foreground">أنشئ حملة إعلانية احترافية خطوة بخطوة</p>
+            <p className="text-[#A1A1C2]">أنشئ حملة إعلانية احترافية خطوة بخطوة</p>
           </div>
           <Button variant="ghost" onClick={() => router.back()}>
             <ArrowRight size={16} />
@@ -63,8 +62,7 @@ export default function CreateCampaignPage({ params: { locale } }: { params: { l
           onSubmit={handleSubmit}
           onAISuggestions={handleAISuggestions}
         />
-      </div>
-    </DashboardShell>
+    </div>
   );
 }
 

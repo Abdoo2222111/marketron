@@ -17,7 +17,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DashboardShell } from '@/components/layout/DashboardShell';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
 import { marketApi, type MarketReport } from '@/services/api-modules';
 import { EmptyState } from '@/components/ui/empty-state';
 
@@ -30,13 +37,8 @@ export default function MarketResearchPage({ params: { locale } }: { params: { l
   const [selectedReport, setSelectedReport] = useState<MarketReport | null>(null);
 
   useEffect(() => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
-    if (!token) {
-      window.location.href = '/ar/auth/login';
-      return;
-    }
     loadReports();
-  }, []);
+  }, [locale]);
 
   const loadReports = async () => {
     try {
@@ -67,7 +69,6 @@ export default function MarketResearchPage({ params: { locale } }: { params: { l
   };
 
   return (
-    <DashboardShell>
       <div className="space-y-6" dir="rtl">
         <div>
           <h1 className="text-2xl font-black gradient-brand-text">أبحاث السوق</h1>
@@ -75,13 +76,13 @@ export default function MarketResearchPage({ params: { locale } }: { params: { l
         </div>
 
         {error && (
-          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3 flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300">
-            <AlertCircle className="w-4 h-4" />
+          <div className="bg-[#F43F5E]/10 border border-[#F43F5E]/20 text-[#F43F5E] rounded-xl p-3 flex items-center gap-2 text-sm">
+            <AlertCircle className="w-4 h-4 shrink-0" />
             {error}
           </div>
         )}
 
-        <Card className="border-0 shadow-md bg-gradient-to-br from-electric/5 via-transparent to-purple/5">
+        <Card className="border-0 shadow-lg dark:shadow-black/30 bg-gradient-to-br from-electric/5 via-transparent to-purple/5">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-electric" />
@@ -100,20 +101,24 @@ export default function MarketResearchPage({ params: { locale } }: { params: { l
               </div>
               <div>
                 <Label>الدولة</Label>
-                <select
-                  className="w-full h-10 px-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm"
+                <Select
                   value={form.country}
-                  onChange={(e) => setForm({ ...form, country: e.target.value })}
+                  onValueChange={(value) => setForm({ ...form, country: value })}
                 >
-                  <option>السعودية</option>
-                  <option>الإمارات</option>
-                  <option>مصر</option>
-                  <option>الكويت</option>
-                  <option>قطر</option>
-                  <option>البحرين</option>
-                  <option>عمان</option>
-                  <option>الأردن</option>
-                </select>
+                  <SelectTrigger className="w-full h-10">
+                    <SelectValue placeholder="اختر الدولة" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="السعودية">السعودية</SelectItem>
+                    <SelectItem value="الإمارات">الإمارات</SelectItem>
+                    <SelectItem value="مصر">مصر</SelectItem>
+                    <SelectItem value="الكويت">الكويت</SelectItem>
+                    <SelectItem value="قطر">قطر</SelectItem>
+                    <SelectItem value="البحرين">البحرين</SelectItem>
+                    <SelectItem value="عمان">عمان</SelectItem>
+                    <SelectItem value="الأردن">الأردن</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label>الفئة (اختياري)</Label>
@@ -158,7 +163,7 @@ export default function MarketResearchPage({ params: { locale } }: { params: { l
                     <div className="w-10 h-10 rounded-xl gradient-brand flex items-center justify-center">
                       <Globe className="w-5 h-5 text-white" />
                     </div>
-                    <Badge variant="info">{r.country}</Badge>
+                    <Badge variant="secondary">{r.country}</Badge>
                   </div>
                   <h3 className="font-bold text-sm mb-1">{r.productName}</h3>
                   {r.productCategory && (
@@ -167,7 +172,7 @@ export default function MarketResearchPage({ params: { locale } }: { params: { l
                   <p className="text-xs text-muted-foreground line-clamp-3 mb-3">
                     {r.reportSummary || 'تقرير ذكي شامل عن السوق...'}
                   </p>
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="text-[10px] text-[#A1A1C2]">
                     {new Date(r.createdAt).toLocaleDateString('ar')}
                   </p>
                 </CardContent>
@@ -185,13 +190,27 @@ export default function MarketResearchPage({ params: { locale } }: { params: { l
               </div>
             </CardHeader>
             <CardContent>
-              <pre className="text-sm whitespace-pre-wrap text-gray-700 dark:text-gray-300">
-                {JSON.stringify(selectedReport.reportData, null, 2)}
-              </pre>
+              {selectedReport.reportData && typeof selectedReport.reportData === 'object' ? (
+                <div className="space-y-2">
+                  {Object.entries(selectedReport.reportData as Record<string, unknown>).map(([key, value]) => (
+                    <div key={key} className="border-b border-gray-100 dark:border-gray-800 pb-2 last:border-0">
+                      <p className="text-xs font-medium text-muted-foreground mb-0.5">{key}</p>
+                      <p className="text-sm text-gray-800 dark:text-gray-200">
+                        {typeof value === 'object' && value !== null
+                          ? JSON.stringify(value, null, 2)
+                          : String(value)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  {selectedReport.reportData ? String(selectedReport.reportData) : 'لا توجد بيانات متاحة'}
+                </p>
+              )}
             </CardContent>
           </Card>
         )}
       </div>
-    </DashboardShell>
   );
 }

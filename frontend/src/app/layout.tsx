@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     description: 'MARKETING + AUTOMATION - منصة متكاملة للذكاء الاصطناعي والتسويق',
     type: 'website',
     locale: 'ar_SA',
-    images: [{ url: '/logo.svg', width: 800, height: 560, alt: 'MARKETRON' }],
+    images: [{ url: '/logo.png', width: 800, height: 560, alt: 'MARKETRON' }],
   },
 };
 
@@ -32,7 +32,7 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Cairo:wght@200;300;400;500;600;700;800;900&family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap"
           rel="stylesheet"
         />
-        <script src="https://puter.com"></script>
+        <script src="https://js.puter.com/v2/" async></script>
       </head>
       <body className="min-h-screen bg-background antialiased noise-overlay">
         <Providers>{children}</Providers>

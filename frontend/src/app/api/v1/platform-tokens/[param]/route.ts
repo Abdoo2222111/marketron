@@ -1,22 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { verifyAccessToken } from '@/lib/auth-utils';
+import { requireAuth } from '@/lib/auth-utils';
 
 export async function PUT(req: NextRequest, { params }: { params: { param: string } }) {
-  const auth = req.headers.get('authorization');
-  if (!auth?.startsWith('Bearer ')) {
-    return NextResponse.json({ success: false, error: 'مطلوب توثيق' }, { status: 401 });
-  }
-  const payload = verifyAccessToken(auth.slice(7));
-  if (!payload) {
-    return NextResponse.json({ success: false, error: 'توكن غير صالح' }, { status: 401 });
-  }
+  const { error, user } = await requireAuth(req);
+  if (error) return error;
+  const u = user!;
 
   try {
     const body = await req.json();
     const platform = params.param;
     const token = await prisma.platformToken.upsert({
-      where: { userId_platform: { userId: payload.userId, platform } },
+      where: { userId_platform: { userId: u.userId, platform } },
       update: {
         accessToken: body.accessToken,
         refreshToken: body.refreshToken,
@@ -28,28 +23,24 @@ export async function PUT(req: NextRequest, { params }: { params: { param: strin
         accessToken: body.accessToken,
         refreshToken: body.refreshToken,
         label: body.label,
-        userId: payload.userId,
+        userId: u.userId,
       },
     });
-    return NextResponse.json({ success: true, data: token });
+    const { accessToken, ...sanitized } = token;
+    return NextResponse.json({ success: true, data: sanitized });
   } catch (e: any) {
     return NextResponse.json({ success: false, error: e.message }, { status: 500 });
   }
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { param: string } }) {
-  const auth = req.headers.get('authorization');
-  if (!auth?.startsWith('Bearer ')) {
-    return NextResponse.json({ success: false, error: 'مطلوب توثيق' }, { status: 401 });
-  }
-  const payload = verifyAccessToken(auth.slice(7));
-  if (!payload) {
-    return NextResponse.json({ success: false, error: 'توكن غير صالح' }, { status: 401 });
-  }
+  const { error, user } = await requireAuth(req);
+  if (error) return error;
+  const u = user!;
 
   try {
     const id = params.param;
-    await prisma.platformToken.deleteMany({ where: { id, userId: payload.userId } });
+    await prisma.platformToken.deleteMany({ where: { id, userId: u.userId } });
     return NextResponse.json({ success: true, message: 'تم الحذف' });
   } catch (e: any) {
     return NextResponse.json({ success: false, error: e.message }, { status: 500 });

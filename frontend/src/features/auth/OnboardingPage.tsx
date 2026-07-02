@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Megaphone, Check, Facebook, Instagram, Music, Ghost, Target, BarChart3, Link2 } from 'lucide-react';
-import { cn } from '@/utils/helpers';
+import { cn } from '@/lib/utils';
 
 const platforms = [
   { id: 'facebook', label: 'فيسبوك', icon: Facebook, color: '#1877F2' },
@@ -22,7 +22,7 @@ const goals = [
 
 export const OnboardingPage: React.FC = () => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
@@ -36,7 +36,7 @@ export const OnboardingPage: React.FC = () => {
   };
 
   const handleFinish = () => {
-    navigate('/dashboard');
+    router.push('/dashboard');
   };
 
   return (

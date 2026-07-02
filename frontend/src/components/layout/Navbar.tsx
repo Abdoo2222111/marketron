@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useTheme } from '@/contexts/ThemeContext';
-import { cn } from '@/utils/helpers';
+import { useAuth } from '@/contexts/AuthContext';
+import { cn } from '@/lib/utils';
 import {
-  Bell, Moon, Sun, Globe, LogOut, Settings, User, ChevronDown, Search, Megaphone
+  Bell, Moon, Sun, Globe, LogOut, Settings, User, ChevronDown, Search, Megaphone, Loader2
 } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 
@@ -13,8 +14,11 @@ export const Navbar: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { isDark } = useTheme();
   const { lang, setLang } = useSettingsStore();
+  const { user, isLoading, logout } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifLoading, setNotifLoading] = useState(false);
   const isRTL = i18n.language === 'ar';
 
   const toggleLang = () => {
@@ -23,11 +27,21 @@ export const Navbar: React.FC = () => {
     i18n.changeLanguage(newLang);
   };
 
-  const notifications = [
-    { id: '1', title: t('notifications.newCampaign'), message: 'حملة "عيد الأضحى" تم إنشاؤها بنجاح', time: '5 دقائق', read: false },
-    { id: '2', title: t('notifications.budgetAlert'), message: 'حملة "الربيع" تجاوزت 80% من الميزانية', time: 'ساعة', read: false },
-    { id: '3', title: t('notifications.newInsight'), message: 'تقرير أداء الأسبوع متاح الآن', time: '3 ساعات', read: true },
-  ];
+  useEffect(() => {
+    (async () => {
+      if (!showNotifications) return;
+      setNotifLoading(true);
+      try {
+        const { notificationsApi } = await import('@/services/api-modules');
+        const res = await notificationsApi.list();
+        setNotifications(res.data?.data || []);
+      } catch {
+        setNotifications([]);
+      } finally {
+        setNotifLoading(false);
+      }
+    })();
+  }, [showNotifications]);
 
   return (
     <header className="h-16 bg-white dark:bg-dark-card border-b border-gray-100 dark:border-dark-border flex items-center justify-between px-4 lg:px-6 sticky top-0 z-20">
@@ -75,13 +89,23 @@ export const Navbar: React.FC = () => {
                   <span className="text-xs text-primary-600 cursor-pointer">{t('notifications.markAllRead')}</span>
                 </div>
                 <div className="max-h-72 overflow-y-auto">
-                  {notifications.map((n) => (
-                    <div key={n.id} className={cn('p-3 border-b border-gray-50 dark:border-dark-border hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer', !n.read && 'bg-primary-50/50 dark:bg-primary-900/10')}>
-                      <p className="text-sm font-medium text-gray-900 dark:text-dark-text">{n.title}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{n.message}</p>
-                      <p className="text-xs text-gray-400 mt-1">{n.time}</p>
+                  {notifLoading ? (
+                    <div className="flex items-center justify-center py-6">
+                      <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
                     </div>
-                  ))}
+                  ) : notifications.length === 0 ? (
+                    <div className="p-6 text-center text-sm text-gray-400">
+                      لا توجد إشعارات
+                    </div>
+                  ) : (
+                    notifications.map((n) => (
+                      <div key={n.id} className={cn('p-3 border-b border-gray-50 dark:border-dark-border hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer', !n.isRead && 'bg-primary-50/50 dark:bg-primary-900/10')}>
+                        <p className="text-sm font-medium text-gray-900 dark:text-dark-text">{n.title}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{n.message}</p>
+                        <p className="text-xs text-gray-400 mt-1">{n.createdAt ? new Date(n.createdAt).toLocaleDateString('ar-SA') : ''}</p>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </>
@@ -94,25 +118,31 @@ export const Navbar: React.FC = () => {
             onClick={() => setShowUserMenu(!showUserMenu)}
             className="flex items-center gap-2 p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
           >
-            <Avatar name="أحمد محمد" size="sm" />
-            <div className="hidden md:block text-right">
-              <p className="text-sm font-medium text-gray-900 dark:text-dark-text">أحمد محمد</p>
-              <p className="text-xs text-gray-500">مدير تسويق</p>
-            </div>
+            {isLoading ? (
+              <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+            ) : (
+              <>
+                <Avatar name={user?.name} size="sm" />
+                <div className="hidden md:block text-right">
+                  <p className="text-sm font-medium text-gray-900 dark:text-dark-text">{user?.name || 'مستخدم'}</p>
+                  <p className="text-xs text-gray-500">{user?.email}</p>
+                </div>
+              </>
+            )}
             <ChevronDown className="w-4 h-4 text-gray-400 hidden md:block" />
           </button>
           {showUserMenu && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />
               <div className="absolute left-0 mt-2 w-56 bg-white dark:bg-dark-card border border-gray-200 dark:border-dark-border rounded-xl shadow-xl z-50 animate-fade-in py-1">
-                <Link to="/settings" onClick={() => setShowUserMenu(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+                <Link href="/settings" onClick={() => setShowUserMenu(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
                   <User className="w-4 h-4" /> {t('nav.profile')}
                 </Link>
-                <Link to="/settings" onClick={() => setShowUserMenu(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+                <Link href="/settings" onClick={() => setShowUserMenu(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
                   <Settings className="w-4 h-4" /> {t('nav.settings')}
                 </Link>
                 <hr className="my-1 border-gray-100 dark:border-dark-border" />
-                <button className="flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 w-full">
+                <button onClick={logout} className="flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 w-full">
                   <LogOut className="w-4 h-4" /> {t('nav.logout')}
                 </button>
               </div>
