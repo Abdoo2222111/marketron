@@ -24,7 +24,7 @@ function daysLater(days: number): Date {
   return d;
 }
 
-async function seed() {
+export async function seed() {
   console.log('🔄 Seeding database...');
 
   // Clean existing data in correct order (child first)
@@ -517,11 +517,15 @@ async function seed() {
   console.log('═══════════════════════════════════════════');
 }
 
-seed()
-  .catch((e) => {
-    console.error('❌ Seed failed:', e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+// Auto-run only when executed directly (not imported)
+const isDirectRun = require.main === module || process.argv[1]?.endsWith('seed.ts');
+if (isDirectRun) {
+  seed()
+    .catch((e) => {
+      console.error('❌ Seed failed:', e);
+      process.exit(1);
+    })
+    .finally(async () => {
+      await prisma.$disconnect();
+    });
+}

@@ -35,6 +35,7 @@ import apiKeysRoutes from './routes/apiKeys.routes';
 import personasRoutes from './routes/personas.routes';
 import engineRoutes from './routes/engine.routes';
 import platformTokensRoutes from './routes/platformTokens.routes';
+import seedRoutes from './routes/seed.routes';
 
 const app: Express = express();
 
@@ -183,6 +184,7 @@ app.use('/api/v1/api-keys', apiKeysRoutes);
 app.use('/api/v1/personas', personasRoutes);
 app.use('/api/v1/engine', engineRoutes);
 app.use('/api/v1/platform-tokens', platformTokensRoutes);
+app.use('/api/v1/seed', seedRoutes);
 
 app.use(express.static('public'));
 
