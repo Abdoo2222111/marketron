@@ -55,7 +55,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       {/* Mobile header */}
       <div className="lg:hidden fixed top-0 inset-x-0 h-16 bg-[#0B0A1A] border-b border-[#7C3AED]/10 z-30 flex items-center justify-between px-4">
         <Link href={`/${locale}/dashboard`} className="flex items-center gap-3">
-          <Logo width={56} height={56} className="drop-shadow-[0_0_15px_rgba(124,58,237,0.4)]" />
+          <Logo size="lg" className="drop-shadow-[0_0_15px_rgba(124,58,237,0.4)]" />
           <span className="font-black text-lg gradient-brand-text">MARKETRON</span>
         </Link>
         <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 hover:bg-[#1E1B3A] rounded-lg">

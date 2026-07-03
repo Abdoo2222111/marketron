@@ -51,7 +51,7 @@ export default function ForgotPasswordPage({ params: { locale } }: { params: { l
           {/* Logo */}
           <div className="text-center mb-8">
             <Link href={`/${locale}`} className="inline-flex items-center gap-3 mb-4">
-              <Logo width={48} height={48} />
+              <Logo size="md" />
               <span className="text-2xl font-black bg-gradient-to-r from-electric via-cyan to-purple bg-clip-text text-transparent tracking-tight">
                 MARKETRON
               </span>

@@ -109,7 +109,7 @@ export default function RegisterPage({ params: { locale } }: { params: { locale:
 
           <div className="mb-8">
             <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.5, delay: 0.1 }}>
-              <Logo height={80} className="mb-6 drop-shadow-[0_0_30px_rgba(124,58,237,0.4)]" />
+              <Logo size="xl" className="mb-6 drop-shadow-[0_0_30px_rgba(124,58,237,0.4)]" />
             </motion.div>
             <h1 className="text-2xl font-bold mb-1">{t('auth.createAccount')}</h1>
             <p className="text-[#A1A1C2] text-sm">{t('auth.register')}</p>

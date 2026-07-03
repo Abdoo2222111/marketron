@@ -52,7 +52,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
       >
         <div className="flex items-center h-16 px-4 border-b border-[#7C3AED]/10">
           <Link href="/ar/dashboard" className="flex items-center gap-3 min-w-0" onClick={onNavigate}>
-            <Logo width={56} height={56} className="drop-shadow-[0_0_15px_rgba(124,58,237,0.5)]" />
+            <Logo size="lg" className="drop-shadow-[0_0_15px_rgba(124,58,237,0.5)]" />
             {sidebarOpen && (
               <span className="font-black text-lg gradient-brand-text whitespace-nowrap tracking-tight">
                 MARKETRON
