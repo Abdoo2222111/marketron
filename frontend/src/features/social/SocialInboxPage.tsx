@@ -311,9 +311,15 @@ const SocialInboxPage: React.FC = () => {
     setQrLoading(true);
     try {
       const res = await socialApi.generateWhatsAppQR(waInbox.id);
-      const qr = res.data?.data?.qrCode || res.data?.qrCode || null;
-      setQrCodeUrl(qr);
-      setWhatsAppStatus('pending');
+      const qr = res.data?.qrCodeUrl || res.data?.data?.qrCode || res.data?.qrCode || null;
+      if (qr && (qr.startsWith('data:') || qr.startsWith('http'))) {
+        setQrCodeUrl(qr);
+      } else if (qr) {
+        setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qr)}`);
+      } else {
+        setQrCodeUrl(null);
+      }
+      setWhatsAppStatus(qr ? 'pending' : 'disconnected');
     } catch {
       setError('فشل إنشاء رمز QR للواتساب');
     } finally {

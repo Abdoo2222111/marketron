@@ -421,6 +421,27 @@ export class SocialInboxService {
         qrCodeUrl: state === 'QRCODE' ? undefined : null,
       },
     });
+
+    // Auto-create a default AI reply rule on first connection
+    if (newStatus === 'connected') {
+      const existingRule = await prisma.aiReplyRule.findFirst({
+        where: { userId: inbox.userId, platform: 'whatsapp', triggerType: 'all' },
+      });
+      if (!existingRule) {
+        await prisma.aiReplyRule.create({
+          data: {
+            userId: inbox.userId,
+            platform: 'whatsapp',
+            triggerType: 'all',
+            useAi: true,
+            isActive: true,
+            priority: 100,
+            responseTemplate: 'شكراً لتواصلك معنا! سنقوم بالرد عليك في أقرب وقت ممكن.',
+          },
+        });
+        logger.info(`Auto-created default AI reply rule for WhatsApp user ${inbox.userId}`);
+      }
+    }
   }
 
   async receiveEvolutionMessage(data: {
@@ -773,17 +794,15 @@ export class SocialInboxService {
 
 رسالة العميل: "${message.messageText}"`;
 
-    if (!process.env.POLLINATIONS_API_KEY && !process.env.OPENAI_API_KEY) {
-      logger.warn('No AI API key set, returning fallback AI reply');
-      return `شكراً لتواصلك مع MARKETRON! تم استلام رسالتك: "${message.messageText}". سيتواصل معك فريقنا قريباً.`;
-    }
-
     try {
-      return await generateAI(prompt);
+      const reply = await generateAI(prompt);
+      if (reply && !reply.includes('AI service unavailable')) {
+        return reply;
+      }
     } catch (error: any) {
       logger.error('generateAiReply failed', { error: error.message });
-      return rule.responseTemplate || 'شكراً لتواصلك مع MARKETRON، سنتواصل معك قريباً.';
     }
+    return rule.responseTemplate || `شكراً لتواصلك مع MARKETRON! تم استلام رسالتك: "${message.messageText}". سيتواصل معك فريقنا قريباً.`;
   }
 
   private generateWebhookToken(): string {
