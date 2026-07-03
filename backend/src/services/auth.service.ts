@@ -5,6 +5,7 @@ import { ApiError } from '../utils/apiError';
 import { sendPasswordResetEmail } from './email.service';
 import { demoDataService } from './demoData.service';
 import { Prisma } from '@prisma/client';
+import logger from '../utils/logger';
 
 export class AuthService {
   /**
@@ -19,9 +20,16 @@ export class AuthService {
     role?: string;
   }) {
     // Check if email already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email: data.email },
-    });
+    logger.info(`[auth] Register attempt for ${data.email}`);
+    let existingUser: any;
+    try {
+      existingUser = await prisma.user.findUnique({
+        where: { email: data.email },
+      });
+    } catch (err: any) {
+      logger.error(`[auth] Register check FAILED: ${err.message}`, { stack: err.stack, code: err.code });
+      throw err;
+    }
 
     if (existingUser) {
       throw ApiError.conflict('البريد الإلكتروني مسجل مسبقاً');
@@ -65,9 +73,17 @@ export class AuthService {
    */
   async login(email: string, password: string) {
     // Find user
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
+    logger.info(`[auth] Login attempt for ${email}`);
+    let user: any;
+    try {
+      user = await prisma.user.findUnique({
+        where: { email },
+      });
+      logger.info(`[auth] User query succeeded: ${user ? 'found' : 'not found'}`);
+    } catch (err: any) {
+      logger.error(`[auth] User query FAILED: ${err.message}`, { stack: err.stack, code: err.code });
+      throw err;
+    }
 
     if (!user) {
       throw ApiError.unauthorized('البريد الإلكتروني أو كلمة المرور غير صحيحة');
