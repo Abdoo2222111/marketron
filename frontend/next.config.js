@@ -14,10 +14,11 @@ const nextConfig = {
     ignoreBuildErrors: false,
   },
   async rewrites() {
+    const backendUrl = process.env.BACKEND_API_URL || 'https://marketron-backend-production.up.railway.app';
     return [
       {
         source: '/api/v1/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_URL || 'https://marketron-backend-production.up.railway.app/api/v1'}/:path*`,
+        destination: `${backendUrl}/api/v1/:path*`,
       },
     ];
   },
