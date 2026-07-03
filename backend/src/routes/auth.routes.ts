@@ -48,7 +48,6 @@ router.post('/register', validate(registerSchema), async (req: Request, res: Res
 router.post('/login', validate(loginSchema), async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
-    logger.info(`[auth-route] Login: ${email}`);
     const result = await authService.login(email, password);
     res.json({
       success: true,
@@ -60,7 +59,6 @@ router.post('/login', validate(loginSchema), async (req: Request, res: Response)
       message: 'تم تسجيل الدخول بنجاح',
     });
   } catch (error: any) {
-    logger.error(`[auth-route] Login error: ${error.message}`, { stack: error.stack, name: error.constructor?.name });
     res.status(401).json({ success: false, error: error.message || 'فشل تسجيل الدخول' });
   }
 });

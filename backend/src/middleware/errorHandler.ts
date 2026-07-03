@@ -91,7 +91,7 @@ export const errorHandler = (
   logger.error(`500: ${err.message}`, { stack: err.stack, name: err.constructor?.name });
   res.status(500).json({
     success: false,
-    error: err.message || 'خطأ داخلي في الخادم',
+    error: 'خطأ داخلي في الخادم',
   });
 };
 
