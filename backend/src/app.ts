@@ -134,13 +134,24 @@ if (config.env === 'development') {
 
 app.use(globalRateLimiter);
 
-app.get('/api/v1/health', (_req: Request, res: Response) => {
-  res.status(200).json({
-    success: true,
-    message: 'الخادم يعمل بشكل طبيعي',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-  });
+app.get('/api/v1/health', async (_req: Request, res: Response) => {
+  try {
+    const prisma = (await import('./config/database')).default;
+    await prisma.$queryRaw`SELECT 1`;
+    res.status(200).json({
+      success: true,
+      message: 'الخادم يعمل بشكل طبيعي',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      db: 'connected',
+    });
+  } catch (e: any) {
+    res.status(500).json({
+      success: false,
+      message: 'الخادم يعمل لكن قاعدة البيانات غير متصلة',
+      error: e.message,
+    });
+  }
 });
 
 app.get('/', (_req: Request, res: Response) => {

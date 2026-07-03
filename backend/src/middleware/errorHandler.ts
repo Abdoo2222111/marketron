@@ -88,9 +88,10 @@ export const errorHandler = (
   }
 
   // Default 500 error
+  logger.error(`500: ${err.message}`, { stack: err.stack, name: err.constructor?.name });
   res.status(500).json({
     success: false,
-    error: 'خطأ داخلي في الخادم',
+    error: process.env.NODE_ENV === 'development' ? err.message : 'خطأ داخلي في الخادم',
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
   });
 };
