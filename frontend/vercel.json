@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "npx prisma db push && next build",
+  "buildCommand": "next build",
   "outputDirectory": ".next",
   "installCommand": "npm install",
   "framework": "nextjs",

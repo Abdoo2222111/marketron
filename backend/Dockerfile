@@ -22,4 +22,4 @@ COPY backend/prisma ./prisma
 RUN mkdir -p ./logs
 
 EXPOSE 4000
-CMD npx prisma generate && node dist/index.js
+CMD npx prisma db push --accept-data-loss && node dist/index.js
