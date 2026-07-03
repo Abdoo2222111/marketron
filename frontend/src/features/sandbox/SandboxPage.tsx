@@ -56,7 +56,8 @@ export const SandboxPage: React.FC = () => {
       }
       setChatMessages(prev => [...prev, { role: 'assistant', content: reply }]);
     } catch (err: any) {
-      setChatMessages(prev => [...prev, { role: 'assistant', content: `عذراً، حدث خطأ في الاتصال: ${err.message || ''}` }]);
+      const msg = err?.response?.data?.error || err?.message || 'خطأ غير معروف';
+      setChatMessages(prev => [...prev, { role: 'assistant', content: `عذراً، حدث خطأ: ${msg}` }]);
     }
     setChatLoading(false);
   };

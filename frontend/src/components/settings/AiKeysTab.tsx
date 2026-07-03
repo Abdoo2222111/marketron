@@ -11,13 +11,13 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
-const BYOK_PROVIDER_META: Record<string, { icon: string; color: string; desc: string }> = {
-  zen: { icon: '🧘', color: 'from-indigo-500 to-purple-600', desc: 'OpenCode Zen — GPT-5.5, GPT-5.4 (الرئيسي)' },
-  openai: { icon: '⚡', color: 'from-emerald-500 to-teal-600', desc: 'GPT-4o, DALL-E 3' },
-  anthropic: { icon: '🌿', color: 'from-amber-500 to-orange-600', desc: 'Claude 3.5 Sonnet' },
-  openrouter: { icon: '🌐', color: 'from-blue-500 to-indigo-600', desc: 'بوابة موحدة لعشرات الموديلات' },
-  deepseek: { icon: '🐋', color: 'from-sky-500 to-violet-600', desc: 'DeepSeek Chat, Coder' },
-  google: { icon: '🔮', color: 'from-blue-400 to-indigo-600', desc: 'Gemini 1.5 Flash, Pro' },
+const BYOK_PROVIDER_META: Record<string, { icon: string; color: string; desc: string; baseUrl: string; defaultModel: string }> = {
+  zen: { icon: '🧘', color: 'from-indigo-500 to-purple-600', desc: 'OpenCode Zen — GPT-5.5, GPT-5.4 (الرئيسي)', baseUrl: 'https://opencode.ai/zen', defaultModel: 'gpt-5.4-mini' },
+  openai: { icon: '⚡', color: 'from-emerald-500 to-teal-600', desc: 'GPT-4o, DALL-E 3', baseUrl: 'https://api.openai.com', defaultModel: 'gpt-4o-mini' },
+  anthropic: { icon: '🌿', color: 'from-amber-500 to-orange-600', desc: 'Claude 3.5 Sonnet', baseUrl: 'https://api.anthropic.com', defaultModel: 'claude-3-5-sonnet-20241022' },
+  openrouter: { icon: '🌐', color: 'from-blue-500 to-indigo-600', desc: 'بوابة موحدة لعشرات الموديلات', baseUrl: 'https://openrouter.ai/api', defaultModel: 'openai/gpt-4o-mini' },
+  deepseek: { icon: '🐋', color: 'from-sky-500 to-violet-600', desc: 'DeepSeek Chat, Coder', baseUrl: 'https://api.deepseek.com', defaultModel: 'deepseek-chat' },
+  google: { icon: '🔮', color: 'from-blue-400 to-indigo-600', desc: 'Gemini 1.5 Flash, Pro', baseUrl: 'https://generativelanguage.googleapis.com', defaultModel: 'gemini-1.5-flash' },
 };
 
 export function AiKeysTab() {
@@ -171,11 +171,11 @@ export function AiKeysTab() {
                     </div>
                     <div>
                       <Label className="text-xs">Base URL (اختياري)</Label>
-                      <Input type="text" value={formBase} onChange={e => setFormBase(e.target.value)} className="text-xs" placeholder="https://api.openai.com/v1" />
+                      <Input type="text" value={formBase} onChange={e => setFormBase(e.target.value)} className="text-xs" placeholder={BYOK_PROVIDER_META[provider]?.baseUrl || 'https://api.openai.com'} />
                     </div>
                     <div>
                       <Label className="text-xs">النموذج الافتراضي (اختياري)</Label>
-                      <Input type="text" value={formModel} onChange={e => setFormModel(e.target.value)} className="text-xs" placeholder="gpt-4o-mini" />
+                      <Input type="text" value={formModel} onChange={e => setFormModel(e.target.value)} className="text-xs" placeholder={BYOK_PROVIDER_META[provider]?.defaultModel || 'gpt-4o-mini'} />
                     </div>
                     <div>
                       <Label className="text-xs">استخدام افتراضي لـ (اختياري)</Label>
@@ -211,10 +211,11 @@ export function AiKeysTab() {
                     </div>
                     <div className="flex gap-1">
                       <Button size="sm" variant="ghost" className="text-xs h-7" onClick={() => {
+                        const meta = BYOK_PROVIDER_META[provider];
                         setEditing(provider);
                         setFormKey('');
-                        setFormBase(existing?.baseUrl || '');
-                        setFormModel(existing?.defaultModel || '');
+                        setFormBase(existing?.baseUrl || meta?.baseUrl || '');
+                        setFormModel(existing?.defaultModel || meta?.defaultModel || '');
                         setFormLabel(existing?.label || '');
                         setFormDefaultType(existing?.isDefaultForType || '');
                       }}>

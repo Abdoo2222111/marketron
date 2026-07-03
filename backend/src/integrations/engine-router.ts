@@ -5,7 +5,7 @@ import * as pollinationsService from './pollinationsService';
 import type { AiProviderName } from './aiService';
 
 // ── BYOK Provider types supported ──────────────────────
-export type ByokProvider = 'openai' | 'anthropic' | 'openrouter' | 'deepseek' | 'google' | 'pollinations';
+export type ByokProvider = 'openai' | 'anthropic' | 'openrouter' | 'deepseek' | 'google' | 'pollinations' | 'zen';
 
 export interface EngineRequest {
   section: SectionType;
@@ -97,14 +97,19 @@ export function decryptKey(encrypted: string): string {
   }
 }
 
+// Strip trailing /v1 or /v1/ so we can consistently append it
+function normalizeBaseUrl(url: string): string {
+  return url.replace(/\/v1\/?$/, '');
+}
+
 // ── Test a BYOK key by making a small API call ─────────
 export async function testByokKey(provider: ByokProvider, apiKey: string, baseUrl?: string): Promise<boolean> {
   try {
     const axios = (await import('axios')).default;
-    const url = baseUrl || getDefaultBaseUrl(provider);
+    const url = normalizeBaseUrl(baseUrl || getDefaultBaseUrl(provider));
     const { status } = await axios.get(`${url}/v1/models`, {
       headers: { Authorization: `Bearer ${apiKey}` },
-      timeout: 10000,
+      timeout: 15000,
     });
     return status === 200;
   } catch {
@@ -120,6 +125,7 @@ function getDefaultBaseUrl(provider: ByokProvider): string {
     deepseek: 'https://api.deepseek.com',
     google: 'https://generativelanguage.googleapis.com',
     pollinations: config.ai.providers.pollinations.baseUrl,
+    zen: 'https://opencode.ai/zen',
   };
   return map[provider] || '';
 }
@@ -248,7 +254,7 @@ export class EngineRouter {
 
   private async callByokText(provider: ByokProvider, prompt: string, apiKey: string, baseUrl?: string, req?: EngineRequest): Promise<string> {
     const axios = (await import('axios')).default;
-    const url = baseUrl || getDefaultBaseUrl(provider);
+    const url = normalizeBaseUrl(baseUrl || getDefaultBaseUrl(provider));
     const model = req?.model || 'gpt-4o-mini';
 
     const { data } = await axios.post(
@@ -269,7 +275,7 @@ export class EngineRouter {
 
   private async callByokImage(provider: ByokProvider, prompt: string, apiKey: string, baseUrl?: string, req?: EngineRequest): Promise<any> {
     const axios = (await import('axios')).default;
-    const url = baseUrl || getDefaultBaseUrl(provider);
+    const url = normalizeBaseUrl(baseUrl || getDefaultBaseUrl(provider));
     const model = req?.model || 'dall-e-3';
 
     const { data } = await axios.post(

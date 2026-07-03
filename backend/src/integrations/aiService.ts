@@ -261,6 +261,51 @@ class GeminiProvider implements AiProvider {
   }
 }
 
+// ── Pollinations Provider (custom — not OpenAI-compatible) ─
+class PollinationsProvider implements AiProvider {
+  name: AiProviderName = 'pollinations';
+  private baseUrl: string;
+  private defaultModel: string;
+
+  constructor() {
+    this.baseUrl = config.ai.providers.pollinations.baseUrl || 'https://text.pollinations.ai';
+    this.defaultModel = config.ai.providers.pollinations.defaultModel || 'openai';
+  }
+
+  reloadFromEnv() {
+    this.baseUrl = config.ai.providers.pollinations.baseUrl || 'https://text.pollinations.ai';
+    this.defaultModel = config.ai.providers.pollinations.defaultModel || 'openai';
+  }
+
+  applyConfig() { /* no-op */ }
+  isConfigured() { return true; }
+
+  async generateText(prompt: string, opts?: AiCompletionOptions): Promise<AiCompletionResult> {
+    const model = opts?.model || this.defaultModel;
+    const messages: any[] = [];
+    if (opts?.systemPrompt) messages.push({ role: 'system', content: opts.systemPrompt });
+    messages.push({ role: 'user', content: prompt });
+
+    const { data: responseText } = await axios.post(
+      this.baseUrl + '/',
+      {
+        model,
+        messages,
+        temperature: opts?.temperature ?? 0.7,
+        ...(opts?.maxTokens ? { max_tokens: opts.maxTokens } : {}),
+      },
+      {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 120000,
+        responseType: 'text',
+      }
+    );
+
+    const text = typeof responseText === 'string' ? responseText : String(responseText);
+    return { text, provider: this.name, model, tokensUsed: 0 };
+  }
+}
+
 // ── Provider Registry ──────────────────────────────────
 function envFor(name: AiProviderName) {
   const p = config.ai.providers[name];
@@ -276,7 +321,7 @@ const providers: Record<AiProviderName, AiProvider> = {
   cohere: new OpenAICompatibleProvider('cohere', envFor('cohere')),
   deepseek: new OpenAICompatibleProvider('deepseek', envFor('deepseek')),
   perplexity: new OpenAICompatibleProvider('perplexity', envFor('perplexity')),
-  pollinations: new OpenAICompatibleProvider('pollinations', envFor('pollinations'), false),
+  pollinations: new PollinationsProvider(),
 };
 
 // ── Main AI Service (Text) ─────────────────────────────

@@ -113,7 +113,7 @@ export const AiAgentsPage: React.FC = () => {
       setChatMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: `⚠️ ${err?.response?.data?.error || err.message || 'حدث خطأ في الاتصال بالوكيل'}`,
+        content: `⚠️ ${err?.response?.data?.error || err?.message || 'حدث خطأ في الاتصال بالوكيل'}`,
       }]);
     } finally {
       setSending(false);
