@@ -70,3 +70,5 @@ temp/
 
 # Vercel
 .vercel/
+.env.vercel
+.env.vercel.pulled

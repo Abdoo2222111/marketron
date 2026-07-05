@@ -3,6 +3,7 @@ import { authenticate } from '../middleware/auth';
 import { socialInboxService } from '../services/socialInbox.service';
 import { validate } from '../middleware/validate';
 import { z } from 'zod';
+import prisma from '../config/database';
 import logger from '../utils/logger';
 
 const router = Router();
@@ -210,16 +211,93 @@ router.post('/webhook/evolution', async (req: Request, res: Response) => {
   }
 });
 
+// ── Telegram webhook receiver ─────────────────────────
+router.post('/webhook/telegram', async (req: Request, res: Response) => {
+  try {
+    await socialInboxService.handleTelegramWebhook(req.body);
+    res.json({ success: true });
+  } catch (error: any) {
+    logger.error('Telegram webhook processing error', { error: error.message });
+    res.status(200).json({ success: true });
+  }
+});
+
 router.get('/webhook/meta', async (req: Request, res: Response) => {
-  const mode = req.query['hub.mode'];
-  const token = req.query['hub.verify_token'];
-  const challenge = req.query['hub.challenge'];
+  const mode = req.query['hub.mode'] as string;
+  const token = req.query['hub.verify_token'] as string;
+  const challenge = req.query['hub.challenge'] as string;
 
   if (mode === 'subscribe' && token === process.env.FACEBOOK_WEBHOOK_VERIFY_TOKEN) {
     logger.info('Meta webhook verified');
     res.status(200).send(challenge);
   } else {
     res.status(403).json({ success: false, error: 'Verification failed' });
+  }
+});
+
+router.post('/webhook/meta', async (req: Request, res: Response) => {
+  try {
+    const body = req.body;
+    if (body.object !== 'page') {
+      res.status(200).json({ success: true });
+      return;
+    }
+
+    for (const entry of body.entry || []) {
+      const pageId = entry.id;
+      const messaging = entry.messaging || [];
+
+      for (const event of messaging) {
+        const senderId = event.sender?.id;
+        const message = event.message;
+        const text = message?.text || '';
+        const mid = message?.mid || '';
+        const attachments = message?.attachments || [];
+        const mediaUrl = attachments.find((a: any) => a.type === 'image' || a.type === 'video')?.payload?.url;
+
+        if (!senderId || !message) continue;
+
+        const inbox = await prisma.socialInbox.findFirst({
+          where: { platformAccountId: pageId, platform: { in: ['messenger', 'facebook'] } },
+        });
+
+        if (!inbox) {
+          logger.warn(`No inbox found for Messenger page ${pageId}`);
+          continue;
+        }
+
+        const exists = await prisma.socialMessage.findFirst({
+          where: { platformMessageId: mid },
+        });
+        if (exists) continue;
+
+        const socialMessage = await prisma.socialMessage.create({
+          data: {
+            inboxId: inbox.id,
+            userId: inbox.userId,
+            platform: 'messenger',
+            direction: 'inbound',
+            status: 'unread',
+            senderName: senderId,
+            senderId,
+            messageText: text,
+            mediaUrl: mediaUrl || '',
+            platformMessageId: mid,
+            metadata: JSON.stringify(event),
+          } as any,
+        });
+
+        try {
+          const { autoReplyEngine } = await import('../services/enhancedAutoReply.service');
+          await autoReplyEngine.processIncomingMessage(inbox.id, socialMessage.id, text, `conv_${senderId}`, 'messenger');
+        } catch { /* non-blocking */ }
+      }
+    }
+
+    res.status(200).json({ success: true });
+  } catch (error: any) {
+    logger.error('Meta webhook processing error', { error: error.message });
+    res.status(200).json({ success: true });
   }
 });
 
@@ -246,6 +324,8 @@ router.get('/integrations/status', async (_req: Request, res: Response) => {
     const { metaGraph } = await import('../integrations/metaGraph');
     const { config } = await import('../config');
 
+    const { telegramApi } = await import('../integrations/telegramApi');
+
     res.json({
       success: true,
       data: {
@@ -257,6 +337,23 @@ router.get('/integrations/status', async (_req: Request, res: Response) => {
         meta: {
           provider: 'Meta Graph API (Facebook / Messenger / Instagram)',
           configured: metaGraph.isEnabled(),
+        },
+        telegram: {
+          provider: 'Telegram Bot API',
+          configured: telegramApi.isEnabled(),
+          botUsername: telegramApi.isEnabled() ? telegramApi.botUsername : null,
+        },
+        tiktok: {
+          provider: 'TikTok Business API',
+          configured: !!(await import('../config')).config.tiktok.appId,
+        },
+        snapchat: {
+          provider: 'Snapchat Business API',
+          configured: !!(await import('../config')).config.snapchat.appId,
+        },
+        twitter: {
+          provider: 'Twitter/X API v2',
+          configured: !!(await import('../config')).config.twitter.bearerToken,
         },
         pollinations: {
           provider: 'Pollinations AI',

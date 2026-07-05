@@ -162,9 +162,9 @@ function AnimatedCounter({ value, format = 'number' }: { value: number; format?:
 
 function StatusPill({ text, loading = false }: { text: string; loading?: boolean }) {
   return (
-    <div className="inline-flex items-center gap-1.5 text-[11px] text-[#A1A1C2] bg-[#1E1B3A]/80 backdrop-blur-sm px-3 py-1.5 rounded-full border border-[#7C3AED]/10">
+    <div className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground bg-muted/80 backdrop-blur-sm px-3 py-1.5 rounded-full border border-border">
       {loading ? (
-        <Loader2 className="w-3 h-3 animate-spin text-[#7C3AED]" />
+        <Loader2 className="w-3 h-3 animate-spin text-primary" />
       ) : (
         <span className="relative w-1.5 h-1.5 rounded-full bg-[#10B981]">
           <span className="absolute inset-0 rounded-full bg-[#10B981] animate-ping opacity-60" />
@@ -177,7 +177,7 @@ function StatusPill({ text, loading = false }: { text: string; loading?: boolean
 
 function SkeletonBar({ className }: { className?: string }) {
   return (
-    <div className={cn('bg-gradient-to-r from-[#1E1B3A] via-[#2D2B55] to-[#1E1B3A] rounded animate-shimmer bg-[length:200%_100%]', className)} />
+    <div className={cn('bg-gradient-to-r from-muted via-muted/50 to-muted rounded animate-shimmer bg-[length:200%_100%]', className)} />
   );
 }
 
@@ -196,8 +196,8 @@ function FloatingOrb({ color = '#7C3AED', size = 300, className }: { color?: str
 function GlassCard({ children, className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div className={cn(
-      'relative overflow-hidden rounded-2xl border border-[#7C3AED]/10 bg-[#14102B]/70 backdrop-blur-sm',
-      'hover:border-[#7C3AED]/25 hover:shadow-[0_0_40px_rgba(124,58,237,0.12)]',
+      'relative overflow-hidden rounded-2xl border border-border bg-card/70 backdrop-blur-sm',
+      'hover:border-primary/25 hover:shadow-[0_0_40px_rgba(124,58,237,0.12)]',
       'transition-all duration-500',
       className,
     )} {...props}>
@@ -349,7 +349,7 @@ export default function DashboardPage({ params: { locale } }: { params: { locale
               <span className="w-2 h-2 rounded-full bg-[#06B6D4] animate-pulse shadow-[0_0_8px_rgba(6,182,212,0.6)]" style={{ animationDelay: '0.6s' }} />
             </div>
           </div>
-          <p className="text-[#A1A1C2] text-xs sm:text-sm mt-1">{txt.overview}</p>
+          <p className="text-muted-foreground text-xs sm:text-sm mt-1">{txt.overview}</p>
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
           <StatusPill

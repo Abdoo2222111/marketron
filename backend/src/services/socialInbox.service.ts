@@ -2,6 +2,8 @@ import prisma from '../config/database';
 import { ApiError } from '../utils/apiError';
 import { evolutionApi } from '../integrations/evolutionApi';
 import { metaGraph } from '../integrations/metaGraph';
+import { telegramApi } from '../integrations/telegramApi';
+import { autoReplyEngine } from './enhancedAutoReply.service';
 import { generateAI } from '../integrations/openai';
 import logger from '../utils/logger';
 
@@ -216,7 +218,11 @@ export class SocialInboxService {
         }
 
         case 'telegram': {
-          logger.warn('Telegram sending not yet implemented');
+          const chatId = message.senderId || message.phoneNumber;
+          if (!chatId) {
+            throw new Error('معرّف المحادثة مطلوب لإرسال رسالة تيليجرام');
+          }
+          await telegramApi.sendMessage(chatId, text);
           break;
         }
 
@@ -509,6 +515,8 @@ export class SocialInboxService {
         return this.syncInstagramMessages(userId, inbox);
       case 'whatsapp':
         return this.syncWhatsAppMessages(userId, inbox);
+      case 'telegram':
+        return this.syncTelegramMessages(userId, inbox);
       default:
         return { message: 'المزامنة غير متاحة لهذه المنصة بعد' };
     }
@@ -667,6 +675,130 @@ export class SocialInboxService {
     }
   }
 
+  private async syncTelegramMessages(userId: string, inbox: any) {
+    if (!telegramApi.isEnabled()) {
+      return { message: 'Telegram Bot API not configured' };
+    }
+
+    try {
+      const webhookInfo = await telegramApi.getWebhookInfo();
+      let count = 0;
+
+      const updates = await this.fetchTelegramUpdates(inbox);
+      if (Array.isArray(updates)) {
+        for (const update of updates) {
+          const msg = update.message || update.channel_post;
+          if (!msg || !msg.text) continue;
+
+          const existing = await prisma.socialMessage.findFirst({
+            where: { platformMessageId: String(update.update_id) } as any,
+          });
+          if (existing) continue;
+
+          await prisma.socialMessage.create({
+            data: {
+              inboxId: inbox.id,
+              userId,
+              platform: 'telegram',
+              direction: 'inbound',
+              status: 'unread',
+              senderName: msg.from?.first_name || msg.chat?.title || 'Telegram User',
+              senderId: String(msg.chat?.id || msg.from?.id),
+              phoneNumber: String(msg.chat?.id || ''),
+              messageText: msg.text || '',
+              platformMessageId: String(update.update_id),
+              metadata: JSON.stringify({
+                chat: msg.chat,
+                from: msg.from,
+                date: msg.date,
+              }),
+            } as any,
+          });
+          count++;
+        }
+      }
+
+      await prisma.socialInbox.update({
+        where: { id: inbox.id },
+        data: { lastSyncedAt: new Date() },
+      });
+
+      return { message: `تمت مزامنة ${count} رسالة تيليجرام` };
+    } catch (error: any) {
+      logger.error('Telegram sync failed', { error: error.message });
+      return { message: `فشلت مزامنة تيليجرام: ${error.message}` };
+    }
+  }
+
+  private async fetchTelegramUpdates(inbox: any): Promise<any[]> {
+    try {
+      const axios = (await import('axios')).default;
+      const botToken = (await import('../config')).config.telegram.botToken;
+      const { data } = await axios.get(
+        `https://api.telegram.org/bot${botToken}/getUpdates`,
+        { params: { timeout: 30, limit: 100 } }
+      );
+      return data?.result || [];
+    } catch {
+      return [];
+    }
+  }
+
+  // ── Telegram Webhook ──────────────────────────────────
+  async handleTelegramWebhook(payload: any) {
+    const message = payload?.message || payload?.channel_post;
+    if (!message?.text) return;
+
+    const chatId = String(message.chat?.id || message.from?.id || '');
+    const inboxName = `telegram_${chatId}`;
+
+    let inbox = await prisma.socialInbox.findFirst({
+      where: { name: inboxName, platform: 'telegram' },
+    });
+
+    if (!inbox) {
+      const demoUser = await prisma.user.findFirst({ orderBy: { createdAt: 'asc' } });
+      if (!demoUser) return;
+
+      inbox = await prisma.socialInbox.create({
+        data: {
+          userId: demoUser.id,
+          name: inboxName,
+          platform: 'telegram',
+          platformAccountId: chatId,
+          platformAccountName: message.chat?.title || message.from?.first_name || 'Telegram',
+          webhookToken: this.generateWebhookToken(),
+          settings: JSON.stringify({ autoReply: true, aiEnabled: true }),
+        },
+      });
+    }
+
+    const existing = payload.update_id
+      ? await prisma.socialMessage.findFirst({
+          where: { platformMessageId: String(payload.update_id) } as any,
+        })
+      : null;
+    if (existing) return;
+
+    const msg = await prisma.socialMessage.create({
+      data: {
+        inboxId: inbox.id,
+        userId: inbox.userId,
+        platform: 'telegram',
+        direction: 'inbound',
+        status: 'unread',
+        senderName: message.from?.first_name || message.chat?.title || 'Telegram User',
+        senderId: chatId,
+        phoneNumber: chatId,
+        messageText: message.text || '',
+        platformMessageId: String(payload.update_id || message.message_id || ''),
+        metadata: JSON.stringify({ chat: message.chat, from: message.from, date: message.date }),
+      } as any,
+    });
+
+    await this.checkAutoReply(inbox.userId, msg, 'telegram');
+  }
+
   // ── Webhook ──────────────────────────────────────────
   async handleWebhook(inboxId: string, payload: any) {
     const inbox = await prisma.socialInbox.findUnique({
@@ -729,9 +861,21 @@ export class SocialInboxService {
 
     for (const rule of rules) {
       if (this.matchesRule(rule, message)) {
-        const replyText = rule.useAi
-          ? await this.generateAiReply(rule, message)
-          : rule.responseTemplate || 'شكراً لتواصلك، سنرد عليك قريباً';
+        let replyText: string;
+        let escalateToHuman = false;
+
+        if (rule.useAi) {
+          replyText = await this.generateAiReply(rule, message);
+
+          try {
+            const intent = await autoReplyEngine.analyzeIntent(message.messageText || '');
+            if (intent.sentiment === 'angry' || intent.urgency === 'critical') {
+              escalateToHuman = true;
+            }
+          } catch {}
+        } else {
+          replyText = rule.responseTemplate || 'شكراً لتواصلك، سنرد عليك قريباً';
+        }
 
         await prisma.socialMessage.create({
           data: {
@@ -744,7 +888,7 @@ export class SocialInboxService {
             replyFromAi: true,
             aiReplyText: replyText,
             aiAgentId: rule.agentId,
-            metadata: JSON.stringify({ ruleId: rule.id, autoReply: true }),
+            metadata: JSON.stringify({ ruleId: rule.id, autoReply: true, escalateToHuman }),
           } as any,
         });
 
@@ -769,6 +913,18 @@ export class SocialInboxService {
           }
         }
 
+        if (escalateToHuman) {
+          await prisma.notification.create({
+            data: {
+              userId,
+              title: '🔴 تصعيد تلقائي - رد آلي',
+              message: `تم تصعيد المحادثة بسبب مشاعر سلبية أو استعجال عالي.\nالرسالة: ${(message.messageText || '').slice(0, 200)}`,
+              type: 'alert',
+              link: `/dashboard/social/inbox/${message.inboxId}`,
+            },
+          });
+        }
+
         break;
       }
     }
@@ -788,14 +944,21 @@ export class SocialInboxService {
   }
 
   private async generateAiReply(rule: any, message: any): Promise<string> {
-    const prompt =
-      rule.aiPrompt ||
-      `أنت مندوب خدمة عملاء عربي مهذب لمنصة MARKETRON. رد على رسالة العميل التالية باختصار ووضوح:
+    let enhancedPrompt = rule.aiPrompt || `أنت مندوب خدمة عملاء عربي مهذب لمنصة MARKETRON. رد على رسالة العميل التالية باختصار ووضوح:
 
 رسالة العميل: "${message.messageText}"`;
 
     try {
-      const reply = await generateAI(prompt);
+      const intent = await autoReplyEngine.analyzeIntent(message.messageText || '');
+      enhancedPrompt =
+        `أنت مندوب خدمة عملاء عربي مهذب لمنصة MARKETRON.\n` +
+        `النية المكتشفة: ${intent.intent}\n` +
+        `المشاعر: ${intent.sentiment}\n` +
+        `درجة الاستعجال: ${intent.urgency}\n\n` +
+        (rule.aiPrompt || 'رد على رسالة العميل التالية باختصار ووضوح:\n') +
+        `\nالعميل: "${message.messageText}"`;
+
+      const reply = await generateAI(enhancedPrompt);
       if (reply && !reply.includes('AI service unavailable')) {
         return reply;
       }

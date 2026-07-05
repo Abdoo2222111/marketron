@@ -162,6 +162,11 @@ export const config = {
         baseUrl: process.env.POLLINATIONS_BASE_URL || 'https://gen.pollinations.ai',
         defaultModel: 'openai',
       },
+      huggingface: {
+        apiKey: process.env.HUGGINGFACE_API_KEY || '',
+        baseUrl: 'https://api-inference.huggingface.co',
+        defaultModel: 'microsoft/Phi-3-mini-4k-instruct',
+      },
     },
   },
 

@@ -24,8 +24,8 @@ class PageErrorBoundary extends React.Component<{ children: React.ReactNode }, {
           <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#F43F5E]/20 to-[#F43F5E]/5 flex items-center justify-center mb-6 border border-[#F43F5E]/20">
             <AlertTriangle className="w-10 h-10 text-[#F43F5E]" />
           </div>
-          <h2 className="text-xl font-bold mb-2">عذراً، حدث خطأ</h2>
-          <p className="text-[#A1A1C2] mb-6 max-w-md">{this.state.error?.message || 'حدث خطأ غير متوقع'}</p>
+          <h2 className="text-xl font-bold mb-2 text-foreground">عذراً، حدث خطأ</h2>
+          <p className="text-muted-foreground mb-6 max-w-md">{this.state.error?.message || 'حدث خطأ غير متوقع'}</p>
           <Button onClick={() => window.location.reload()} className="btn-gradient">
             <RefreshCw className="w-4 h-4 ml-1" /> إعادة تحميل
           </Button>
@@ -41,25 +41,25 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const { sidebarOpen, mobileMenuOpen, setMobileMenuOpen } = useSettingsStore();
 
   return (
-    <div className="min-h-screen bg-[#0B0A1A] relative" dir={direction} lang={locale}>
+    <div className="min-h-screen bg-background relative" dir={direction} lang={locale}>
       <ParticlesBackground count={40} interactive={false} />
 
       {/* Ambient glow orbs */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-[#7C3AED]/10 rounded-full blur-[120px]" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-[#06B6D4]/8 rounded-full blur-[120px]" style={{ animationDelay: '2s' }} />
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/10 rounded-full blur-[120px]" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-accent/8 rounded-full blur-[120px]" style={{ animationDelay: '2s' }} />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#EC4899]/5 rounded-full blur-[150px]" />
         <div className="bg-grid absolute inset-0 opacity-[0.02]" />
       </div>
 
       {/* Mobile header */}
-      <div className="lg:hidden fixed top-0 inset-x-0 h-16 bg-[#0B0A1A] border-b border-[#7C3AED]/10 z-30 flex items-center justify-between px-4">
+      <div className="lg:hidden fixed top-0 inset-x-0 h-16 bg-background border-b border-border z-30 flex items-center justify-between px-4">
         <Link href={`/${locale}/dashboard`} className="flex items-center gap-3">
           <Logo size="lg" className="drop-shadow-[0_0_15px_rgba(124,58,237,0.4)]" />
           <span className="font-black text-lg gradient-brand-text">MARKETRON</span>
         </Link>
-        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 hover:bg-[#1E1B3A] rounded-lg">
-          {mobileMenuOpen ? <X className="w-5 h-5 text-[#A1A1C2]" /> : <Menu className="w-5 h-5 text-[#A1A1C2]" />}
+        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 hover:bg-muted/30 rounded-lg transition-colors">
+          {mobileMenuOpen ? <X className="w-5 h-5 text-muted-foreground" /> : <Menu className="w-5 h-5 text-muted-foreground" />}
         </button>
       </div>
 

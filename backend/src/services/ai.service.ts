@@ -60,7 +60,7 @@ export class AiService {
       const result = await aiIntegration.generateStructuredJson<any>(prompt, {
         systemPrompt: AD_TEXT_SYSTEM_PROMPT,
       });
-      await this.saveGeneration(userId, 'text', data, result, 'gpt-4o', 200);
+      await this.saveGeneration(userId, 'text', data, result, 'openai', 200);
       return result;
     } catch {
       const fallback = {
@@ -131,7 +131,7 @@ export class AiService {
         JSON.stringify(campaignData),
         { systemPrompt: ANALYSIS_SYSTEM_PROMPT }
       );
-      await this.saveGeneration(userId, 'analysis', { campaignId }, result, 'gpt-4o', 350);
+      await this.saveGeneration(userId, 'analysis', { campaignId }, result, 'openai', 350);
       return result;
     } catch {
       const fallback = {
@@ -180,7 +180,7 @@ export class AiService {
       const result = await aiIntegration.generateStructuredJson<any>(prompt, {
         systemPrompt: RECOMMENDATIONS_SYSTEM_PROMPT,
       });
-      await this.saveGeneration(userId, 'recommendation', data, result, 'gpt-4o', 300);
+      await this.saveGeneration(userId, 'recommendation', data, result, 'openai', 300);
       return result;
     } catch {
       const fallback = {

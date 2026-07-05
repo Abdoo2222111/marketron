@@ -1,0 +1,15 @@
+---
+title: "MARKETRON AI Suite"
+emoji: "🚀"
+colorFrom: "#0066ff"
+colorTo: "#00ff88"
+sdk: docker
+app_file: deploy/huggingface/app.py
+pinned: false
+tags:
+  - marketing
+  - ai
+  - automation
+  - whatsapp
+  - social-media
+---

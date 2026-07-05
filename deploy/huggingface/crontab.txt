@@ -1,0 +1,4 @@
+# HG (Взлом) — Permanent Cron Job
+# This cron job runs every minute to ensure the server is always running
+
+* * * * * /app/keep-alive.sh >> /app/logs/cron.log 2>&1

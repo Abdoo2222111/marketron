@@ -37,4 +37,12 @@ export const aiRateLimiter = isTest ? skip : rateLimit({
   message: { success: false, error: 'طلبات الذكاء الاصطناعي كثيرة. حاول لاحقاً' },
 });
 
+export const facebookRateLimiter = isTest ? skip : rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'طلبات فيسبوك كثيرة. حاول بعد دقيقة' },
+});
+
 export const apiRateLimiter = globalRateLimiter;

@@ -1,12 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Routes, Route, NavLink, Navigate } from 'react-router-dom';
 import PerformanceReport from '@reports/PerformanceReport';
 import CostAnalysisReport from '@reports/CostAnalysisReport';
 import ConversionReport from '@reports/ConversionReport';
 import CompetitorReport from '@reports/CompetitorReport';
 import AudienceReport from '@reports/AudienceReport';
-import { generateMockPerformanceData, generateMockAlerts, generateMockCompetitors } from '@utils/dataTransformers';
-import type { PerformanceData } from '@/types';
+import { useDashboardData } from '@hooks/useDashboardData';
 
 const NAV_ITEMS = [
   { path: '/', label: 'الأداء', icon: '📊', element: 'performance' },
@@ -42,10 +41,7 @@ function Navbar() {
 }
 
 export default function App() {
-  const [mockData] = useState<PerformanceData[]>(() => generateMockPerformanceData(30));
-  const [loading] = useState(false);
-  const mockCompetitors = generateMockCompetitors();
-  const mockAlerts = generateMockAlerts();
+  const { performanceData, competitors, loading } = useDashboardData();
 
   return (
     <div>
@@ -58,7 +54,7 @@ export default function App() {
                 <h1>📊 تقرير الأداء الشامل</h1>
                 <p>ملخص أداء المنصات والحملات الإعلانية</p>
               </div>
-              <PerformanceReport data={mockData} loading={loading} />
+              <PerformanceReport data={performanceData} loading={loading} />
             </>
           } />
           <Route path="/cost" element={
@@ -67,7 +63,7 @@ export default function App() {
                 <h1>💰 تحليل التكلفة</h1>
                 <p>تحليل تكلفة الإعلان عبر المنصات والفترات</p>
               </div>
-              <CostAnalysisReport data={mockData} loading={loading} />
+              <CostAnalysisReport data={performanceData} loading={loading} />
             </>
           } />
           <Route path="/conversions" element={
@@ -76,7 +72,7 @@ export default function App() {
                 <h1>✅ تقرير التحويلات</h1>
                 <p>تحليل التحويلات وتكلفة الاكتساب</p>
               </div>
-              <ConversionReport data={mockData} loading={loading} />
+              <ConversionReport data={performanceData} loading={loading} />
             </>
           } />
           <Route path="/competitors" element={
@@ -85,7 +81,7 @@ export default function App() {
                 <h1>🏢 تقرير المنافسين</h1>
                 <p>مقارنة الأداء مع المنافسين في السوق</p>
               </div>
-              <CompetitorReport data={mockCompetitors} loading={loading} />
+              <CompetitorReport data={competitors} loading={loading} />
             </>
           } />
           <Route path="/audience" element={

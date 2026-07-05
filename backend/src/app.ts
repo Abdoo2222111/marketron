@@ -36,6 +36,8 @@ import personasRoutes from './routes/personas.routes';
 import engineRoutes from './routes/engine.routes';
 import platformTokensRoutes from './routes/platformTokens.routes';
 import seedRoutes from './routes/seed.routes';
+import facebookRoutes from './routes/facebook.routes';
+import creativesRoutes from './routes/creatives.routes';
 
 const app: Express = express();
 
@@ -185,6 +187,8 @@ app.use('/api/v1/personas', personasRoutes);
 app.use('/api/v1/engine', engineRoutes);
 app.use('/api/v1/platform-tokens', platformTokensRoutes);
 app.use('/api/v1/seed', seedRoutes);
+app.use('/api/v1/facebook', facebookRoutes);
+app.use('/api/v1/creatives', creativesRoutes);
 
 app.use(express.static('public'));
 

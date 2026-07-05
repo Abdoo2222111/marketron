@@ -1,0 +1,32 @@
+# ============================================================
+# MARKETRON — Evolution API for Hugging Face Spaces
+# WhatsApp Business API — Permanent Mode
+# ============================================================
+FROM evoapicloud/evolution-api:latest
+
+# Install health check utilities
+USER root
+RUN apt-get update -qq && apt-get install -y -qq --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Environment variables
+ENV DATABASE_PROVIDER=postgresql
+ENV SKIP_DB_MIGRATIONS=true
+ENV PORT=8080
+
+# Create data directory for persistence
+RUN mkdir -p /evolution/data /evolution/logs
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:8080/health || curl -f http://localhost:8080/manager/ || exit 1
+
+EXPOSE 8080
+
+# Keep alive entry point
+COPY deploy/huggingface/keep_alive.py /keep_alive.py
+RUN chmod +x /keep_alive.py
+
+# Start Evolution API
+CMD ["node", "src/index.js"]

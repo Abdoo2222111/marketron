@@ -11,7 +11,8 @@ export type AiProviderName =
   | 'cohere'
   | 'deepseek'
   | 'perplexity'
-  | 'pollinations';
+  | 'pollinations'
+  | 'huggingface';
 
 export interface AiCompletionOptions {
   model?: string;
@@ -63,7 +64,7 @@ export const PROVIDER_MODELS: Record<AiProviderName, { label: string; models: st
     models: ['llama-3.1-sonar-large-128k-online', 'llama-3.1-sonar-small-128k-online', 'llama-3.1-sonar-huge-128k-online'],
   },
   pollinations: {
-    label: 'Pollinations AI',
+    label: 'Pollinations AI (مجاني)',
     models: [
       'openai', 'openai-fast', 'openai-large',
       'gpt-5.4', 'gpt-5.4-mini',
@@ -80,6 +81,17 @@ export const PROVIDER_MODELS: Record<AiProviderName, { label: string; models: st
       'mercury', 'polly', 'step-flash',
       'perplexity', 'perplexity-fast', 'perplexity-deep', 'perplexity-reasoning',
       'gemini-search', 'gemini-search-fast', 'gemini-search-large',
+    ],
+  },
+  huggingface: {
+    label: 'Hugging Face (مجاني - مفتوح المصدر)',
+    models: [
+      'microsoft/Phi-3-mini-4k-instruct',
+      'HuggingFaceH4/zephyr-7b-beta',
+      'mistralai/Mistral-7B-Instruct-v0.3',
+      'meta-llama/Llama-3.2-3B-Instruct',
+      'google/gemma-2-2b-it',
+      'Qwen/Qwen2.5-7B-Instruct',
     ],
   },
 };
@@ -306,6 +318,62 @@ class PollinationsProvider implements AiProvider {
   }
 }
 
+// ── Hugging Face Provider (Free Inference API) ─────────
+class HuggingFaceProvider implements AiProvider {
+  name: AiProviderName = 'huggingface';
+  private defaultModel: string;
+
+  constructor() {
+    this.defaultModel = config.ai.providers.huggingface?.defaultModel || 'microsoft/Phi-3-mini-4k-instruct';
+  }
+
+  isConfigured() { return true; }
+
+  reloadFromEnv() {
+    this.defaultModel = config.ai.providers.huggingface?.defaultModel || 'microsoft/Phi-3-mini-4k-instruct';
+  }
+
+  applyConfig() { /* no-op — HF is always free */ }
+
+  async generateText(prompt: string, opts?: AiCompletionOptions): Promise<AiCompletionResult> {
+    const model = opts?.model || this.defaultModel;
+    const apiKey = config.ai.providers.huggingface?.apiKey;
+
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+
+    const systemMsg = opts?.systemPrompt;
+    const fullPrompt = systemMsg ? `${systemMsg}\n\n${prompt}` : prompt;
+
+    try {
+      const { data } = await axios.post(
+        `https://api-inference.huggingface.co/models/${model}`,
+        {
+          inputs: fullPrompt,
+          parameters: {
+            max_new_tokens: opts?.maxTokens || 500,
+            temperature: opts?.temperature ?? 0.7,
+            return_full_text: false,
+          },
+        },
+        { headers, timeout: 60000 }
+      );
+
+      const text = Array.isArray(data) ? (data[0]?.generated_text || '') : (data?.generated_text || JSON.stringify(data));
+      return { text, provider: this.name, model, tokensUsed: 0 };
+    } catch {
+      // Fallback: some models use different response format
+      const { data } = await axios.post(
+        `https://api-inference.huggingface.co/models/${model}`,
+        { inputs: fullPrompt },
+        { headers, timeout: 60000 }
+      );
+      const text = Array.isArray(data) ? (data[0]?.generated_text || '') : String(data);
+      return { text, provider: this.name, model, tokensUsed: 0 };
+    }
+  }
+}
+
 // ── Provider Registry ──────────────────────────────────
 function envFor(name: AiProviderName) {
   const p = config.ai.providers[name];
@@ -322,6 +390,7 @@ const providers: Record<AiProviderName, AiProvider> = {
   deepseek: new OpenAICompatibleProvider('deepseek', envFor('deepseek')),
   perplexity: new OpenAICompatibleProvider('perplexity', envFor('perplexity')),
   pollinations: new PollinationsProvider(),
+  huggingface: new HuggingFaceProvider(),
 };
 
 // ── Main AI Service (Text) ─────────────────────────────

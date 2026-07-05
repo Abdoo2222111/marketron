@@ -1,13 +1,16 @@
 ﻿'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import {
   Bot, BarChart3, Sparkles, TrendingUp, MessageSquare, Shield,
   ChevronLeft, Star, Check, Menu, X, ArrowLeft, Play,
   Building2, Share2, CheckCircle, ChevronDown,
+  Sun, Moon, Globe,
 } from 'lucide-react';
+import { useTheme } from '@/hooks/useTheme';
+import { useLocalization } from '@/hooks/useLocalization';
 import { ParticlesBackground } from '@/components/ui/ParticlesBackground';
 
 const LOGO_URL = '/logo.png';
@@ -59,14 +62,88 @@ const plans = [
   { name: 'مؤسسي', price: '799', period: 'ريال / شهر', desc: 'للشركات الكبيرة', features: ['كل مميزات الاحترافي', 'مستخدمين غير محدودين', 'API مخصص', 'مدير حساب مخصص', 'SLA مضمون'], cta: 'تواصل معنا', highlight: false },
 ];
 
+const testimonials = [
+  { name: 'أحمد السيد', role: 'مدير تسويق', company: 'شركة التقنية المتقدمة', text: 'منذ استخدام MARKETRON، زادت كفاءة حملاتنا بنسبة ٤٠٪. الوكيل الذكي وفر علينا ساعات من الرد على العملاء.', rating: 5 },
+  { name: 'سارة العنزي', role: 'صاحبة متجر إلكتروني', company: 'متجر روز للتجميل', text: 'لم أتوقع أن أجد منصة عربية متكاملة بهذا المستوى. توليد المحتوى بالعربية دقيق جداً وأوفر ٧٠٪ من وقتي.', rating: 5 },
+  { name: 'فيصل المطيري', role: 'مستشار تسويق رقمي', company: 'مكتب فيصل للاستشارات', text: 'أرشح MARKETRON لكل عملاي. لوحة التحكم الموحدة تغنيك عن ٣ أدوات مختلفة. منصة مذهلة.', rating: 5 },
+  { name: 'نورة الدوسري', role: 'مديرة علامة تجارية', company: 'مجموعة الضيافة العربية', text: 'تقارير التحليل الذكية ساعدتنا نحدد نقاط الضعف في حملاتنا بسرعة. التوصيات دائماً دقيقة ومفيدة.', rating: 5 },
+  { name: 'عبدالله الزهراني', role: 'رائد أعمال', company: 'منصة زاد للتجارة', text: 'بدأت بالخطة التجريبية وبعد أسبوع انتقلت للاحترافية. الفرق واضح — وكيل ذكي وتقارير وتوليد محتوى بجودة احترافية.', rating: 5 },
+  { name: 'هند الشمري', role: 'أخصائية تسويق', company: 'وكالة براند للإعلان', text: 'أفضل ما في MARKETRON أنه ينشر بإذنك — تحكم كامل بدون مفاجآت. عملاي يثقون فيّ أكثر.', rating: 5 },
+];
+
+function TestimonialsSection() {
+  return (
+    <section className="py-24 px-4 overflow-hidden">
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-16">
+          <span className="text-purple-400 text-sm font-bold tracking-widest mb-4 block">شهادات العملاء</span>
+          <h2 className="text-4xl sm:text-5xl font-black mb-4">
+            ماذا يقول <span className="bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">عملاؤنا</span>
+          </h2>
+          <p className="text-gray-400 text-lg">آلاف المسوقين يثقون في MARKETRON — اكتشف لماذا</p>
+        </div>
+        <div className="relative">
+          <div className="testimonial-track">
+            {[...testimonials, ...testimonials].map((t, i) => (
+              <div key={i} className="testimonial-card">
+                <div className="flex items-center gap-1 mb-4">
+                  {Array.from({ length: t.rating }).map((_, j) => (
+                    <Star key={j} size={14} className="text-amber-400 fill-amber-400" />
+                  ))}
+                </div>
+                <p className="text-gray-300 text-sm leading-relaxed mb-6">&ldquo;{t.text}&rdquo;</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-cyan-400 flex items-center justify-center text-white font-bold text-sm shadow-[0_0_15px_rgba(124,58,237,0.3)]">
+                    {t.name[0]}
+                  </div>
+                  <div>
+                    <div className="text-white font-semibold text-sm">{t.name}</div>
+                    <div className="text-gray-500 text-xs">{t.role} &middot; {t.company}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="absolute top-0 left-0 bottom-0 w-32 bg-gradient-to-r from-[#0B0A1A] to-transparent pointer-events-none z-10" />
+          <div className="absolute top-0 right-0 bottom-0 w-32 bg-gradient-to-l from-[#0B0A1A] to-transparent pointer-events-none z-10" />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ScrollProgress() {
+  const [width, setWidth] = useState('0%');
+  useEffect(() => {
+    const handle = () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      setWidth(`${docHeight > 0 ? (scrollTop / docHeight) * 100 : 0}%`);
+    };
+    window.addEventListener('scroll', handle, { passive: true });
+    return () => window.removeEventListener('scroll', handle);
+  }, []);
+  return <div className="scroll-progress" style={{ width }} />;
+}
+
 export const LandingPage: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const { theme, toggleTheme } = useTheme();
+  const { setLocale } = useLocalization();
   const [mobileMenu, setMobileMenu] = useState(false);
   const locale = i18n.language || 'ar';
+  const LANGUAGES = [
+    { code: 'ar', label: 'العربية', dir: 'rtl' },
+    { code: 'en', label: 'English', dir: 'ltr' },
+    { code: 'fr', label: 'Français', dir: 'ltr' },
+    { code: 'tr', label: 'Türkçe', dir: 'ltr' },
+  ] as const;
+  const currentLang = LANGUAGES.find(l => l.code === locale) || LANGUAGES[0];
 
   return (
     <div dir="rtl" className="min-h-screen bg-[#0B0A1A] text-white overflow-x-hidden">
       <ParticlesBackground />
+      <ScrollProgress />
       {/* ===== Floating Cubes Background ===== */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] rounded-full bg-gradient-radial from-purple-600/15 via-purple-900/5 to-transparent blur-3xl" />
@@ -87,6 +164,27 @@ export const LandingPage: React.FC = () => {
             <a href="https://wa.me/201011273472" target="_blank" rel="noopener noreferrer" className="text-sm px-4 py-2 rounded-lg bg-emerald-500/20 text-emerald-400 font-semibold hover:bg-emerald-500/30 transition-all flex items-center gap-1">
               01011273472
             </a>
+            {/* Language Switcher */}
+            <div className="flex items-center gap-1 text-[#A1A1C2]">
+              {LANGUAGES.map(l => (
+                <button
+                  key={l.code}
+                  onClick={() => setLocale(l.code)}
+                  className={`px-2 py-1 text-xs rounded transition-all ${
+                    locale === l.code ? 'bg-purple-500/20 text-purple-400' : 'hover:text-white'
+                  }`}
+                >
+                  {l.label.slice(0, 2)}
+                </button>
+              ))}
+            </div>
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg text-[#A1A1C2] hover:text-white hover:bg-white/5 transition-all"
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
           </nav>
           <div className="flex items-center gap-3">
             <a href={`/${locale}/auth/login`} className="text-sm text-[#A1A1C2] hover:text-white hidden sm:inline transition-colors">تسجيل الدخول</a>
@@ -107,12 +205,37 @@ export const LandingPage: React.FC = () => {
             <a href="https://wa.me/201011273472" target="_blank" rel="noopener noreferrer" className="text-lg text-emerald-400">واتساب: 01011273472</a>
             <a href={`/${locale}/auth/login`} className="text-lg text-[#A1A1C2]">تسجيل الدخول</a>
             <a href={`/${locale}/auth/register`} className="mt-4 px-8 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-500 text-white font-bold">ابدأ مجاناً</a>
+            {/* Language Switcher - Mobile */}
+            <div className="flex items-center gap-3 mt-4">
+              {LANGUAGES.map(l => (
+                <button
+                  key={l.code}
+                  onClick={() => { setLocale(l.code); setMobileMenu(false); }}
+                  className={`px-3 py-1.5 text-sm rounded transition-all ${
+                    locale === l.code ? 'bg-purple-500/20 text-purple-400 border border-purple-500/40' : 'text-[#A1A1C2] border border-transparent'
+                  }`}
+                >
+                  {l.label}
+                </button>
+              ))}
+            </div>
+            {/* Theme Toggle - Mobile */}
+            <button
+              onClick={toggleTheme}
+              className="flex items-center gap-2 text-[#A1A1C2] hover:text-white transition-colors"
+            >
+              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              <span>{theme === 'dark' ? 'الوضع النهاري' : 'الوضع الليلي'}</span>
+            </button>
           </div>
         </div>
       )}
 
       {/* ===== HERO SECTION ===== */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20 hero-grid hero-grid-cyan">
+        <div className="gradient-orb w-[500px] h-[500px] bg-purple-600/20" style={{ top: '0%', left: '0%', animationDelay: '0s' }} />
+        <div className="gradient-orb w-[400px] h-[400px] bg-cyan-500/15" style={{ top: '50%', right: '0%', animationDelay: '-3s' }} />
+        <div className="gradient-orb w-[300px] h-[300px] bg-pink-500/10" style={{ top: '30%', left: '50%', animationDelay: '-6s' }} />
         <div className="relative z-10 text-center px-4 max-w-5xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
             <div className="flex justify-center mb-10">
@@ -270,7 +393,7 @@ export const LandingPage: React.FC = () => {
               <motion.div key={i} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
                 className={`relative rounded-3xl p-8 transition-all duration-300 ${
                   p.highlight
-                    ? 'bg-gradient-to-br from-purple-900/60 to-cyan-900/30 border-2 border-purple-500/60 scale-105 shadow-[0_0_50px_rgba(124,58,237,0.3)]'
+                    ? 'bg-gradient-to-br from-purple-900/60 to-cyan-900/30 border border-purple-500/40 scale-105 pricing-card-highlight'
                     : 'bg-[#14102B] border border-purple-900/20 hover:border-purple-500/30'
                 }`}>
                 {p.badge && (
@@ -300,6 +423,9 @@ export const LandingPage: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* ===== TESTIMONIALS ===== */}
+      <TestimonialsSection />
 
       {/* ===== CTA ===== */}
       <section className="py-32 px-4 relative overflow-hidden">

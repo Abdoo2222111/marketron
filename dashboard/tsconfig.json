@@ -26,7 +26,8 @@
       "@templates/*": ["src/templates/*"],
       "@scripts/*": ["src/scripts/*"],
       "@hooks/*": ["src/hooks/*"],
-      "@types/*": ["src/types/*"]
+      "@types/*": ["src/types/*"],
+      "@services/*": ["src/services/*"]
     }
   },
   "include": ["src"],
