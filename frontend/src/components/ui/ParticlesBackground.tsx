@@ -46,7 +46,7 @@ function drawShape(ctx: CanvasRenderingContext2D, shape: number, size: number) {
 }
 
 export function ParticlesBackground({
-  count = 120, interactive = true, className = '', style = {},
+  count = 60, interactive = true, className = '', style = {},
   colorScheme = 'auto',
 }: {
   count?: number; interactive?: boolean; className?: string; style?: React.CSSProperties;
@@ -215,11 +215,11 @@ export function ParticlesBackground({
     <div className={`fixed inset-0 pointer-events-none z-0 overflow-hidden ${className}`} style={style}>
       <canvas ref={canvasRef} className="absolute inset-0" />
       {/* Ambient glow orbs */}
-      <div className="absolute top-1/5 left-1/5 w-[400px] h-[400px] radial-glow radial-glow-purple animate-float-gentle opacity-60" />
-      <div className="absolute top-1/3 right-1/6 w-[300px] h-[300px] radial-glow radial-glow-cyan animate-float-gentle opacity-40" style={{ animationDelay: '3s' }} />
-      <div className="absolute bottom-1/4 left-1/4 w-[350px] h-[350px] radial-glow radial-glow-pink animate-float-gentle opacity-30" style={{ animationDelay: '6s' }} />
-      <div className="absolute bottom-1/3 right-1/4 w-[250px] h-[250px] radial-glow radial-glow-emerald animate-float-gentle opacity-35" style={{ animationDelay: '9s' }} />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] radial-glow radial-glow-gold animate-float-gentle opacity-20" style={{ animationDelay: '12s' }} />
+      <div className="hidden sm:block absolute top-[15%] left-[15%] w-[400px] h-[400px] radial-glow radial-glow-purple animate-float-gentle opacity-60" />
+      <div className="hidden sm:block absolute top-[30%] right-[10%] w-[300px] h-[300px] radial-glow radial-glow-cyan animate-float-gentle opacity-40" style={{ animationDelay: '3s' }} />
+      <div className="hidden sm:block absolute bottom-[20%] left-[20%] w-[350px] h-[350px] radial-glow radial-glow-pink animate-float-gentle opacity-30" style={{ animationDelay: '6s' }} />
+      <div className="hidden sm:block absolute bottom-[30%] right-[20%] w-[250px] h-[250px] radial-glow radial-glow-emerald animate-float-gentle opacity-35" style={{ animationDelay: '9s' }} />
+      <div className="hidden sm:block absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] radial-glow radial-glow-gold animate-float-gentle opacity-20" style={{ animationDelay: '12s' }} />
     </div>
   );
 }

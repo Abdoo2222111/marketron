@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import {
   Bot, BarChart3, Sparkles, TrendingUp, MessageSquare, Shield,
@@ -148,7 +148,7 @@ export const LandingPage: React.FC = () => {
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] rounded-full bg-gradient-radial from-purple-600/15 via-purple-900/5 to-transparent blur-3xl" />
         <div className="bg-grid absolute inset-0 opacity-[0.03]" />
-        {CUBES.map((c, i) => <FloatingCube key={i} {...c} />)}
+        <div className="hidden md:block">{CUBES.map((c, i) => <FloatingCube key={i} {...c} />)}</div>
       </div>
 
       {/* ===== HEADER ===== */}
@@ -196,8 +196,9 @@ export const LandingPage: React.FC = () => {
         </div>
       </header>
 
-      {mobileMenu && (
-        <div className="fixed inset-0 z-40 bg-[#0B0A1A]/95 backdrop-blur-2xl pt-24">
+      <AnimatePresence>
+        {mobileMenu && (
+          <motion.div initial={{ opacity: 0, x: locale === 'ar' ? 80 : -80 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: locale === 'ar' ? 80 : -80 }} transition={{ type: 'spring', damping: 25, stiffness: 200 }} className="fixed inset-0 z-40 bg-[#0B0A1A]/95 backdrop-blur-2xl pt-24">
           <div className="flex flex-col items-center gap-6 p-8">
             <a href="/ar/services" onClick={() => setMobileMenu(false)} className="text-xl text-white font-bold">خدماتنا</a>
             <a href="#features" onClick={() => setMobileMenu(false)} className="text-lg text-[#A1A1C2]">المميزات</a>
@@ -228,14 +229,15 @@ export const LandingPage: React.FC = () => {
               <span>{theme === 'dark' ? 'الوضع النهاري' : 'الوضع الليلي'}</span>
             </button>
           </div>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
 
       {/* ===== HERO SECTION ===== */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20 hero-grid hero-grid-cyan">
-        <div className="gradient-orb w-[500px] h-[500px] bg-purple-600/20" style={{ top: '0%', left: '0%', animationDelay: '0s' }} />
-        <div className="gradient-orb w-[400px] h-[400px] bg-cyan-500/15" style={{ top: '50%', right: '0%', animationDelay: '-3s' }} />
-        <div className="gradient-orb w-[300px] h-[300px] bg-pink-500/10" style={{ top: '30%', left: '50%', animationDelay: '-6s' }} />
+        <div className="gradient-orb w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] bg-purple-600/20" style={{ top: '0%', left: '0%', animationDelay: '0s' }} />
+        <div className="hidden sm:block gradient-orb w-[400px] h-[400px] bg-cyan-500/15" style={{ top: '50%', right: '0%', animationDelay: '-3s' }} />
+        <div className="hidden sm:block gradient-orb w-[300px] h-[300px] bg-pink-500/10" style={{ top: '30%', left: '50%', animationDelay: '-6s' }} />
         <div className="relative z-10 text-center px-4 max-w-5xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
             <div className="flex justify-center mb-10">
@@ -245,7 +247,7 @@ export const LandingPage: React.FC = () => {
               <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse" />
               منصة الذكاء الاصطناعي للتسويق الرقمي
             </div>
-            <h1 className="text-5xl sm:text-7xl lg:text-8xl font-black leading-tight mb-8 animate-fade-in-up [text-shadow:_0_0_30px_rgba(6,182,212,0.3)]">
+            <h1 className="text-[2.5rem] xs:text-5xl sm:text-7xl lg:text-8xl font-black leading-tight mb-8 animate-fade-in-up [text-shadow:_0_0_30px_rgba(6,182,212,0.3)]">
               حملاتك الإعلانية
               <br />
               <span className="bg-gradient-to-r from-cyan-300 via-purple-300 to-cyan-300 bg-clip-text text-transparent animate-gradient-x">
@@ -371,7 +373,7 @@ export const LandingPage: React.FC = () => {
                       <span className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-purple-500 text-white text-sm font-bold flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.5)] group-hover:scale-110 transition-transform duration-300">{i + 1}</span>
                     </div>
                     <h3 className="text-white font-bold text-xl mb-3 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-cyan-300 group-hover:to-purple-300 transition-all duration-300">{s.title}</h3>
-                    <p className="text-gray-400 text-sm leading-relaxed max-w-[220px] group-hover:text-gray-300 transition-colors duration-300">{s.desc}</p>
+                    <p className="text-gray-400 text-sm leading-relaxed max-w-[220px] sm:max-w-[220px] group-hover:text-gray-300 transition-colors duration-300">{s.desc}</p>
                   </motion.div>
                 );
               })}
@@ -393,7 +395,7 @@ export const LandingPage: React.FC = () => {
               <motion.div key={i} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
                 className={`relative rounded-3xl p-8 transition-all duration-300 ${
                   p.highlight
-                    ? 'bg-gradient-to-br from-purple-900/60 to-cyan-900/30 border border-purple-500/40 scale-105 pricing-card-highlight'
+                    ? 'bg-gradient-to-br from-purple-900/60 to-cyan-900/30 border border-purple-500/40 md:scale-105 pricing-card-highlight'
                     : 'bg-[#14102B] border border-purple-900/20 hover:border-purple-500/30'
                 }`}>
                 {p.badge && (
