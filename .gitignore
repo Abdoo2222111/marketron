@@ -72,3 +72,40 @@ temp/
 .vercel/
 .env.vercel
 .env.vercel.pulled
+
+# Development docs
+PROGRESS.md
+TASKS.md
+PROMPT_*.md
+
+# OpenCode
+.opencode/
+
+# Old deployment configs
+evolution-api-deploy/
+
+# Legacy directories
+ai-services/
+docs/
+scripts/
+tests/
+backend/tests/
+backend/src/ai/
+backend/src/jobs/
+backend/src/models/
+backend/src/scripts/
+backend/src/websocket/
+backend/config/
+backend/uploads/
+frontend/generated/
+frontend/public/fonts/
+frontend/public/images/
+frontend/public/locales/
+frontend/src/data/
+frontend/src/utils/
+frontend/src/components/competitors/
+frontend/src/components/content/
+frontend/src/components/dashboard/
+frontend/src/components/landing/
+frontend/src/components/market/
+frontend/src/components/shared/
