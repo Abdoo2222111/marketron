@@ -16,6 +16,8 @@ import { PricingSection } from './PricingSection';
 import { TestimonialsSection } from './TestimonialsSection';
 import { CTASection } from './CTASection';
 import { Footer } from './Footer';
+import { FAQSection } from './FAQSection';
+import { TeamSection } from './TeamSection';
 
 function FloatingCube({ x, y, size, delay }: { x: number; y: number; size: string; delay: number }) {
   return (
@@ -142,6 +144,8 @@ export const LandingPage: React.FC = () => {
       <StepsSection />
       <PricingSection locale={locale} />
       <TestimonialsSection />
+      <TeamSection />
+      <FAQSection />
       <CTASection locale={locale} />
       <Footer />
     </div>
