@@ -1,5 +1,6 @@
 import prisma from '../config/database';
 import { aiService as aiIntegration } from '../integrations/aiService';
+import axios from 'axios';
 
 const AD_TEXT_SYSTEM_PROMPT = `أنت خبير تسويق إعلاني في منصة MARKETRON. مهمتك توليد نصوص إعلانية احترافية.
 المخرجات بالعربية الفصحى دائماً. أعد JSON بالتنسيق التالي:
@@ -81,15 +82,35 @@ export class AiService {
   async generateImage(userId: string, data: {
     prompt: string; style?: string; platform?: string;
   }) {
-    const fallback = {
-      imageUrl: 'https://via.placeholder.com/1200x628?text=Marketron+AI+Ad',
-      thumbnailUrl: 'https://via.placeholder.com/300x157?text=Marketron+AI',
-      altText: data.prompt,
-      style: data.style || 'realistic',
-      variations: [],
-    };
-    await this.saveGeneration(userId, 'image', data, fallback, 'placeholder', 0);
-    return fallback;
+    const prompt = `محتوى تسويقي: ${data.platform ? `لـ ${data.platform} - ` : ''}${data.prompt}${data.style ? ` بأسلوب ${data.style}` : ''}`;
+    const encoded = encodeURIComponent(prompt.substring(0, 400));
+    const pollinationsUrl = `https://image.pollinations.ai/prompt/${encoded}?width=1200&height=628&nologo=true`;
+
+    try {
+      const { data: imageBuffer } = await axios.get(pollinationsUrl, {
+        responseType: 'arraybuffer', timeout: 30000,
+      });
+      const base64 = Buffer.from(imageBuffer).toString('base64');
+      const result = {
+        imageUrl: `data:image/jpeg;base64,${base64}`,
+        thumbnailUrl: `data:image/jpeg;base64,${base64}`,
+        altText: data.prompt,
+        style: data.style || 'realistic',
+        variations: [],
+      };
+      await this.saveGeneration(userId, 'image', data, result, 'pollinations', 0);
+      return result;
+    } catch {
+      const fallback = {
+        imageUrl: `https://image.pollinations.ai/prompt/${encoded}?width=1200&height=628&nologo=true`,
+        thumbnailUrl: `https://image.pollinations.ai/prompt/${encoded}?width=300&height=157&nologo=true`,
+        altText: data.prompt,
+        style: data.style || 'realistic',
+        variations: [],
+      };
+      await this.saveGeneration(userId, 'image', data, fallback, 'pollinations', 0);
+      return fallback;
+    }
   }
 
   async analyzeCampaign(userId: string, campaignId: string) {

@@ -36,7 +36,8 @@ export const ContentStudioPage: React.FC = () => {
   // ── Model Selection State ──
   const [textModel, setTextModel] = useState({ provider: '', model: '' });
   const [imageModel, setImageModel] = useState({ provider: '', model: '' });
-  const [useCustomModel, setUseCustomModel] = useState(false);
+  const [useCustomTextModel, setUseCustomTextModel] = useState(false);
+  const [useCustomImageModel, setUseCustomImageModel] = useState(false);
 
   // ── Text Generation State ──
   const [textPrompt, setTextPrompt] = useState('');
@@ -76,7 +77,7 @@ export const ContentStudioPage: React.FC = () => {
     setTextLoading(true);
     setError(null);
     try {
-      if (useCustomModel && textModel.provider) {
+      if (useCustomTextModel && textModel.provider) {
         const result = await generateClientText({
           prompt: textPrompt,
           provider: textModel.provider,
@@ -111,7 +112,7 @@ export const ContentStudioPage: React.FC = () => {
     setImageLoading(true);
     setError(null);
     try {
-      if (useCustomModel && imageModel.provider) {
+      if (useCustomImageModel && imageModel.provider) {
         if (imageModel.provider === 'puter') {
           const result = await generateClientImage({
             prompt: imagePrompt,
@@ -263,13 +264,13 @@ export const ContentStudioPage: React.FC = () => {
             <input
               type="checkbox"
               id="use-custom-model-text"
-              checked={useCustomModel}
-              onChange={e => setUseCustomModel(e.target.checked)}
+              checked={useCustomTextModel}
+              onChange={e => setUseCustomTextModel(e.target.checked)}
               className="rounded border-[#7C3AED]/30"
             />
             <label htmlFor="use-custom-model-text" className="text-xs text-[#A1A1C2] cursor-pointer">اختيار نموذج AI محدد</label>
           </div>
-          {useCustomModel && (
+          {useCustomTextModel && (
             <ModelSelector
               value={textModel}
               onChange={setTextModel}
@@ -452,13 +453,13 @@ export const ContentStudioPage: React.FC = () => {
             <input
               type="checkbox"
               id="use-custom-model-image"
-              checked={useCustomModel}
-              onChange={e => setUseCustomModel(e.target.checked)}
+              checked={useCustomImageModel}
+              onChange={e => setUseCustomImageModel(e.target.checked)}
               className="rounded border-[#7C3AED]/30"
             />
             <label htmlFor="use-custom-model-image" className="text-xs text-[#A1A1C2] cursor-pointer">اختيار نموذج AI محدد</label>
           </div>
-          {useCustomModel && (
+          {useCustomImageModel && (
             <ModelSelector
               value={imageModel}
               onChange={setImageModel}
