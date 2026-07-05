@@ -66,13 +66,13 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
 
   return (
     <div className="min-h-screen bg-[#0B0A1A] flex relative overflow-hidden">
-      <ParticlesBackground count={60} interactive />
+      <ParticlesBackground count={60} />
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="bg-grid absolute inset-0 opacity-[0.03]" />
       </div>
 
       <div className="w-full lg:w-[45%] xl:w-[40%] flex items-center justify-center p-6 relative z-10">
-        <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }} className="w-full max-w-sm">
+        <div className="w-full max-w-sm">
           <Link href={`/${locale}`} className="inline-flex items-center gap-2 mb-8 text-[#A1A1C2] hover:text-[#F5F3FF] transition-colors text-sm group">
             <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> {t('common.back')}
           </Link>
@@ -144,7 +144,7 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
               </Link>
             </p>
           </Card>
-        </motion.div>
+        </div>
       </div>
 
       <div className="hidden lg:flex lg:w-[55%] xl:w-[60%] bg-[#14102B] relative overflow-hidden items-center justify-center">

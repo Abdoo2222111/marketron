@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -77,7 +77,7 @@ export default function RegisterPage({ params: { locale } }: { params: { locale:
 
   return (
     <div className="min-h-screen bg-[#0B0A1A] flex relative overflow-hidden">
-      <ParticlesBackground count={60} interactive />
+      <ParticlesBackground count={60} />
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="bg-grid absolute inset-0 opacity-[0.03]" />
       </div>
@@ -102,13 +102,13 @@ export default function RegisterPage({ params: { locale } }: { params: { locale:
       </div>
 
       <div className="w-full lg:w-[45%] xl:w-[40%] flex items-center justify-center p-6 relative z-10 order-2">
-        <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }} className="w-full max-w-sm">
+        <div className="w-full max-w-sm">
           <Link href={`/${locale}`} className="inline-flex items-center gap-2 mb-8 text-[#A1A1C2] hover:text-[#F5F3FF] transition-colors text-sm group">
             <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> {t('common.back')}
           </Link>
 
           <div className="mb-8">
-            <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.5, delay: 0.1 }}>
+            <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} transition={{ duration: 0.5, delay: 0.1 }}>
               <Logo size="xl" className="mb-6 drop-shadow-[0_0_30px_rgba(124,58,237,0.4)]" />
             </motion.div>
             <h1 className="text-2xl font-bold mb-1">{t('auth.createAccount')}</h1>
@@ -225,7 +225,7 @@ export default function RegisterPage({ params: { locale } }: { params: { locale:
               <Link href={`/${locale}/auth/login`} className="text-[#06B6D4] font-semibold hover:underline">{t('auth.login')}</Link>
             </p>
           </Card>
-        </motion.div>
+        </div>
       </div>
     </div>
   );
