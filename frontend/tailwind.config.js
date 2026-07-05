@@ -91,8 +91,8 @@ module.exports = {
         shimmer: 'shimmer 2s ease-in-out infinite',
       },
       fontFamily: {
-        arabic: ['Cairo', 'Tajawal', 'sans-serif'],
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        arabic: ['var(--font-cairo)', 'Tajawal', 'sans-serif'],
+        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
       },
     },
   },

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Providers } from './providers';
+import { cairo, inter, spaceGrotesk } from '@/lib/fonts';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://marketron.ai'),
@@ -17,24 +18,16 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ar" dir="rtl" suppressHydrationWarning>
+    <html lang="ar" dir="rtl" suppressHydrationWarning className={`${cairo.variable} ${inter.variable} ${spaceGrotesk.variable}`}>
       <head>
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Cairo:wght@200;300;400;500;600;700;800;900&family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap"
-          rel="stylesheet"
-        />
+        <link rel="preload" href="/logo.png" as="image" />
+        <link rel="preconnect" href="https://js.puter.com" />
         <script src="https://js.puter.com/v2/" async></script>
       </head>
-      <body className="min-h-screen bg-background antialiased noise-overlay">
+      <body className="min-h-screen bg-background antialiased noise-overlay" style={{ fontFamily: 'var(--font-cairo), var(--font-inter), sans-serif' }}>
         <Providers>{children}</Providers>
       </body>
     </html>

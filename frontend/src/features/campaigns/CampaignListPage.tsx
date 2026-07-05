@@ -12,7 +12,8 @@ import {
   MousePointerClick, Loader2, AlertCircle, Target, BarChart3, PieChart, Activity,
 } from 'lucide-react';
 import { campaignsApi } from '@/services/api-modules';
-import { ParticlesBackground } from '@/components/ui/ParticlesBackground';
+import dynamic from 'next/dynamic';
+const ParticlesBackground = dynamic(() => import('@/components/ui/ParticlesBackground'), { ssr: false });
 
 const platformIcons: Record<string, { icon: React.ReactNode; color: string }> = {
   facebook: { icon: <Facebook className="w-4 h-4" />, color: '#1877F2' },

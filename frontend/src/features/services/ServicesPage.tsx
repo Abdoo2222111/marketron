@@ -5,7 +5,8 @@ import { motion } from 'framer-motion';
 import {
   ChevronLeft, CheckCircle, Sparkles, Target, BarChart3, MessageCircle, Search, Shield, Zap, Users, Star, Camera, Play, TrendingUp, DollarSign, Clock, ArrowLeft, Menu, X, Code, ChevronDown,
 } from 'lucide-react';
-import { ParticlesBackground } from '@/components/ui/ParticlesBackground';
+import dynamic from 'next/dynamic';
+const ParticlesBackground = dynamic(() => import('@/components/ui/ParticlesBackground'), { ssr: false });
 
 const LOGO_URL = '/logo.png';
 

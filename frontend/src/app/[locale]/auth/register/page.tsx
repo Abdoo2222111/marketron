@@ -11,7 +11,8 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { googleAuthApi } from '@/services/api-modules';
 import { Logo } from '@/components/ui/Logo';
-import { ParticlesBackground } from '@/components/ui/ParticlesBackground';
+import dynamic from 'next/dynamic';
+const ParticlesBackground = dynamic(() => import('@/components/ui/ParticlesBackground'), { ssr: false });
 
 const plans = [
   { id: 'free', labelKey: 'landing.pricingFree', priceKey: 'landing.pricingFreePrice', descKey: 'landing.pricingFreeDesc' },

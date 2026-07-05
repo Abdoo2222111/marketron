@@ -7,7 +7,8 @@ import { Menu, X, AlertTriangle, RefreshCw } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { Logo } from '@/components/ui/Logo';
 import { Button } from '@/components/ui/button';
-import { ParticlesBackground } from '@/components/ui/ParticlesBackground';
+import dynamic from 'next/dynamic';
+const ParticlesBackground = dynamic(() => import('@/components/ui/ParticlesBackground'), { ssr: false });
 
 class PageErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
   constructor(props: { children: React.ReactNode }) {
