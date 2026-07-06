@@ -99,9 +99,9 @@ export const ContentStudioPage: React.FC = () => {
         setGeneratedText(res.data?.data || res.data);
       }
     } catch (err: any) {
+      setGeneratedText(null);
       const msg = err?.response?.data?.error || 'فشل التوليد النصي';
       setError(msg);
-      toast.error(msg);
     } finally {
       setTextLoading(false);
     }
@@ -157,9 +157,9 @@ export const ContentStudioPage: React.FC = () => {
         });
       }
     } catch (err: any) {
+      setGeneratedImage(null);
       const msg = err?.response?.data?.error || 'فشل توليد الصورة';
       setError(msg);
-      toast.error(msg);
     } finally {
       setImageLoading(false);
     }

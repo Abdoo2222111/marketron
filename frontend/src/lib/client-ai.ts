@@ -43,20 +43,38 @@ export async function generateClientText(opts: GenerateTextOptions): Promise<{ t
     return { text, provider: 'puter', model };
   }
 
-  const res = await aiProvidersApi.generate({
-    prompt: opts.prompt,
-    systemPrompt: opts.systemPrompt,
-    provider,
-    model,
-    temperature: opts.temperature,
-    maxTokens: opts.maxTokens,
-  });
-
-  return {
-    text: res.data?.data?.text || '',
-    provider: res.data?.data?.provider || provider,
-    model: res.data?.data?.model || model,
-  };
+  try {
+    const res = await aiProvidersApi.generate({
+      prompt: opts.prompt,
+      systemPrompt: opts.systemPrompt,
+      provider,
+      model,
+      temperature: opts.temperature,
+      maxTokens: opts.maxTokens,
+    });
+    return {
+      text: res.data?.data?.text || '',
+      provider: res.data?.data?.provider || provider,
+      model: res.data?.data?.model || model,
+    };
+  } catch (err: any) {
+    if (err?.response?.status === 404 || err?.response?.status === 500) {
+      const fallbackRes = await aiProvidersApi.generate({
+        prompt: opts.prompt,
+        systemPrompt: opts.systemPrompt,
+        provider: 'pollinations',
+        model: 'openai',
+        temperature: opts.temperature,
+        maxTokens: opts.maxTokens,
+      });
+      return {
+        text: fallbackRes.data?.data?.text || '',
+        provider: 'pollinations',
+        model: 'openai',
+      };
+    }
+    throw err;
+  }
 }
 
 export async function generateClientImage(opts: GenerateImageOptions): Promise<{ imageUrl: string; provider: string; model: string }> {
