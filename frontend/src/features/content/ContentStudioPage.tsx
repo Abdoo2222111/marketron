@@ -127,17 +127,18 @@ export const ContentStudioPage: React.FC = () => {
             variations: [],
           });
         } else {
-          const res = await aiProvidersApi.generate({
-            prompt: `توليد وصف صورة إعلانية: ${imagePrompt}`,
-            provider: imageModel.provider,
-            model: imageModel.model || undefined,
+          const res = await aiProvidersApi.generateImage({
+            prompt: imagePrompt,
+            style: imageStyle,
+            platform: imagePlatform || undefined,
           });
+          const imgData = res.data?.data || res.data;
           setGeneratedImage({
-            imageUrl: '',
-            thumbnailUrl: '',
+            imageUrl: imgData?.imageUrl || `https://image.pollinations.ai/prompt/${encodeURIComponent(imagePrompt)}?nologo=true`,
+            thumbnailUrl: imgData?.thumbnailUrl || `https://image.pollinations.ai/prompt/${encodeURIComponent(imagePrompt)}?nologo=true&width=300`,
             altText: imagePrompt,
             style: imageStyle,
-            variations: [res.data?.data?.text || ''],
+            variations: [],
           });
         }
       } else {
@@ -146,11 +147,10 @@ export const ContentStudioPage: React.FC = () => {
           style: imageStyle,
           platform: imagePlatform || undefined,
         });
-        const imageData = res.data?.data;
-        const firstImage = Array.isArray(imageData) ? imageData[0] : null;
+        const imgData = res.data?.data || res.data;
         setGeneratedImage({
-          imageUrl: firstImage?.url || '',
-          thumbnailUrl: firstImage?.url || '',
+          imageUrl: imgData?.imageUrl || `https://image.pollinations.ai/prompt/${encodeURIComponent(imagePrompt)}?nologo=true`,
+          thumbnailUrl: imgData?.thumbnailUrl || `https://image.pollinations.ai/prompt/${encodeURIComponent(imagePrompt)}?nologo=true&width=300`,
           altText: imagePrompt,
           style: imageStyle,
           variations: [],
