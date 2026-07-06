@@ -43,11 +43,7 @@ export default function ForgotPasswordPage({ params: { locale } }: { params: { l
   return (
     <AuthShell>
       <div className="min-h-screen flex items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-md"
-        >
+        <div className="w-full max-w-md">
           {/* Logo */}
           <div className="text-center mb-8">
             <Link href={`/${locale}`} className="inline-flex items-center gap-3 mb-4">
@@ -126,7 +122,7 @@ export default function ForgotPasswordPage({ params: { locale } }: { params: { l
               </div>
             </CardContent>
           </Card>
-        </motion.div>
+        </div>
       </div>
     </AuthShell>
   );

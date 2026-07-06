@@ -7,9 +7,6 @@ import { Menu, X, AlertTriangle, RefreshCw } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { Logo } from '@/components/ui/Logo';
 import { Button } from '@/components/ui/button';
-import dynamic from 'next/dynamic';
-const ParticlesBackground = dynamic(() => import('@/components/ui/ParticlesBackground'), { ssr: false });
-
 class PageErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
   constructor(props: { children: React.ReactNode }) {
     super(props);
@@ -43,8 +40,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background relative" dir={direction} lang={locale}>
-      <ParticlesBackground count={40} interactive={false} />
-
       {/* Ambient glow orbs */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/10 rounded-full blur-[120px]" />
